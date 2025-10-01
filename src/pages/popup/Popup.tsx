@@ -17,11 +17,6 @@ export default function Popup() {
   const [loadingMna, setLoadingMna] = useState(false);
   const [loadingRouters, setLoadingRouters] = useState(false);
 
-  const handleClearData = () => {
-    // Implement clear cache and cookies logic
-    console.log('Clearing data...');
-  };
-
   const handleOpenSettings = () => {
     chrome.runtime.openOptionsPage();
   };
@@ -135,13 +130,6 @@ export default function Popup() {
         </div>
 
         <div className="flex gap-1 ml-auto">
-          <button
-            onClick={handleClearData}
-            className="px-3 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors"
-            title="Очистить кеш и куки"
-          >
-            🗑️
-          </button>
           <button
             onClick={handleOpenSettings}
             className="px-3 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors"
