@@ -1,7 +1,7 @@
 {
-  "name": "vite-web-extension",
+  "name": "helper-ext",
   "version": "1.4.0",
-  "description": "A simple chrome & firefox extension template with Vite, React, TypeScript and Tailwind CSS.",
+  "description": "Инструмент для помощи в работе",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -29,9 +29,9 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/webextension-polyfill": "^0.12.3",
-    "@typescript-eslint/eslint-plugin": "^7.8.0",
-    "@typescript-eslint/parser": "^7.18.0",
-    "@vitejs/plugin-react": "^4.7.0",
+    "@typescript-eslint/eslint-plugin": "^8.45.0",
+    "@typescript-eslint/parser": "^8.45.0",
+    "@vitejs/plugin-react": "^5.0.4",
     "eslint": "^9.32.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
@@ -43,7 +43,7 @@
     "tailwindcss": "^4.1.8",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5",
+    "vite": "7.1.7",
     "vite-tsconfig-paths": "^5.1.4"
   }
 }
