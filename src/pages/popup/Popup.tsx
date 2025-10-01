@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { fetchMNAData, fetchRoutersData, type MNAProvider, type Router } from '../../utils/api';
 
 type Tab = 'Главная' | 'MnA' | 'Роутеры' | 'РМы' | 'Инструменты';
 
@@ -10,6 +11,11 @@ export default function Popup() {
   const [ipAddress, setIpAddress] = useState('');
   const [link, setLink] = useState('');
   const [specialist, setSpecialist] = useState('');
+
+  const [mnaData, setMnaData] = useState<MNAProvider[]>([]);
+  const [routersData, setRoutersData] = useState<Router[]>([]);
+  const [loadingMna, setLoadingMna] = useState(false);
+  const [loadingRouters, setLoadingRouters] = useState(false);
 
   const handleClearData = () => {
     // Implement clear cache and cookies logic
@@ -26,6 +32,86 @@ export default function Popup() {
 
   const handleOpenDonate = () => {
     window.open('https://donate.url', '_blank');
+  };
+
+  useEffect(() => {
+    if (activeTab === 'MnA' && mnaData.length === 0) {
+      setLoadingMna(true);
+      fetchMNAData()
+        .then((data) => {
+          setMnaData(data.mna);
+        })
+        .catch((error) => {
+          console.error('Error loading MNA data:', error);
+        })
+        .finally(() => {
+          setLoadingMna(false);
+        });
+    }
+  }, [activeTab, mnaData.length]);
+
+  useEffect(() => {
+    if (activeTab === 'Роутеры' && routersData.length === 0) {
+      setLoadingRouters(true);
+      fetchRoutersData()
+        .then((data) => {
+          setRoutersData(data.routers);
+        })
+        .catch((error) => {
+          console.error('Error loading routers data:', error);
+        })
+        .finally(() => {
+          setLoadingRouters(false);
+        });
+    }
+  }, [activeTab, routersData.length]);
+
+  const filteredMnaData = useMemo(() => {
+    if (!searchProvider) return mnaData;
+    const search = searchProvider.toUpperCase();
+    return mnaData.filter(
+      (provider) =>
+        provider.name.toUpperCase().includes(search) ||
+        provider.authorization.toUpperCase().includes(search) ||
+        provider.connection.toUpperCase().includes(search)
+    );
+  }, [mnaData, searchProvider]);
+
+  const filteredRoutersData = useMemo(() => {
+    if (!searchRouter) return routersData;
+    const search = searchRouter.toUpperCase();
+    return routersData.filter((router) =>
+      router.Name.toUpperCase().includes(search) ||
+      router.Settings.toUpperCase().includes(search)
+    );
+  }, [routersData, searchRouter]);
+
+  const createLinkOrText = (value: string | string[], text: string, isEmulator = false) => {
+    if (value === 'Нет') {
+      return 'Нет';
+    }
+    if (isEmulator && Array.isArray(value)) {
+      return value.map((link, index) => (
+        <React.Fragment key={link}>
+          {index > 0 && ', '}
+          <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+            {text}
+          </a>
+        </React.Fragment>
+      ));
+    }
+    if (Array.isArray(value)) {
+      return (
+        <a href={value[0]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+          {text}
+        </a>
+      );
+    }
+    return (
+      <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+        {text}
+      </a>
+    );
   };
 
   return (
@@ -202,12 +288,37 @@ export default function Popup() {
               value={searchProvider}
               onChange={(e) => setSearchProvider(e.target.value)}
               placeholder="Поиск провайдера"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
               autoFocus
             />
-            <div className="mt-4 text-gray-600 text-sm">
-              {searchProvider && `Поиск: ${searchProvider}`}
-            </div>
+            {loadingMna ? (
+              <div className="text-center py-8 text-gray-600">Загрузка данных...</div>
+            ) : (
+              <div className="overflow-auto" style={{ maxHeight: '480px' }}>
+                <table className="w-full border-collapse border border-gray-300 text-sm">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="border border-gray-300 px-3 py-2 text-left">Провайдер</th>
+                      <th className="border border-gray-300 px-3 py-2 text-left">Авторизация</th>
+                      <th className="border border-gray-300 px-3 py-2 text-left">Подключение</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredMnaData.map((provider, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-3 py-2">
+                          <a href={provider.link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                            {provider.name}
+                          </a>
+                        </td>
+                        <td className="border border-gray-300 px-3 py-2">{provider.authorization}</td>
+                        <td className="border border-gray-300 px-3 py-2">{provider.connection}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
@@ -218,12 +329,43 @@ export default function Popup() {
               value={searchRouter}
               onChange={(e) => setSearchRouter(e.target.value)}
               placeholder="Поиск роутера"
-              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
               autoFocus
             />
-            <div className="mt-4 text-gray-600 text-sm">
-              {searchRouter && `Поиск: ${searchRouter}`}
-            </div>
+            {loadingRouters ? (
+              <div className="text-center py-8 text-gray-600">Загрузка данных...</div>
+            ) : (
+              <div className="overflow-y-auto" style={{ maxHeight: '480px' }}>
+                <table className="w-full border-collapse border border-gray-300 text-xs table-fixed">
+                  <thead className="bg-gray-100 sticky top-0">
+                    <tr>
+                      <th className="border border-gray-300 px-1 py-1 text-left" style={{ width: '20%' }}>Название</th>
+                      <th className="border border-gray-300 px-1 py-1 text-left" style={{ width: '10%' }}>PPPoE</th>
+                      <th className="border border-gray-300 px-1 py-1 text-left" style={{ width: '10%' }}>DHCP</th>
+                      <th className="border border-gray-300 px-1 py-1 text-left" style={{ width: '10%' }}>IPoE</th>
+                      <th className="border border-gray-300 px-1 py-1 text-left" style={{ width: '10%' }}>Каналы</th>
+                      <th className="border border-gray-300 px-1 py-1 text-left" style={{ width: '15%' }}>Интерфейс</th>
+                      <th className="border border-gray-300 px-1 py-1 text-left" style={{ width: '10%' }}>БЗ</th>
+                      <th className="border border-gray-300 px-1 py-1 text-left" style={{ width: '15%' }}>Эмулятор</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredRoutersData.map((router, index) => (
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-1 py-1 break-words">{router.Name}</td>
+                        <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.PPPoE, 'PPPoE')}</td>
+                        <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.DHCP, 'DHCP')}</td>
+                        <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.IPoE, 'IPoE')}</td>
+                        <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.Channels, 'Каналы')}</td>
+                        <td className="border border-gray-300 px-1 py-1 break-words">{router.Settings}</td>
+                        <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.BZ, 'БЗ')}</td>
+                        <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.Emulator, 'Эмулятор', true)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
 
