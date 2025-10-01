@@ -1,120 +1,122 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { fetchMNAData, fetchRoutersData, type MNAProvider, type Router } from '../../utils/api';
+import { useState, useEffect, useMemo, useCallback, type ReactNode } from 'react';
+import { fetchMNAData, fetchRoutersData, type MNAProvider, type Router } from '@src/utils/api';
 
 type Tab = 'Главная' | 'MnA' | 'Роутеры' | 'РМы' | 'Инструменты';
 
-export default function Popup() {
+interface ToolState {
+  macAddress: string;
+  ipAddress: string;
+  link: string;
+  specialist: string;
+}
+
+export default function Popup(): ReactNode {
   const [activeTab, setActiveTab] = useState<Tab>('Главная');
   const [searchProvider, setSearchProvider] = useState('');
   const [searchRouter, setSearchRouter] = useState('');
-  const [macAddress, setMacAddress] = useState('');
-  const [ipAddress, setIpAddress] = useState('');
-  const [link, setLink] = useState('');
-  const [specialist, setSpecialist] = useState('');
+  const [tools, setTools] = useState<ToolState>({
+    macAddress: '',
+    ipAddress: '',
+    link: '',
+    specialist: '',
+  });
 
   const [mnaData, setMnaData] = useState<MNAProvider[]>([]);
   const [routersData, setRoutersData] = useState<Router[]>([]);
   const [loadingMna, setLoadingMna] = useState(false);
   const [loadingRouters, setLoadingRouters] = useState(false);
 
-  const handleOpenSettings = () => {
+  const handleOpenSettings = useCallback(() => {
     chrome.runtime.openOptionsPage();
-  };
+  }, []);
 
-  const handleOpenTelegram = () => {
-    window.open('https://t.me/+jH1mblw0ytcwOWUy', '_blank');
-  };
-
-  const handleOpenDonate = () => {
-    window.open('https://donate.url', '_blank');
-  };
+  const handleOpenLink = useCallback((url: string) => {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, []);
 
   useEffect(() => {
-    if (activeTab === 'MnA' && mnaData.length === 0) {
+    if (activeTab === 'MnA' && mnaData.length === 0 && !loadingMna) {
       setLoadingMna(true);
       fetchMNAData()
-        .then((data) => {
-          setMnaData(data.mna);
-        })
-        .catch((error) => {
-          console.error('Error loading MNA data:', error);
-        })
-        .finally(() => {
-          setLoadingMna(false);
-        });
+        .then((data) => setMnaData(data.mna))
+        .catch((error) => console.error('Error loading MNA data:', error))
+        .finally(() => setLoadingMna(false));
     }
-  }, [activeTab, mnaData.length]);
+  }, [activeTab, mnaData.length, loadingMna]);
 
   useEffect(() => {
-    if (activeTab === 'Роутеры' && routersData.length === 0) {
+    if (activeTab === 'Роутеры' && routersData.length === 0 && !loadingRouters) {
       setLoadingRouters(true);
       fetchRoutersData()
-        .then((data) => {
-          setRoutersData(data.routers);
-        })
-        .catch((error) => {
-          console.error('Error loading routers data:', error);
-        })
-        .finally(() => {
-          setLoadingRouters(false);
-        });
+        .then((data) => setRoutersData(data.routers))
+        .catch((error) => console.error('Error loading routers data:', error))
+        .finally(() => setLoadingRouters(false));
     }
-  }, [activeTab, routersData.length]);
+  }, [activeTab, routersData.length, loadingRouters]);
 
   const filteredMnaData = useMemo(() => {
-    if (!searchProvider) return mnaData;
-    const search = searchProvider.toUpperCase();
+    if (!searchProvider.trim()) return mnaData;
+    const search = searchProvider.trim().toUpperCase();
     return mnaData.filter(
-      (provider) =>
-        provider.name.toUpperCase().includes(search) ||
-        provider.authorization.toUpperCase().includes(search) ||
-        provider.connection.toUpperCase().includes(search)
+      ({ name, authorization, connection }) =>
+        name.toUpperCase().includes(search) ||
+        authorization.toUpperCase().includes(search) ||
+        connection.toUpperCase().includes(search)
     );
   }, [mnaData, searchProvider]);
 
   const filteredRoutersData = useMemo(() => {
-    if (!searchRouter) return routersData;
-    const search = searchRouter.toUpperCase();
-    return routersData.filter((router) =>
-      router.Name.toUpperCase().includes(search) ||
-      router.Settings.toUpperCase().includes(search)
+    if (!searchRouter.trim()) return routersData;
+    const search = searchRouter.trim().toUpperCase();
+    return routersData.filter(({ Name, Settings }) =>
+      Name.toUpperCase().includes(search) || Settings.toUpperCase().includes(search)
     );
   }, [routersData, searchRouter]);
 
-  const createLinkOrText = (value: string | string[], text: string, isEmulator = false) => {
-    if (value === 'Нет') {
-      return 'Нет';
-    }
-    if (isEmulator && Array.isArray(value)) {
-      return value.map((link, index) => (
-        <React.Fragment key={link}>
-          {index > 0 && ', '}
-          <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-            {text}
-          </a>
-        </React.Fragment>
-      ));
-    }
+  const createLinkOrText = useCallback((value: string | string[], text: string, isEmulator = false): ReactNode => {
+    if (value === 'Нет') return 'Нет';
+
+    const linkClass = "text-blue-600 hover:underline";
+
     if (Array.isArray(value)) {
+      if (isEmulator) {
+        return value.map((link, index) => (
+          <span key={link}>
+            {index > 0 && ', '}
+            <a href={link} target="_blank" rel="noopener noreferrer" className={linkClass}>
+              {text}
+            </a>
+          </span>
+        ));
+      }
       return (
-        <a href={value[0]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+        <a href={value[0]} target="_blank" rel="noopener noreferrer" className={linkClass}>
           {text}
         </a>
       );
     }
+
     return (
-      <a href={value} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+      <a href={value} target="_blank" rel="noopener noreferrer" className={linkClass}>
         {text}
       </a>
     );
-  };
+  }, []);
+
+  const TABS: Tab[] = ['Главная', 'MnA', 'Роутеры', 'РМы', 'Инструменты'];
+
+  const TOOLBAR_BUTTONS = [
+    { title: 'Перейти в настройки', icon: '⚙️', onClick: handleOpenSettings },
+    { title: 'Перейти в Telegram', icon: 'telegram', onClick: () => handleOpenLink('https://t.me/+jH1mblw0ytcwOWUy') },
+    { title: 'Поддержать проект', icon: '💰', onClick: () => handleOpenLink('https://pay.cloudtips.ru/p/787b494c') },
+  ] as const;
 
   return (
     <div className="w-[640px] min-h-[580px] bg-white">
       {/* Toolbar */}
       <div className="flex items-center gap-2 p-4 border-b border-gray-200">
         <div className="flex gap-1">
-          {(['Главная', 'MnA', 'Роутеры', 'РМы', 'Инструменты'] as Tab[]).map((tab) => (
+          {TABS.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -130,37 +132,28 @@ export default function Popup() {
         </div>
 
         <div className="flex gap-1 ml-auto">
-          <button
-            onClick={handleOpenSettings}
-            className="px-3 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors"
-            title="Перейти в настройки"
-          >
-            ⚙️
-          </button>
-          <button
-            onClick={handleOpenTelegram}
-            className="px-3 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors flex items-center"
-            title="Перейти в Telegram"
-          >
-            <svg height="16" viewBox="0 0 240.1 240.1" width="16" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <linearGradient gradientUnits="userSpaceOnUse" id="telegram-gradient" x1="120.1" x2="120.1" y1="0" y2="240.1">
-                  <stop offset="0" style={{stopColor:'#2AABEE'}}/>
-                  <stop offset="1" style={{stopColor:'#229ED9'}}/>
-                </linearGradient>
-              </defs>
-              <circle cx="120.1" cy="120.1" fill="url(#telegram-gradient)" r="120.1"/>
-              <path d="M54.3,118.8c35-15.2,58.3-25.3,70-30.2c33.3-13.9,40.3-16.3,44.8-16.4c1,0,3.2,0.2,4.7,1.4 c1.2,1,1.5,2.3,1.7,3.3s0.4,3.1,0.2,4.7c-1.8,19-9.6,65.1-13.6,86.3c-1.7,9-5,12-8.2,12.3c-7,0.6-12.3-4.6-19-9 c-10.6-6.9-16.5-11.2-26.8-18c-11.9-7.8-4.2-12.1,2.6-19.1c1.8-1.8,32.5-29.8,33.1-32.3c0.1-0.3,0.1-1.5-0.6-2.1 c-0.7-0.6-1.7-0.4-2.5-0.2c-1.1,0.2-17.9,11.4-50.6,33.5c-4.8,3.3-9.1,4.9-13,4.8c-4.3-0.1-12.5-2.4-18.7-4.4 c-7.5-2.4-13.5-3.7-13-7.9C45.7,123.3,48.7,121.1,54.3,118.8z"
-                fill="#FFFFFF"/>
-            </svg>
-          </button>
-          <button
-            onClick={handleOpenDonate}
-            className="px-3 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors"
-            title="Поддержать проект"
-          >
-            💰
-          </button>
+          {TOOLBAR_BUTTONS.map(({ title, icon, onClick }) => (
+            <button
+              key={title}
+              onClick={onClick}
+              className="px-3 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors flex items-center"
+              title={title}
+            >
+              {icon === 'telegram' ? (
+                <svg height="16" viewBox="0 0 240.1 240.1" width="16" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient gradientUnits="userSpaceOnUse" id="telegram-gradient" x1="120.1" x2="120.1" y1="0" y2="240.1">
+                      <stop offset="0" style={{stopColor:'#2AABEE'}}/>
+                      <stop offset="1" style={{stopColor:'#229ED9'}}/>
+                    </linearGradient>
+                  </defs>
+                  <circle cx="120.1" cy="120.1" fill="url(#telegram-gradient)" r="120.1"/>
+                  <path d="M54.3,118.8c35-15.2,58.3-25.3,70-30.2c33.3-13.9,40.3-16.3,44.8-16.4c1,0,3.2,0.2,4.7,1.4 c1.2,1,1.5,2.3,1.7,3.3s0.4,3.1,0.2,4.7c-1.8,19-9.6,65.1-13.6,86.3c-1.7,9-5,12-8.2,12.3c-7,0.6-12.3-4.6-19-9 c-10.6-6.9-16.5-11.2-26.8-18c-11.9-7.8-4.2-12.1,2.6-19.1c1.8-1.8,32.5-29.8,33.1-32.3c0.1-0.3,0.1-1.5-0.6-2.1 c-0.7-0.6-1.7-0.4-2.5-0.2c-1.1,0.2-17.9,11.4-50.6,33.5c-4.8,3.3-9.1,4.9-13,4.8c-4.3-0.1-12.5-2.4-18.7-4.4 c-7.5-2.4-13.5-3.7-13-7.9C45.7,123.3,48.7,121.1,54.3,118.8z"
+                    fill="#FFFFFF"/>
+                </svg>
+              ) : icon}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -375,8 +368,8 @@ export default function Popup() {
               <span className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Проверка MAC</span>
               <input
                 type="text"
-                value={macAddress}
-                onChange={(e) => setMacAddress(e.target.value)}
+                value={tools.macAddress}
+                onChange={(e) => setTools(prev => ({ ...prev, macAddress: e.target.value }))}
                 placeholder="Введи MAC"
                 className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -389,8 +382,8 @@ export default function Popup() {
               <span className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Проверка IP</span>
               <input
                 type="text"
-                value={ipAddress}
-                onChange={(e) => setIpAddress(e.target.value)}
+                value={tools.ipAddress}
+                onChange={(e) => setTools(prev => ({ ...prev, ipAddress: e.target.value }))}
                 placeholder="Введи IP"
                 className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -403,8 +396,8 @@ export default function Popup() {
               <span className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Сокращ. ссылок</span>
               <input
                 type="text"
-                value={link}
-                onChange={(e) => setLink(e.target.value)}
+                value={tools.link}
+                onChange={(e) => setTools(prev => ({ ...prev, link: e.target.value }))}
                 placeholder="Введи ссылку"
                 className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -417,8 +410,8 @@ export default function Popup() {
               <span className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Проверка спеца</span>
               <input
                 type="text"
-                value={specialist}
-                onChange={(e) => setSpecialist(e.target.value)}
+                value={tools.specialist}
+                onChange={(e) => setTools(prev => ({ ...prev, specialist: e.target.value }))}
                 placeholder="Введи фамилию и имя"
                 className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
