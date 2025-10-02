@@ -19,21 +19,31 @@
     "128": "icon-128.png"
   },
   "permissions": [
-    "activeTab"
+    "activeTab",
+    "tabs",
+    "storage",
+    "management",
+    "activeTab",
+    "contextMenus",
+    "browsingData"
+  ],
+  "host_permissions": [
+    "*://*.ertelecom.ru/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "http://*/*",
-        "https://*/*",
-        "<all_urls>"
+        "*://*.ertelecom.ru/*"
       ],
       "js": [
-        "src/pages/content/index.tsx"
+        "src/pages/content/arm/init.ts",
+        "src/pages/content/genesys/init.ts",
+        "src/pages/content/line/init.ts"
       ],
       "css": [
         "contentStyle.css"
-      ]
+      ],
+      "all_frames": true
     }
   ],
   "devtools_page": "src/pages/devtools/index.html",
