@@ -28,7 +28,8 @@
     "browsingData"
   ],
   "host_permissions": [
-    "*://*.ertelecom.ru/*"
+    "*://*.ertelecom.ru/*",
+    "https://helper.chrsnv.ru/*"
   ],
   "content_scripts": [
     {
