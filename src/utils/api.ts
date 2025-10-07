@@ -16,7 +16,7 @@ interface Router {
   IPoE: string | string[];
   Channels: string | string[];
   Settings: string;
-  BZ: string | string[];
+  KnowledgeBase: string | string[];
   Emulator: string | string[];
 }
 
