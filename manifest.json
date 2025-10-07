@@ -4,7 +4,8 @@
   "version": "1.0",
   "description": "Инструмент для помощи в работе",
   "options_ui": {
-    "page": "src/pages/options/index.html"
+    "page": "src/pages/options/index.html",
+    "open_in_tab": true
   },
   "action": {
     "default_popup": "src/pages/popup/index.html",
@@ -53,9 +54,10 @@
       "resources": [
         "contentStyle.css",
         "icon-128.png",
-        "icon-32.png"
+        "icon-32.png",
+        "sounds/*.mp3"
       ],
-      "matches": []
+      "matches": ["<all_urls>"]
     }
   ]
 }

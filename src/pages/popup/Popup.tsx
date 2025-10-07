@@ -339,7 +339,7 @@ export default function Popup(): ReactNode {
                         <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.IPoE, 'IPoE')}</td>
                         <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.Channels, 'Каналы')}</td>
                         <td className="border border-gray-300 px-1 py-1 break-words">{router.Settings}</td>
-                        <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.BZ, 'БЗ')}</td>
+                        <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.KnowledgeBase, 'БЗ')}</td>
                         <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.Emulator, 'Эмулятор', true)}</td>
                       </tr>
                     ))}

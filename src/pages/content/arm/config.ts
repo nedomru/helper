@@ -89,14 +89,7 @@ export const armPageConfigs: PageConfig[] = [
     // Страница изменения обращения
     {
         pattern: URL_PATTERNS.CHANGE_REQUEST,
-        features: [
-            // { key: 'ARM_checkWrongTransfer', handler: wrongTransferFalse },
-            // { key: 'ARM_checkSetToMe', handler: removeSetForMe },
-            // { key: 'ARM_copyTimeSlots', handler: copyTimeSlots },
-            // { key: 'ARM_changeRequestFBCR', handler: fastButtonsChangeRequest },
-            // { key: 'ARM_checkPaidHelp', handler: paidHelpTrue },
-            // { key: 'ARM_showAgreementOnChange', handler: showClientAgreementOnChangeRequest }
-        ],
+        features: [],
         alwaysRun: [showAgreementOnRequestChange]
     }
 ];
