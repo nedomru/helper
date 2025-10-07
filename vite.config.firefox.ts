@@ -15,7 +15,13 @@ export default mergeConfig(
           background: {
             scripts: [ 'src/pages/background/index.ts' ]
           },
-        } as ManifestV3Export,
+          browser_specific_settings: {
+            gecko: {
+              id: "{724d1c91-059e-4392-8478-494513fc8241}",
+              update_url: "https://helper.chrsnv.ru/api/versions.json"
+            }
+          }
+        } as unknown as ManifestV3Export,
         browser: 'firefox',
         contentScripts: {
           injectCss: true,
