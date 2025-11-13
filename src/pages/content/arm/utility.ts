@@ -3,13 +3,13 @@ export function allowCopy() {
         const waiter = document.getElementById("waiter");
         if (!waiter) return;
 
-        console.debug("[Копирование] Найден элемент waiter");
+        console.debug("[АРМ - Копирование] Найден элемент waiter");
         const parent = waiter.parentNode as HTMLElement;
 
         if (parent) {
             parent.removeAttribute("style");
             parent.removeAttribute("onselectstart");
-            console.debug("[Копирование] Удалили аттрибуты style и onselectstart");
+            console.debug("[АРМ - Копирование] Удалили аттрибуты style и onselectstart");
         }
 
         const formform = document.getElementById("formform");
@@ -19,7 +19,7 @@ export function allowCopy() {
             if (element) {
                 element.onmousedown = stopPropagation;
                 element.onselectstart = stopPropagation;
-                console.debug("[Копирование] Убрали ивенты");
+                console.debug("[АРМ - Копирование] Убрали ивенты");
             }
         });
     });
@@ -30,6 +30,7 @@ export function showAgreementOnRequestChange() {
     const agreement_num = document.querySelector('input[name="agr_num"]')
 
     if (headerText && agreement_num) {
-        headerText.textContent = `Обращение по договору №${agreement_num.textContent}`;
+        headerText.textContent = `Обращение по договору №${(agreement_num as HTMLInputElement).value}`;
+        console.debug("[АРМ - Изменение обращения] Добавлен номер договора");
     }
 }
