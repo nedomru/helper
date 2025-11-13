@@ -30,6 +30,6 @@ export function showAgreementOnRequestChange() {
     const agreement_num = document.querySelector('input[name="agr_num"]')
 
     if (headerText && agreement_num) {
-        headerText.textContent = `Обращение по договору ${(agreement_num as HTMLInputElement).value}`;
+        headerText.textContent = `Обращение по договору №${agreement_num.textContent}`;
     }
 }
