@@ -1,12 +1,14 @@
-import type {PageConfig} from '../core/types';
-import {allowCopy, showAgreementOnRequestChange} from './utility';
+import type {PageConfig} from "../core/types";
+import {allowCopy, showAgreementOnRequestChange} from "./utility";
 
 // URL паттерны для ARM
 export const URL_PATTERNS = {
     ARM_BASE: "ertelecom.ru/cgi-bin", // Весь АРМ
     EXCELLS: "ertelecom.ru/cgi-bin/ppo/excells",
-    CLIENT_SESSION: "ertelecom.ru/static_pages/private/wcc/client_session/?user_id", // Сессии клиента
-    RADIUS_LOGIN: "ertelecom.ru/cgi-bin/ppo/excells/radius_accounting_info.login_detail?id_session",
+    CLIENT_SESSION:
+        "ertelecom.ru/static_pages/private/wcc/client_session/?user_id", // Сессии клиента
+    RADIUS_LOGIN:
+        "ertelecom.ru/cgi-bin/ppo/excells/radius_accounting_info.login_detail?id_session",
     LEFT_FRAME: "wcc2_main.frame_left_reasons", // Левый фрейм
     RETENTION: "ertelecom.ru/cgi-bin/ppo/excells/adv_act_retention", // Акции на удержание
     CHANGE_REQUEST: "wcc_request_appl_support.change_request_appl", // Изменение обращения
@@ -29,7 +31,7 @@ export const armPageConfigs: PageConfig[] = [
         ],
         alwaysRun: [
             // loadLastDayClientSessions
-        ]
+        ],
     },
 
     // Страница RADIUS логина
@@ -39,8 +41,8 @@ export const armPageConfigs: PageConfig[] = [
             // { key: 'ARM_copySearchMAC', handler: copyMAC }
         ],
         alwaysRun: [
-            // copyIP
-        ]
+            // copyIPAddress,
+        ],
     },
 
     // Левый фрейм
@@ -50,7 +52,7 @@ export const armPageConfigs: PageConfig[] = [
             // { key: 'ARM_changeRequestFBLF', handler: leftFrame_fastAppeals },
             // { key: 'ARM_leftFrame_fastSR', handler: leftFrame_fastSR },
             // { key: 'ARM_setAppealItemToInternet', handler: changeAppealItemToInternet }
-        ]
+        ],
     },
 
     // Страница акций на удержание
@@ -60,7 +62,7 @@ export const armPageConfigs: PageConfig[] = [
             // agrTransCompensationButton,
             // autoFormatCompensateButtons
         ],
-        features: []
+        features: [],
     },
 
     // Базовая страница ARM (исключая страницу изменения обращения)
@@ -83,13 +85,13 @@ export const armPageConfigs: PageConfig[] = [
             //         await deleteTabs(tabsToDelete);
             //     }
             // }
-        ]
+        ],
     },
 
     // Страница изменения обращения
     {
         pattern: URL_PATTERNS.CHANGE_REQUEST,
         features: [],
-        alwaysRun: [showAgreementOnRequestChange]
-    }
+        alwaysRun: [showAgreementOnRequestChange],
+    },
 ];

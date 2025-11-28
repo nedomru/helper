@@ -34,3 +34,33 @@ export function showAgreementOnRequestChange() {
         console.debug("[АРМ - Изменение обращения] Добавлен номер договора");
     }
 }
+
+// @TODO Example, to be completed
+// export function copyIPAddress() {
+//     const current_ips = document.getElementsByClassName("ip")
+
+//     for (let ip = 0; ip < current_ips.length; ip++) {
+//         const ipElement = current_ips[ip] as HTMLDivElement;
+
+//         const acronymElement = ipElement.querySelector('acronym');
+//         const ipText = acronymElement?.innerText.trim() || '';
+
+//         ipElement.onclick = () => {
+//             navigator.clipboard.writeText(ipText).then(() => {
+//                 console.log("[АРМ - Копирование] Скопировали IP-адрес из сессии")
+
+//                 if (acronymElement) {
+//                     acronymElement.classList.add('ip-copied');
+
+//                     setTimeout(() => {
+//                         acronymElement.classList.remove('ip-copied');
+//                     }, 800);
+//                 }
+//             }).catch(err => {
+//                 console.error('[АРМ - Копирование]: Не удалось скопировать IP-адрес из сессии', err);
+//             });
+//         };
+
+//         ipElement.style.cursor = 'pointer';
+//     }
+// }
