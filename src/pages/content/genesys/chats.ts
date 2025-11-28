@@ -1,12 +1,18 @@
-export function addFlomaster() {
-}
-
 export function removeAnswers() {
 }
 
 export function removeRMs() {
 }
 
+/**
+ * Set custom colors for operator and client.
+ *
+ * Uses basic genesys configuration:
+ * chat.agent.prompt-color - Color of agent name
+ * chat.agent.text-color - Color of agent message text
+ * chat.client.prompt-color - Color of client name
+ * chat.client.text-color - Color of client message text.
+ */
 export function customChatColors() {
     chrome.storage.sync.get('settings', (result) => {
         if (result?.settings?.genesys?.chats) {
@@ -28,6 +34,13 @@ export function customChatColors() {
     });
 }
 
+/**
+ * Set custom chat sounds.
+ *
+ * Uses basic genesys configuration:
+ * chat.ringing-bell - Sound of new chat
+ * chat.new-message-bell - Sound of new message in chat.
+ */
 export function customChatSounds() {
     const baseURL = "http://genesys-srv.cc3.ertelecom.ru/sounds/";
 
