@@ -29,10 +29,10 @@ export type { MNAProvider, MNAData, Router, RoutersData };
 export async function fetchFromAPI<T>(url: string): Promise<T> {
   try {
     const response = await fetch(url, {
-      method: 'GET',
+        method: "GET",
       headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
+          Accept: "application/json",
+          "Content-Type": "application/json",
       },
     });
 
@@ -48,9 +48,9 @@ export async function fetchFromAPI<T>(url: string): Promise<T> {
 }
 
 export async function fetchMNAData(): Promise<MNAData> {
-  return fetchFromAPI<MNAData>('https://helper.chrsnv.ru/api/mna.json');
+    return fetchFromAPI<MNAData>("https://helper.chrsnv.ru/api/mna.json");
 }
 
 export async function fetchRoutersData(): Promise<RoutersData> {
-  return fetchFromAPI<RoutersData>('https://helper.chrsnv.ru/api/routers.json');
+    return fetchFromAPI<RoutersData>("https://helper.chrsnv.ru/api/routers.json");
 }

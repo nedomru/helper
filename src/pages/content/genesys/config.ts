@@ -1,7 +1,6 @@
 import type {PageConfig} from '../core/types';
 import {hideUselessButtons, showDutyMessages, showLineStatus} from "@pages/content/genesys/utility";
 import {
-    addFlomaster,
     allowChatSizeEdit,
     allowPaste,
     autoCollapseChatHeader,
@@ -24,7 +23,6 @@ export const genesysPageConfigs: PageConfig[] = [
             {key: 'showLineStatus', handler: showLineStatus},
             {key: 'showDutyMessages', handler: showDutyMessages},
             {key: 'hideUselessButtons', handler: hideUselessButtons},
-            {key: 'addFlomaster', handler: addFlomaster},
             {key: 'removeAnswers', handler: removeAnswers},
             {key: 'removeRMs', handler: removeRMs},
             {key: 'customChatColors', handler: customChatColors},

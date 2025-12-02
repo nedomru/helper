@@ -44,6 +44,26 @@ export function showAgreementOnRequestChange() {
   }
 }
 
+export function changeAppealItem() {
+    const changeEvent = new Event("change", {
+        bubbles: true, cancelable: true,
+    });
+
+    const product = document.querySelector(".uni_reas_prod") as HTMLSelectElement | null;
+
+    if (!product || !(product instanceof HTMLSelectElement)) {
+        return;
+    }
+
+    const values = Array.from(product.options).map((option) => option.value);
+
+    if (values.includes("70")) {
+        product.value = "70";
+        product.dispatchEvent(changeEvent);
+    }
+}
+
+
 // @TODO Example, to be completed
 // export function copyIPAddress() {
 //     const current_ips = document.getElementsByClassName("ip")

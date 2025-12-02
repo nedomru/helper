@@ -1,5 +1,6 @@
 import type {PageConfig} from "../core/types";
 import {allowCopy, showAgreementOnRequestChange} from "./utility";
+import {copyClientCard} from "@pages/content/genesys/buttons";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -18,7 +19,7 @@ export const armPageConfigs: PageConfig[] = [
     {
         pattern: URL_PATTERNS.EXCELLS,
         features: [],
-        alwaysRun: [allowCopy],
+        alwaysRun: [allowCopy, copyClientCard],
     },
 
     {
@@ -36,6 +37,7 @@ export const armPageConfigs: PageConfig[] = [
     {
         pattern: URL_PATTERNS.LEFT_FRAME,
         features: [],
+        alwaysRun: []
     },
 
     {
