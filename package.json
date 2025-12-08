@@ -23,7 +23,7 @@
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.2.1",
-    "@tailwindcss/vite": "^4.1.11",
+    "@tailwindcss/vite": "^4.1.17",
     "@types/chrome": "^0.1.29",
     "@types/node": "^24.4.0",
     "@types/react": "^19.2.2",
