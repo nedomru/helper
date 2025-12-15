@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 
 interface Settings {
-    general: {},
+    general: object,
     genesys: {
         main: {
             showLineStatus: boolean;

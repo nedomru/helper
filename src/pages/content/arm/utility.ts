@@ -4,27 +4,27 @@
  * Working by removing element, that places over page.
  */
 export function allowCopy() {
-  requestAnimationFrame(() => {
-    const waiter = document.getElementById("waiter");
-    if (!waiter) return;
+    requestAnimationFrame(() => {
+        const waiter = document.getElementById("waiter");
+        if (!waiter) return;
 
-    const parent = waiter.parentNode as HTMLElement;
+        const parent = waiter.parentNode as HTMLElement;
 
-    if (parent) {
-      parent.removeAttribute("style");
-      parent.removeAttribute("onselectstart");
-    }
+        if (parent) {
+            parent.removeAttribute("style");
+            parent.removeAttribute("onselectstart");
+        }
 
-    const formform = document.getElementById("formform");
+        const formform = document.getElementById("formform");
 
-    [waiter, formform].filter(Boolean).forEach((element) => {
-      const stopPropagation = (event: Event) => event.stopPropagation();
-      if (element) {
-        element.onmousedown = stopPropagation;
-        element.onselectstart = stopPropagation;
-      }
+        [waiter, formform].filter(Boolean).forEach((element) => {
+            const stopPropagation = (event: Event) => event.stopPropagation();
+            if (element) {
+                element.onmousedown = stopPropagation;
+                element.onselectstart = stopPropagation;
+            }
+        });
     });
-  });
 }
 
 /**
@@ -34,34 +34,35 @@ export function allowCopy() {
  * There is no other elements containing agreement number on this page.
  */
 export function showAgreementOnRequestChange() {
-  const headerText = document.querySelector(".text-primary");
-  const agreement_num = document.querySelector('input[name="agr_num"]');
+    const headerText = document.querySelector(".text-primary");
+    const agreement_num = document.querySelector('input[name="agr_num"]');
 
-  if (headerText && agreement_num) {
-    headerText.textContent = `Обращение по договору №${
-      (agreement_num as HTMLInputElement).value
-    }`;
-  }
-}
-
-export function changeAppealItem() {
-    const changeEvent = new Event("change", {
-        bubbles: true, cancelable: true,
-    });
-
-    const product = document.querySelector(".uni_reas_prod") as HTMLSelectElement | null;
-
-    if (!product || !(product instanceof HTMLSelectElement)) {
-        return;
-    }
-
-    const values = Array.from(product.options).map((option) => option.value);
-
-    if (values.includes("70")) {
-        product.value = "70";
-        product.dispatchEvent(changeEvent);
+    if (headerText && agreement_num) {
+        headerText.textContent = `Обращение по договору №${
+            (agreement_num as HTMLInputElement).value
+        }`;
     }
 }
+
+// * Remove that later, function was implemented on ARM side
+// export function changeAppealItem() {
+//     const changeEvent = new Event("change", {
+//         bubbles: true, cancelable: true,
+//     });
+//
+//     const product = document.querySelector(".uni_reas_prod") as HTMLSelectElement | null;
+//
+//     if (!product || !(product instanceof HTMLSelectElement)) {
+//         return;
+//     }
+//
+//     const values = Array.from(product.options).map((option) => option.value);
+//
+//     if (values.includes("70")) {
+//         product.value = "70";
+//         product.dispatchEvent(changeEvent);
+//     }
+// }
 
 
 // @TODO Example, to be completed
