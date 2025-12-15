@@ -93,3 +93,9 @@ export async function sendClientCardButton() {
         clientCard.appendChild(sendExampleButton);
     }
 }
+
+export async function compensateButton() {
+    if (document.querySelector(".helper-compensate-btn") != null) {
+        return;
+    }
+}
