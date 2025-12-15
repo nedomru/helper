@@ -1,6 +1,6 @@
 import type {PageConfig} from "../core/types";
 import {allowCopy, removeGenerationTimes, showAgreementOnRequestChange} from "./utility";
-import {copyClientCardButton, sendClientCardButton} from "@pages/content/arm/buttons";
+import {compensateButton, copyClientCardButton, sendClientCardButton} from "@pages/content/arm/buttons";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -19,7 +19,7 @@ export const armPageConfigs: PageConfig[] = [
     {
         pattern: URL_PATTERNS.EXCELLS,
         features: [],
-        alwaysRun: [allowCopy, copyClientCardButton, sendClientCardButton, removeGenerationTimes],
+        alwaysRun: [allowCopy, copyClientCardButton, sendClientCardButton, compensateButton, removeGenerationTimes],
     },
 
     {
