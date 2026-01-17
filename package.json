@@ -13,10 +13,14 @@
     "build:firefox": "vite build --config vite.config.firefox.ts",
     "dev": "nodemon --config nodemon.chrome.json",
     "dev:chrome": "nodemon --config nodemon.chrome.json",
-    "dev:firefox": "nodemon --config nodemon.firefox.json"
+    "dev:firefox": "nodemon --config nodemon.firefox.json",
+    "format": "biome format --write",
+    "check": "biome check --write",
+    "lint": "biome lint --write"
   },
   "type": "module",
   "dependencies": {
+    "biome": "^0.3.3",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "webextension-polyfill": "^0.12.0"
