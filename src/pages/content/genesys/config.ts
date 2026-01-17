@@ -1,14 +1,19 @@
 import type {PageConfig} from '../core/types';
-import {hideUselessButtons, showDutyMessages, showLineStatus} from "@pages/content/genesys/utility";
+
+// Chat Features
 import {
     allowChatSizeEdit,
     allowPaste,
     autoCollapseChatHeader,
     customChatColors,
-    customChatSounds,
-    removeAnswers,
-    removeRMs
-} from "@pages/content/genesys/chats";
+    customChatSounds
+} from "./features/chat";
+
+// Chat Content Features
+import {removeAnswers, removeRMs} from "./features/chat-content";
+
+// UI Enhancement Features
+import {hideUselessButtons, showDutyMessages, showLineStatus} from "./features/ui-enhancements";
 
 // TODO заполнить URL паттерны для Genesys
 export const URL_PATTERNS = {

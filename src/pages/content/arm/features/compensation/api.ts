@@ -1,22 +1,12 @@
-export async function getARMBaseUrl(): Promise<string | undefined> {
-    const currentURL = window.location.href;
-
-    if (currentURL) {
-        const matchResult = currentURL.match(/(https:\/\/[^\/]+)/);
-        if (matchResult && matchResult[1]) {
-            return matchResult[1];
-        }
-    }
-    return undefined;
-}
+import {getARMBaseUrl} from "../../shared/api";
 
 /**
  * Executes the compensation API call for a single date.
- * @param {string} date - The date in DD.MM.YYYY format.
- * @param {string} ssn - The SSN identifier.
- * @param {string} user_id - The User ID identifier.
- * @param {string} agr_id - The Agreement ID identifier.
- * @returns {Promise<boolean>} A promise that resolves to true if compensation was successful, false otherwise.
+ * @param date - The date in DD.MM.YYYY format.
+ * @param ssn - The SSN identifier.
+ * @param user_id - The User ID identifier.
+ * @param agr_id - The Agreement ID identifier.
+ * @returns A promise that resolves to true if compensation was successful, false otherwise.
  */
 export async function compensate(date: string, ssn: string, user_id: string, agr_id: string): Promise<boolean> {
     const baseUrl: string | undefined = await getARMBaseUrl();

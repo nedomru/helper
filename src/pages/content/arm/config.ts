@@ -1,6 +1,16 @@
 import type {PageConfig} from "../core/types";
-import {allowCopy, copyIPAddress, copyMACAddress, removeGenerationTimes, showAgreementOnRequestChange} from "./utility";
-import {compensateButton, copyClientCardButton, sendClientCardButton} from "@pages/content/arm/buttons";
+
+// Client Card Features
+import {copyClientCardButton, sendClientCardButton} from "./features/client-card";
+
+// Compensation Features
+import {compensateButton} from "./features/compensation";
+
+// Network Info Features
+import {copyIPAddress, copyMACAddress} from "./features/network-info";
+
+// UI Enhancement Features
+import {allowCopy, removeGenerationTimes, showAgreementOnRequestChange} from "./features/ui-enhancements";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
