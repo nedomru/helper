@@ -111,13 +111,23 @@ export async function compensateButton(): Promise<void> {
 
     if (!refreshBtn || !top3Btn || !container) return;
 
+    const agrWithTypeElement = document.getElementById("agr_with_type");
+    const isIntercom = agrWithTypeElement?.textContent.includes("Домофон") ?? false;
+
     const compensateBtn = document.createElement("button");
-    compensateBtn.className = "btn btn-success helper-compensate-btn float-right btn-xs";
+    compensateBtn.className = `btn ${isIntercom ? "btn-danger" : "btn-success"} helper-compensate-btn float-right btn-xs`;
     compensateBtn.type = "button";
     compensateBtn.textContent = "Компенсировать";
     compensateBtn.style.marginRight = "5px";
 
     container.insertBefore(compensateBtn, top3Btn);
+
+    if (isIntercom) {
+        compensateBtn.addEventListener("click", () => {
+            alert("На договоре домофония, навесь компенсацию вручную :(");
+        });
+        return;
+    }
 
     // Regex for date format DD.MM
     const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\.(0[1-9]|1[0-2])$/;
@@ -181,7 +191,8 @@ export async function compensateButton(): Promise<void> {
         const agreement_id: string | undefined = document.querySelector<HTMLInputElement>('input[class="js-agr-id-prn"]')?.value;
 
         if (!ssn || !user_id || !agreement_id) {
-            $.notify("Не удалось получить необходимые идентификаторы (SSN, User ID, Agreement ID).", "error");
+            // $.notify("Не удалось получить необходимые идентификаторы (SSN, User ID, Agreement ID).", "error");
+            // TODO Add notification
             return;
         }
 
@@ -197,7 +208,7 @@ export async function compensateButton(): Promise<void> {
             if (!compensationDay) return;
 
             if (!isValidDate(compensationDay)) {
-                $.notify("Неверный формат даты. Используйте формат ДД.ММ", "error");
+                // TODO Add notification
                 return;
             }
 
@@ -209,7 +220,8 @@ export async function compensateButton(): Promise<void> {
             if (!startDatePrompt) return;
 
             if (!isValidDate(startDatePrompt)) {
-                $.notify("Неверный формат начальной даты. Используйте формат ДД.ММ", "error");
+                // $.notify("Неверный формат начальной даты. Используйте формат ДД.ММ", "error");
+                // TODO Add notification
                 return;
             }
             const startDate: string = formatDateWithYear(startDatePrompt);
@@ -218,7 +230,8 @@ export async function compensateButton(): Promise<void> {
             if (!endDatePrompt) return;
 
             if (!isValidDate(endDatePrompt)) {
-                $.notify("Неверный формат конечной даты. Используйте формат ДД.ММ", "error");
+                // $.notify("Неверный формат конечной даты. Используйте формат ДД.ММ", "error");
+                // TODO Add notification
                 return;
             }
             const endDate: string = formatDateWithYear(endDatePrompt);
@@ -232,7 +245,8 @@ export async function compensateButton(): Promise<void> {
             const endDateObject: Date = parseDateStringForComparison(endDate);
 
             if (startDateObject > endDateObject) {
-                (window as any).$.notify("Начальная дата не может быть позже конечной даты", "error");
+                // $.notify("Начальная дата не может быть позже конечной даты", "error");
+                // TODO Add notification
                 return;
             }
 
@@ -244,10 +258,12 @@ export async function compensateButton(): Promise<void> {
 
                     await new Promise<void>((resolve) => setTimeout(resolve, 100));
                 }
-                $.notify(`Компенсация успешно отправлена за период с ${startDate} по ${endDate}`, "success");
+                // $.notify(`Компенсация успешно отправлена за период с ${startDate} по ${endDate}`, "success");
+                // TODO Add notification
             } catch (error) {
                 console.error("Compensation processing error:", error);
-                $.notify("Произошла ошибка при обработке компенсаций", "error");
+                // $.notify("Произошла ошибка при обработке компенсаций", "error");
+                // TODO Add notification
             }
         }
     });
