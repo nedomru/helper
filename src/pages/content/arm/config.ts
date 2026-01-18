@@ -1,11 +1,6 @@
 import type {PageConfig} from "../core/types";
 
-import {copyClientCardButton, sendClientCardButton} from "./features/client-card";
-import {compensateButton} from "./features/compensation";
-import {copyIPAddress, copyMACAddress} from "./features/network-info";
 import {allowCopy, removeGenerationTimes, showAgreementOnRequestChange} from "./features/ui-enhancements";
-import {copyClientAgreementButton} from "@pages/content/arm/features/client-agreement";
-import {copyClientAddressButton} from "@pages/content/arm/features/client-address";
 import {macLookupButton} from "@pages/content/arm/features/network-info/macLookup";
 import {foldSpas} from "@pages/content/arm/features/folding/spas";
 import {foldTabInfo} from "@pages/content/arm/features/folding/info";
@@ -23,6 +18,14 @@ import {searchByProperty} from "@pages/content/arm/features/search/properties";
 import {searchByLog} from "@pages/content/arm/features/search/logs";
 import {checkSpecialClient} from "@pages/content/arm/features/alerts/special_client";
 import {smartAnticipation} from "@pages/content/arm/features/anticipation/smart";
+import {copyClientCardButton} from "@pages/content/arm/features/client-card/copyButton";
+import {sendClientCardButton} from "@pages/content/arm/features/client-card/sendButton";
+import {copyClientAgreementButton} from "@pages/content/arm/features/client-agreement/copyButton";
+import {copyClientAddressButton} from "@pages/content/arm/features/client-address/copyButton";
+import {compensateButton} from "@pages/content/arm/features/compensation/button";
+import {copyMACAddress} from "@pages/content/arm/features/network-info/macCopy";
+import {copyIPAddress} from "@pages/content/arm/features/network-info/ipCopy";
+import {filterSessions} from "@pages/content/arm/features/sessions-history/filters";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -78,7 +81,9 @@ export const armPageConfigs: PageConfig[] = [
     {
         pattern: URL_PATTERNS.CLIENT_SESSIONS,
         features: [],
-        alwaysRun: [],
+        alwaysRun: [
+            filterSessions
+        ],
     },
 
     {
