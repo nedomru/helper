@@ -3,7 +3,7 @@
  *
  * Working by removing element, that places over page.
  */
-export function allowCopy(): void {
+export async function allowCopy(): Promise<void> {
     requestAnimationFrame((): void => {
         const waiter: HTMLElement | null = document.getElementById("waiter");
         if (!waiter) return;

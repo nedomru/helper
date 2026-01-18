@@ -7,7 +7,7 @@
  * chat.client.prompt-color - Color of client name
  * chat.client.text-color - Color of client message text.
  */
-export function customChatColors() {
+export async function customChatColors(): Promise<void> {
     chrome.storage.sync.get('settings', (result) => {
         if (result?.settings?.genesys?.chats) {
             const {

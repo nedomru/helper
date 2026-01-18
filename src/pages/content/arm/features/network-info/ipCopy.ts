@@ -5,7 +5,7 @@ import {notify} from "@src/utils";
  *
  * Finds all available IP address rows and add onclick event
  */
-export function copyIPAddress(): void {
+export async function copyIPAddress(): Promise<void> {
     const current_ips: HTMLCollectionOf<Element> = document.getElementsByClassName("ip");
 
     for (let ip: number = 0; ip < current_ips.length; ip++) {

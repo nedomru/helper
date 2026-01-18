@@ -1,13 +1,13 @@
 // Stub implementations for UI enhancement features
 
-export function showLineStatus() {
+export async function showLineStatus(): Promise<void> {
     // TODO: Implement show line status feature
 }
 
-export function showDutyMessages() {
+export async function showDutyMessages(): Promise<void> {
     // TODO: Implement show duty messages feature
 }
 
-export function hideUselessButtons() {
+export async function hideUselessButtons(): Promise<void> {
     // TODO: Implement hide useless buttons feature
 }

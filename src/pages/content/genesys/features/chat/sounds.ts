@@ -5,7 +5,7 @@
  * chat.ringing-bell - Sound of new chat
  * chat.new-message-bell - Sound of new message in chat.
  */
-export function customChatSounds() {
+export async function customChatSounds() {
     const baseURL = "http://genesys-srv.cc3.ertelecom.ru/sounds/";
 
     chrome.storage.sync.get('settings', (result) => {

@@ -3,7 +3,7 @@ import {notify} from "@src/utils";
 /**
  * Creates and inserts a button to copy client agreement from info tab to clipboard
  */
-export function copyClientAgreementButton(): void {
+export async function copyClientAgreementButton(): Promise<void> {
     const agreementTab = document.getElementById("agr_with_type") as HTMLElement | null;
 
     if (document.querySelector(".helper-copy-agreement-btn") != null || !agreementTab) {

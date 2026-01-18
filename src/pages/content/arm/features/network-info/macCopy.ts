@@ -5,7 +5,7 @@ import {notify} from "@src/utils";
  *
  * Finds all available MAC address rows and replace onclick event
  */
-export function copyMACAddress(): void {
+export async function copyMACAddress(): Promise<void> {
     const macElements: NodeListOf<HTMLSpanElement> = document.querySelectorAll("span.mac");
 
     macElements.forEach((macElement: HTMLSpanElement): void => {

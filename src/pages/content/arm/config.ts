@@ -21,6 +21,7 @@ import {showSubscriptionStatus} from "@pages/content/arm/features/highlights/sub
 import {searchByAppeal, searchOpenedAppeals} from "@pages/content/arm/features/search/appeals";
 import {searchByProperty} from "@pages/content/arm/features/search/properties";
 import {searchByLog} from "@pages/content/arm/features/search/logs";
+import {checkSpecialClient} from "@pages/content/arm/features/alerts/special_client";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -61,7 +62,8 @@ export const armPageConfigs: PageConfig[] = [
             searchByAppeal,
             searchByLog,
             searchByProperty,
-            searchOpenedAppeals
+            searchOpenedAppeals,
+            checkSpecialClient
         ],
     },
 

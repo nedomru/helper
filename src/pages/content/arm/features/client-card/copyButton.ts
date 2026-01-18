@@ -3,7 +3,7 @@ import {notify} from "@src/utils";
 /**
  * Creates and inserts a button to copy client card from info tab to clipboard
  */
-export function copyClientCardButton(): void {
+export async function copyClientCardButton(): Promise<void> {
     const clientCardShowButton = document.getElementById("write_let") as HTMLButtonElement | null;
     const clientCardRow = document.getElementById("namcl") as HTMLElement | null;
 

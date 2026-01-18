@@ -3,7 +3,7 @@ import {notify} from "@src/utils";
 /**
  * Creates and inserts a button to copy client address from info tab to clipboard
  */
-export function copyClientAddressButton(): void {
+export async function copyClientAddressButton(): Promise<void> {
     const addressTab = document.getElementById("dr") as HTMLElement | null;
 
     if (document.querySelector(".helper-copy-address-btn") != null || !addressTab) {

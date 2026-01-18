@@ -11,7 +11,7 @@ async function lookupMAC(mac: string) {
 /**
  * Adds a "Check" button next to MAC addresses in tables
  */
-export function macLookupButton(): void {
+export async function macLookupButton(): Promise<void> {
     const macElements = document.querySelectorAll<HTMLElement>(".mac, .js-get-vender-by-mac .mac");
 
     macElements.forEach((macElement) => {
