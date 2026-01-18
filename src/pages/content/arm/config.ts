@@ -24,6 +24,7 @@ import {removeDiagnosticTabs} from "@pages/content/arm/features/ui-enhancements/
 import {removeAppealsColumns} from "@pages/content/arm/features/ui-enhancements/appeals";
 import {showWarrantyExpiration} from "@pages/content/arm/features/highlights/warranty";
 import {showAppealsHighlights} from "@pages/content/arm/features/highlights/appeals";
+import {showSubscriptionStatus} from "@pages/content/arm/features/highlights/subscriptions";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -60,6 +61,7 @@ export const armPageConfigs: PageConfig[] = [
             removeGenerationTimes,
             showWarrantyExpiration,
             showAppealsHighlights,
+            showSubscriptionStatus
         ],
     },
 
