@@ -57,10 +57,8 @@ export async function showAppealsHighlights(): Promise<void> {
                 const cells = row.querySelectorAll<HTMLTableCellElement>("td");
                 if (cells.length < 9) return;
 
-                // Process specific cells: Stage (2), Warranty (5), Problem (8)
-                processTableCell(cells[2]);
-                processTableCell(cells[5]);
-                processTableCell(cells[8]);
+                // Process all cells
+                cells.forEach((cell) => processTableCell(cell));
 
                 row.setAttribute("data-highlighted", "true");
                 highlighted++;
