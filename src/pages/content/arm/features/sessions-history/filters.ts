@@ -1,5 +1,3 @@
-import {notify} from "@src/utils";
-
 type ReasonCounts = Record<string, number>;
 
 /**
@@ -107,6 +105,4 @@ export async function filterSessions(): Promise<void> {
 
     const observer = new MutationObserver(refresh);
     observer.observe(targetNode, {childList: true, subtree: true});
-
-    notify("🔍 Фильтры", "Фильтрация сессий инициализирована", "success");
 }

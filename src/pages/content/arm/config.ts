@@ -26,6 +26,7 @@ import {compensateButton} from "@pages/content/arm/features/compensation/button"
 import {copyMACAddress} from "@pages/content/arm/features/network-info/macCopy";
 import {copyIPAddress} from "@pages/content/arm/features/network-info/ipCopy";
 import {filterSessions} from "@pages/content/arm/features/sessions-history/filters";
+import {loadLastDayClientSessions} from "@pages/content/arm/features/ui-enhancements/sessionsLastDay";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -82,7 +83,8 @@ export const armPageConfigs: PageConfig[] = [
         pattern: URL_PATTERNS.CLIENT_SESSIONS,
         features: [],
         alwaysRun: [
-            filterSessions
+            filterSessions,
+            loadLastDayClientSessions
         ],
     },
 
