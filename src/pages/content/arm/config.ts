@@ -22,6 +22,7 @@ import {searchByAppeal, searchOpenedAppeals} from "@pages/content/arm/features/s
 import {searchByProperty} from "@pages/content/arm/features/search/properties";
 import {searchByLog} from "@pages/content/arm/features/search/logs";
 import {checkSpecialClient} from "@pages/content/arm/features/alerts/special_client";
+import {smartAnticipation} from "@pages/content/arm/features/anticipation/smart";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -50,6 +51,8 @@ export const armPageConfigs: PageConfig[] = [
         ],
         alwaysRun: [
             allowCopy,
+            smartAnticipation,
+            checkSpecialClient,
             copyClientCardButton,
             sendClientCardButton,
             copyClientAgreementButton,
@@ -63,7 +66,6 @@ export const armPageConfigs: PageConfig[] = [
             searchByLog,
             searchByProperty,
             searchOpenedAppeals,
-            checkSpecialClient
         ],
     },
 

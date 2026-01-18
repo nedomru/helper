@@ -1,6 +1,6 @@
 const log = (msg: string) => console.info(`[Хелпер] - [АРМ] - [Особый клиент] ${msg}`);
 
-const isServiceEngineer = (): boolean => {
+export const isServiceEngineer = (): boolean => {
     const namcl = document.querySelector<HTMLHeadingElement>("#namcl b");
     return namcl?.textContent.trim().toLowerCase() === "сервисный инженер для кц";
 };
