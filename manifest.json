@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Хелпер",
   "version": "3.0",
-  "description": "Инструмент для помощи в работе",
+  "description": "Твой швейцарский нож для работы \uD83D\uDE0E",
   "options_ui": {
     "page": "src/pages/options/index.html",
     "open_in_tab": true
@@ -62,5 +62,6 @@
         "<all_urls>"
       ]
     }
-  ]
+  ],
+  "author": "Roman Chursanov"
 }
