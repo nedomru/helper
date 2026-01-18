@@ -13,6 +13,7 @@ import {copyIPAddress, copyMACAddress} from "./features/network-info";
 import {allowCopy, removeGenerationTimes, showAgreementOnRequestChange} from "./features/ui-enhancements";
 import {copyClientAgreementButton} from "@pages/content/arm/features/client-agreement";
 import {copyClientAddressButton} from "@pages/content/arm/features/client-address";
+import {macLookupButton} from "@pages/content/arm/features/network-info/macLookup";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -44,7 +45,7 @@ export const armPageConfigs: PageConfig[] = [
     {
         pattern: URL_PATTERNS.CLIENT_SESSION,
         features: [],
-        alwaysRun: [copyIPAddress, copyMACAddress],
+        alwaysRun: [copyIPAddress, copyMACAddress, macLookupButton],
     },
 
     {

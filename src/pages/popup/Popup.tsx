@@ -175,7 +175,7 @@ export default function Popup(): ReactNode {
                                        className="text-blue-600 hover:underline text-sm">Генезис</a></li>
                                 <li><a href="https://perm.db.ertelecom.ru/cgi-bin/ppo/excells/wcc_main.entry_continue"
                                        className="text-blue-600 hover:underline text-sm">Веб-АРМ</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/breaks/ntp-nck"
+                                <li><a href="https://okcertelecom.ru/yii/breaks/ntp-nck"
                                        className="text-blue-600 hover:underline text-sm">Перерывы</a></li>
                                 <li><a href="https://clever.ertelecom.ru"
                                        className="text-blue-600 hover:underline text-sm">Clever</a></li>
@@ -185,26 +185,26 @@ export default function Popup(): ReactNode {
 
                             <h4 className="font-bold mt-4 text-gray-800">Линии</h4>
                             <ul>
-                                <li><a href="https://okc2.ertelecom.ru/yii/genesys-ntp/line"
+                                <li><a href="https://okcertelecom.ru/yii/genesys-ntp/line"
                                        className="text-blue-600 hover:underline text-sm">НЦК</a></li>
                                 <li>
-                                    <a href="https://okc2.ertelecom.ru/yii/line_ts/ntp1/index"
+                                    <a href="https://okcertelecom.ru/yii/line_ts/ntp1/index"
                                        className="text-blue-600 hover:underline text-sm">НТП1</a>
                                     {' / '}
-                                    <a href="https://okc2.ertelecom.ru/yii/line_ts/ntp2/index"
+                                    <a href="https://okcertelecom.ru/yii/line_ts/ntp2/index"
                                        className="text-blue-600 hover:underline text-sm">НТП2</a>
                                 </li>
                             </ul>
 
                             <h4 className="font-bold mt-4 text-gray-800">Графики</h4>
                             <ul>
-                                <li><a href="https://okc2.ertelecom.ru/wfm/vueapp/personal"
+                                <li><a href="https://okcertelecom.ru/wfm/vueapp/personal"
                                        className="text-blue-600 hover:underline text-sm">Личный</a></li>
                                 <li>
-                                    <a href="https://okc2.ertelecom.ru/wfm/vueapp/day"
+                                    <a href="https://okcertelecom.ru/wfm/vueapp/day"
                                        className="text-blue-600 hover:underline text-sm">День</a>
                                     {' / '}
-                                    <a href="https://okc2.ertelecom.ru/wfm/vueapp/month"
+                                    <a href="https://okcertelecom.ru/wfm/vueapp/month"
                                        className="text-blue-600 hover:underline text-sm">Месяц</a>
                                 </li>
                             </ul>
@@ -226,23 +226,23 @@ export default function Popup(): ReactNode {
                         <div>
                             <h4 className="font-bold text-gray-800">Статистика</h4>
                             <ul>
-                                <li><a href="https://okc2.ertelecom.ru/yii/ure/report/index"
+                                <li><a href="https://okcertelecom.ru/yii/ure/report/index"
                                        className="text-blue-600 hover:underline text-sm">URE</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/premium/ntp-nck/spec_month"
+                                <li><a href="https://okcertelecom.ru/yii/premium/ntp-nck/spec_month"
                                        className="text-blue-600 hover:underline text-sm">Премия</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/gok/detail/ntpNck"
+                                <li><a href="https://okcertelecom.ru/yii/gok/detail/ntpNck"
                                        className="text-blue-600 hover:underline text-sm">Гок</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/csi/report/index"
+                                <li><a href="https://okcertelecom.ru/yii/csi/report/index"
                                        className="text-blue-600 hover:underline text-sm">Оценки CSI</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/appl/thanks/index"
+                                <li><a href="https://okcertelecom.ru/yii/appl/thanks/index"
                                        className="text-blue-600 hover:underline text-sm">Благодарности</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/sales/report/index"
+                                <li><a href="https://okcertelecom.ru/yii/sales/report/index"
                                        className="text-blue-600 hover:underline text-sm">Отчет по продажам</a></li>
                             </ul>
 
                             <h4 className="font-bold mt-4 text-gray-800">Обучение</h4>
                             <ul>
-                                <li><a href="https://okc2.ertelecom.ru/yii/testing/lk/profile"
+                                <li><a href="https://okcertelecom.ru/yii/testing/lk/profile"
                                        className="text-blue-600 hover:underline text-sm">Тесты</a></li>
                                 <li><a href="https://clever.ertelecom.ru/content/space/4/article/8036"
                                        className="text-blue-600 hover:underline text-sm">Электронные курсы</a></li>
@@ -297,7 +297,7 @@ export default function Popup(): ReactNode {
                             <ul>
                                 <li><a href="https://flomaster.chrsnv.ru"
                                        className="text-blue-600 hover:underline text-sm">Фломастер (РМы)</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/appl/chart/index"
+                                <li><a href="https://okcertelecom.ru/yii/appl/chart/index"
                                        className="text-blue-600 hover:underline text-sm">Обращения в КЦ</a></li>
                                 <li><a href="https://clever.ertelecom.ru/content/space/4/article/1625"
                                        className="text-blue-600 hover:underline text-sm">Разблокировка логинов</a></li>

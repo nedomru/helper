@@ -30,7 +30,10 @@
   ],
   "host_permissions": [
     "*://*.ertelecom.ru/*",
-    "https://helper.chrsnv.ru/*"
+    "https://helper.chrsnv.ru/*",
+    "https://api.allorigins.win/*",
+    "https://api.macvendors.com/*",
+    "https://api.ipquery.io/*"
   ],
   "content_scripts": [
     {
@@ -57,7 +60,9 @@
         "icon-32.png",
         "sounds/*.mp3"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ]
 }

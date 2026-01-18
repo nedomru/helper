@@ -1,19 +1,23 @@
-console.log('background script loaded');
+console.log("background script loaded");
 
+import {handleSendClientCard} from "./handlers/sendClientCard";
+import {handleMACLookup} from "./handlers/macLookup";
+
+// Handle all messages from content scripts
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+    // Send client card action
     if (request.action === "sendClientCard") {
-        fetch("https://okc2.ertelecom.ru/yii/api/line-mail-example/send-example-mail", {
-            method: "POST",
-            credentials: "include",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            },
-            body: `message=${request.payload.message}&lineAppId=3`
-        })
-            .then(r => r.json())
-            .then(data => sendResponse({ok: true, data}))
-            .catch(err => sendResponse({ok: false, err}));
+        handleSendClientCard(request)
+            .then(result => sendResponse(result))
+            .catch(err => sendResponse({ok: false, err: String(err)}));
+        return true;
+    }
 
-        return true
+    // MAC lookup action
+    if (request.type === "LOOKUP_MAC") {
+        handleMACLookup(request)
+            .then(result => sendResponse(result))
+            .catch(err => sendResponse({ok: false, err: String(err)}));
+        return true;
     }
 });
