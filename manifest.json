@@ -31,9 +31,7 @@
   "host_permissions": [
     "*://*.ertelecom.ru/*",
     "https://helper.chrsnv.ru/*",
-    "https://api.allorigins.win/*",
-    "https://api.macvendors.com/*",
-    "https://api.ipquery.io/*"
+    "https://api.allorigins.win/*"
   ],
   "content_scripts": [
     {
