@@ -11,6 +11,8 @@ import {copyIPAddress, copyMACAddress} from "./features/network-info";
 
 // UI Enhancement Features
 import {allowCopy, removeGenerationTimes, showAgreementOnRequestChange} from "./features/ui-enhancements";
+import {copyClientAgreementButton} from "@pages/content/arm/features/client-agreement";
+import {copyClientAddressButton} from "@pages/content/arm/features/client-address";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -32,6 +34,8 @@ export const armPageConfigs: PageConfig[] = [
             allowCopy,
             copyClientCardButton,
             sendClientCardButton,
+            copyClientAgreementButton,
+            copyClientAddressButton,
             compensateButton,
             removeGenerationTimes,
         ],
