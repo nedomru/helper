@@ -1,6 +1,5 @@
 import type {PageConfig} from '../core/types';
 
-// Chat Features
 import {
     allowChatSizeEdit,
     allowPaste,
@@ -8,19 +7,13 @@ import {
     customChatColors,
     customChatSounds
 } from "./features/chat";
-
-// Chat Content Features
 import {removeAnswers, removeRMs} from "./features/chat-content";
-
-// UI Enhancement Features
 import {hideUselessButtons, showDutyMessages, showLineStatus} from "./features/ui-enhancements";
 
-// TODO заполнить URL паттерны для Genesys
 export const URL_PATTERNS = {
     GENESYS_BASE: "genesys-app1",
 } as const;
 
-// Конфигурация страниц Genesys
 export const genesysPageConfigs: PageConfig[] = [
     {
         pattern: URL_PATTERNS.GENESYS_BASE,
@@ -35,6 +28,7 @@ export const genesysPageConfigs: PageConfig[] = [
             {key: 'autoCollapseChatHeader', handler: autoCollapseChatHeader},
             {key: 'allowChatSizeEdit', handler: allowChatSizeEdit},
             {key: 'allowPaste', handler: allowPaste},
-        ]
+        ],
+        alwaysRun: []
     }
 ];

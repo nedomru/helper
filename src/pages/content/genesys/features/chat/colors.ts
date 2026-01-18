@@ -1,29 +1,36 @@
-/**
- * Set custom colors for operator and client.
- *
- * Uses basic genesys configuration:
- * chat.agent.prompt-color - Color of agent name
- * chat.agent.text-color - Color of agent message text
- * chat.client.prompt-color - Color of client name
- * chat.client.text-color - Color of client message text.
- */
-export async function customChatColors(): Promise<void> {
-    chrome.storage.sync.get('settings', (result) => {
-        if (result?.settings?.genesys?.chats) {
-            const {
-                operatorNameColor,
-                operatorMessageColor,
-                clientNameColor,
-                clientMessageColor
-            } = result.settings.genesys.chats;
+// TODO Replace with values from settings before relase
+const CHAT_COLORS = {
+    agentPrompt: '#FF6B35',
+    agentText: '#2C3E50',
+    clientPrompt: '#27AE60',
+    clientText: '#34495E',
+} as const;
 
-            const genesys = (window as any).genesys;
-            if (genesys?.wwe?.configuration?.set) {
-                genesys.wwe.configuration.set("chat.agent.prompt-color", operatorNameColor);
-                genesys.wwe.configuration.set("chat.agent.text-color", operatorMessageColor);
-                genesys.wwe.configuration.set("chat.client.prompt-color", clientNameColor);
-                genesys.wwe.configuration.set("chat.client.text-color", clientMessageColor);
-            }
+const GENESYS_SELECTOR = '.wwe-account-state';
+
+function injectColorScript(): void {
+    const script = document.createElement('script');
+    script.textContent = `
+window.genesys.wwe.configuration.set("chat.agent.prompt-color", "${CHAT_COLORS.agentPrompt}");
+window.genesys.wwe.configuration.set("chat.agent.text-color", "${CHAT_COLORS.agentText}");
+window.genesys.wwe.configuration.set("chat.client.prompt-color", "${CHAT_COLORS.clientPrompt}");
+window.genesys.wwe.configuration.set("chat.client.text-color", "${CHAT_COLORS.clientText}");
+    `;
+    document.body.appendChild(script);
+}
+
+export async function customChatColors(): Promise<void> {
+    const applyIfReady = (): boolean => {
+        if (document.querySelector(GENESYS_SELECTOR)) {
+            injectColorScript();
+            return true;
         }
-    });
+        return false;
+    };
+
+    if (!applyIfReady()) {
+        new MutationObserver((_, obs) => {
+            if (applyIfReady()) obs.disconnect();
+        }).observe(document, {childList: true, subtree: true});
+    }
 }
