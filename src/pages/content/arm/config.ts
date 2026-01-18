@@ -1,15 +1,8 @@
 import type {PageConfig} from "../core/types";
 
-// Client Card Features
 import {copyClientCardButton, sendClientCardButton} from "./features/client-card";
-
-// Compensation Features
 import {compensateButton} from "./features/compensation";
-
-// Network Info Features
 import {copyIPAddress, copyMACAddress} from "./features/network-info";
-
-// UI Enhancement Features
 import {allowCopy, removeGenerationTimes, showAgreementOnRequestChange} from "./features/ui-enhancements";
 import {copyClientAgreementButton} from "@pages/content/arm/features/client-agreement";
 import {copyClientAddressButton} from "@pages/content/arm/features/client-address";
@@ -25,7 +18,7 @@ import {removeAppealsColumns} from "@pages/content/arm/features/ui-enhancements/
 import {showWarrantyExpiration} from "@pages/content/arm/features/highlights/warranty";
 import {showAppealsHighlights} from "@pages/content/arm/features/highlights/appeals";
 import {showSubscriptionStatus} from "@pages/content/arm/features/highlights/subscriptions";
-import {searchByAppeal} from "@pages/content/arm/features/search/appeals";
+import {searchByAppeal, searchOpenedAppeals} from "@pages/content/arm/features/search/appeals";
 import {searchByProperty} from "@pages/content/arm/features/search/properties";
 import {searchByLog} from "@pages/content/arm/features/search/logs";
 
@@ -67,7 +60,8 @@ export const armPageConfigs: PageConfig[] = [
             showSubscriptionStatus,
             searchByAppeal,
             searchByLog,
-            searchByProperty
+            searchByProperty,
+            searchOpenedAppeals
         ],
     },
 
