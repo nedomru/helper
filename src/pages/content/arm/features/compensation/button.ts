@@ -1,5 +1,6 @@
 import {compensate} from "./api";
 import {formatDateWithYear, getCurrentDay, getDatesArray, isValidDate, parseDateString} from "./validation";
+import {notify} from "@src/utils";
 
 /**
  * Creates and inserts a "Compensate" button
@@ -40,8 +41,7 @@ export async function compensateButton(): Promise<void> {
         const agreement_id: string | undefined = document.querySelector<HTMLInputElement>('input[class="js-agr-id-prn"]')?.value;
 
         if (!ssn || !user_id || !agreement_id) {
-            // $.notify("Не удалось получить необходимые идентификаторы (SSN, User ID, Agreement ID).", "error");
-            // TODO Add notification
+            notify("💸 Компенсация", "Не удалось получить необходимые идентификаторы (SSN, User ID, Agreement ID).", "error");
             return;
         }
 
@@ -53,7 +53,7 @@ export async function compensateButton(): Promise<void> {
             if (!compensationDay) return;
 
             if (!isValidDate(compensationDay)) {
-                // TODO Add notification
+                notify("💸 Компенсация", "Выбрана некорректная дата. Используй формат ДД.ММ", "error");
                 return;
             }
 
@@ -65,8 +65,7 @@ export async function compensateButton(): Promise<void> {
             if (!startDatePrompt) return;
 
             if (!isValidDate(startDatePrompt)) {
-                // $.notify("Неверный формат начальной даты. Используйте формат ДД.ММ", "error");
-                // TODO Add notification
+                notify("💸 Компенсация", "Неверный формат начальной даты. Используй формат ДД.ММ", "error");
                 return;
             }
             const startDate: string = formatDateWithYear(startDatePrompt);
@@ -75,8 +74,7 @@ export async function compensateButton(): Promise<void> {
             if (!endDatePrompt) return;
 
             if (!isValidDate(endDatePrompt)) {
-                // $.notify("Неверный формат конечной даты. Используйте формат ДД.ММ", "error");
-                // TODO Add notification
+                notify("💸 Компенсация", "Неверный формат конечной даты. Используй формат ДД.ММ", "error");
                 return;
             }
             const endDate: string = formatDateWithYear(endDatePrompt);
@@ -85,8 +83,7 @@ export async function compensateButton(): Promise<void> {
             const endDateObject: Date = parseDateString(endDate);
 
             if (startDateObject > endDateObject) {
-                // $.notify("Начальная дата не может быть позже конечной даты", "error");
-                // TODO Add notification
+                notify("💸 Компенсация", "Начальная дата не может быть позже конечной даты", "error");
                 return;
             }
 
@@ -98,12 +95,10 @@ export async function compensateButton(): Promise<void> {
 
                     await new Promise<void>((resolve) => setTimeout(resolve, 100));
                 }
-                // $.notify(`Компенсация успешно отправлена за период с ${startDate} по ${endDate}`, "success");
-                // TODO Add notification
+                notify("💸 Компенсация", `Компенсация успешно отправлена за период с ${startDate} по ${endDate}`, "success");
             } catch (error) {
                 console.error("Compensation processing error:", error);
-                // $.notify("Произошла ошибка при обработке компенсаций", "error");
-                // TODO Add notification
+                notify("💸 Компенсация", "Произошла ошибка при обработке компенсаций", "error");
             }
         }
     });

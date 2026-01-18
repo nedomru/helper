@@ -116,7 +116,7 @@ export default function Popup(): ReactNode {
     ] as const;
 
     return (
-        <div className="w-[640px] min-h-[580px] bg-white">
+        <div className="w-160 min-h-145 bg-white">
             {/* Toolbar */}
             <div className="flex items-center gap-2 p-4 border-b border-gray-200">
                 <div className="flex gap-1">
@@ -398,14 +398,14 @@ export default function Popup(): ReactNode {
                                     <tbody>
                                     {filteredRoutersData.map((router, index) => (
                                         <tr key={index} className="hover:bg-gray-50">
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{router.Name}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.PPPoE, 'PPPoE')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.DHCP, 'DHCP')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.IPoE, 'IPoE')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.Channels, 'Каналы')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{router.Settings}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.KnowledgeBase, 'БЗ')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.Emulator, 'Эмулятор', true)}</td>
+                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{router.Name}</td>
+                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.PPPoE, 'PPPoE')}</td>
+                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.DHCP, 'DHCP')}</td>
+                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.IPoE, 'IPoE')}</td>
+                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.Channels, 'Каналы')}</td>
+                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{router.Settings}</td>
+                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.KnowledgeBase, 'БЗ')}</td>
+                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.Emulator, 'Эмулятор', true)}</td>
                                         </tr>
                                     ))}
                                     </tbody>

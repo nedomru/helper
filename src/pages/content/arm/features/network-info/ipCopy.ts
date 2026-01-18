@@ -1,3 +1,5 @@
+import {notify} from "@src/utils";
+
 /**
  * Adds functionality to copy IP address from client session
  *
@@ -24,13 +26,14 @@ export function copyIPAddress(): void {
                         ipElement.style.color = "";
                         ipElement.style.backgroundColor = "";
                     }, 600);
-                    console.log("[АРМ - Копирование] Скопировали IP-адрес из сессии");
+                    notify("📋 Копирование", `IP-адрес скопирован: ${ipText}`, "success");
                 })
                 .catch((err) => {
                     console.error(
                         "[АРМ - Копирование]: Не удалось скопировать IP-адрес из сессии",
                         err
                     );
+                    notify("📋 Копирование", "Не удалось скопировать IP-адрес", "error");
                 });
         };
 

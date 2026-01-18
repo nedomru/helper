@@ -1,3 +1,5 @@
+import {notify} from "@src/utils";
+
 /**
  * Creates and inserts a button to copy client card from info tab to clipboard
  */
@@ -23,15 +25,19 @@ export function copyClientCardButton(): void {
     const lineBreak = document.createElement("br") as HTMLBRElement;
 
     const copyButton = document.createElement("button") as HTMLButtonElement;
-    copyButton.textContent = "📋 Карточка";
+    copyButton.textContent = "🪪 Карточка";
     copyButton.classList.add("btn", "btn-primary", "btn-xs", "helper-copy-card-btn");
 
     copyButton.addEventListener("click", (event: Event) => {
         event.preventDefault();
         event.stopPropagation();
 
-        navigator.clipboard.writeText(clientCardText).then(() => console.info("[ARM] - Client card copied"));
-        //  # TODO Add notification
+        navigator.clipboard.writeText(clientCardText).then(() => {
+            notify("🪪 Карточка", "Карточка клиента скопирована", "success");
+            console.info("[ARM] - Client card copied");
+        }).catch(() => {
+            notify("🪪 Карточка", "Не удалось скопировать карточку клиента", "error");
+        });
     });
     clientCard.appendChild(lineBreak);
     clientCard.appendChild(copyButton);

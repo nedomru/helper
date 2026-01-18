@@ -1,3 +1,5 @@
+import {notify} from "@src/utils";
+
 /**
  * Adds functionality to copy MAC address from client session
  *
@@ -26,12 +28,13 @@ export function copyMACAddress(): void {
                     macElement.style.color = "";
                     macElement.style.backgroundColor = "";
                 }, 600);
-                console.log("[АРМ - Копирование] Скопировали MAC-адрес из сессии");
+                notify("📋 Копирование", `MAC-адрес скопирован: ${macText}`, "success");
             }).catch((err): void => {
                 console.error(
                     "[АРМ - Копирование] Не удалось скопировать MAC-адрес из сессии",
                     err
                 );
+                notify("📋 Копирование", "Не удалось скопировать MAC-адрес", "error");
             });
         };
     });
