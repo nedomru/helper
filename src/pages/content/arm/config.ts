@@ -25,6 +25,9 @@ import {removeAppealsColumns} from "@pages/content/arm/features/ui-enhancements/
 import {showWarrantyExpiration} from "@pages/content/arm/features/highlights/warranty";
 import {showAppealsHighlights} from "@pages/content/arm/features/highlights/appeals";
 import {showSubscriptionStatus} from "@pages/content/arm/features/highlights/subscriptions";
+import {searchByAppeal} from "@pages/content/arm/features/search/appeals";
+import {searchByProperty} from "@pages/content/arm/features/search/properties";
+import {searchByLog} from "@pages/content/arm/features/search/logs";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -61,7 +64,10 @@ export const armPageConfigs: PageConfig[] = [
             removeGenerationTimes,
             showWarrantyExpiration,
             showAppealsHighlights,
-            showSubscriptionStatus
+            showSubscriptionStatus,
+            searchByAppeal,
+            searchByLog,
+            searchByProperty
         ],
     },
 
