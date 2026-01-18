@@ -14,16 +14,14 @@ import {allowCopy, removeGenerationTimes, showAgreementOnRequestChange} from "./
 import {copyClientAgreementButton} from "@pages/content/arm/features/client-agreement";
 import {copyClientAddressButton} from "@pages/content/arm/features/client-address";
 import {macLookupButton} from "@pages/content/arm/features/network-info/macLookup";
-import {
-    foldSpas,
-    foldTabAppeals,
-    foldTabApplications,
-    foldTabCRequests,
-    foldTabInfo,
-    foldTabSRequests,
-    removeAppealsColumns,
-    removeDiagnosticTabs
-} from "@pages/content/arm/features/anticipation";
+import {foldSpas} from "@pages/content/arm/features/folding/spas";
+import {foldTabInfo} from "@pages/content/arm/features/folding/info";
+import {foldTabCRequests} from "@pages/content/arm/features/folding/connection_requests";
+import {foldTabApplications} from "@pages/content/arm/features/folding/applications";
+import {foldTabAppeals} from "@pages/content/arm/features/folding/appeals";
+import {foldTabSRequests} from "@pages/content/arm/features/folding/service_requests";
+import {removeDiagnosticTabs} from "@pages/content/arm/features/ui-enhancements/eqm";
+import {removeAppealsColumns} from "@pages/content/arm/features/ui-enhancements/appeals";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -58,7 +56,6 @@ export const armPageConfigs: PageConfig[] = [
             copyClientAddressButton,
             compensateButton,
             removeGenerationTimes,
-            foldTabCRequests,
         ],
     },
 
