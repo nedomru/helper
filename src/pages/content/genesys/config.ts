@@ -1,14 +1,12 @@
 import type {PageConfig} from '../core/types';
 
-import {
-    allowChatSizeEdit,
-    allowPaste,
-    autoCollapseChatHeader,
-    customChatColors,
-    customChatSounds
-} from "./features/chat";
 import {removeAnswers, removeRMs} from "./features/chat-content";
 import {hideUselessButtons, showDutyMessages, showLineStatus} from "./features/ui-enhancements";
+import {customChatSounds} from "@pages/content/genesys/features/chat/sounds";
+import {customChatColors} from "@pages/content/genesys/features/chat/colors";
+import {allowPaste} from "@pages/content/genesys/features/chat/pasting";
+import {allowChatSizeEdit} from "@pages/content/genesys/features/chat/message_area";
+import {autoCollapseChatHeader} from "@pages/content/genesys/features/chat/headers";
 
 export const URL_PATTERNS = {
     GENESYS_BASE: "genesys-app1",
@@ -29,6 +27,10 @@ export const genesysPageConfigs: PageConfig[] = [
             {key: 'allowChatSizeEdit', handler: allowChatSizeEdit},
             {key: 'allowPaste', handler: allowPaste},
         ],
-        alwaysRun: []
+        alwaysRun: [
+            allowChatSizeEdit,
+            autoCollapseChatHeader,
+            allowPaste
+        ]
     }
 ];
