@@ -22,6 +22,7 @@ import {foldTabAppeals} from "@pages/content/arm/features/folding/appeals";
 import {foldTabSRequests} from "@pages/content/arm/features/folding/service_requests";
 import {removeDiagnosticTabs} from "@pages/content/arm/features/ui-enhancements/eqm";
 import {removeAppealsColumns} from "@pages/content/arm/features/ui-enhancements/appeals";
+import {showWarrantyExpiration} from "@pages/content/arm/features/highlights/waranty";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -56,6 +57,7 @@ export const armPageConfigs: PageConfig[] = [
             copyClientAddressButton,
             compensateButton,
             removeGenerationTimes,
+            showWarrantyExpiration
         ],
     },
 
