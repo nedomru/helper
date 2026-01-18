@@ -14,6 +14,8 @@ export * from './config';
 
 // Re-export features for external use if needed
 export * from './features/client-card';
+export * from './features/client-agreement';
+export * from './features/client-address'
 export * from './features/compensation';
 export * from './features/network-info';
 export * from './features/ui-enhancements';
