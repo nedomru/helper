@@ -1,3 +1,5 @@
+import {buildActionUrl, createIframeWindow, extractActionParams,} from "../../shared";
+
 export async function removeAppealsColumns(): Promise<void> {
     const container = document.getElementById("lazy_content_2448");
     if (!container) return;
@@ -151,4 +153,77 @@ export async function removeAppealsColumns(): Promise<void> {
         attributes: true,
         attributeFilter: ["class", "style"],
     });
+}
+
+/**
+ * Adds "Change in window" buttons to appeal links
+ */
+export async function addAppealIframeButtons(): Promise<void> {
+    new MutationObserver(() => {
+        const container = document.getElementById("lazy_content_2448");
+        if (!container?.textContent) return;
+
+        // Check if already processed to avoid duplicate processing
+        if (container.getAttribute("appeal-buttons-processed")) return;
+
+        // Find all anchor elements with the specific pattern within the container
+        const appealLinks = container.querySelectorAll(
+            'a[onclick*="changeAppealInNewTab"]',
+        );
+
+        if (appealLinks.length === 0) return;
+
+        appealLinks.forEach((link) => {
+            // Skip if button already added
+            if (link.parentElement?.querySelector(".appeal-iframe-btn")) {
+                return;
+            }
+
+            // Extract parameters from onclick attribute
+            const onclickAttr = link.getAttribute("onclick");
+            if (!onclickAttr) return;
+
+            const params = extractActionParams(onclickAttr);
+            if (!params) return;
+
+            // Create new iframe button styled as a link
+            const newButton = document.createElement("a");
+            newButton.textContent = "Изменить в окне";
+            newButton.className = "appeal-iframe-btn";
+            newButton.href = "#";
+            newButton.style.cssText = `
+                display: block;
+                cursor: pointer;
+            `;
+
+            // Add click handler
+            newButton.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+
+                // Check if iframe already exists for this button
+                const existingIframe = document.querySelector(
+                    ".appeal-iframe-container",
+                );
+                if (existingIframe) {
+                    existingIframe.remove();
+                }
+
+                // Create iframe window using the shared utility
+                createIframeWindow(
+                    buildActionUrl(params),
+                    "Изменить обращение",
+                );
+            };
+
+            // Insert the new button after the original link (positioned under it)
+            link.parentNode?.insertBefore(newButton, link.nextSibling);
+        });
+
+        // Mark container as processed
+        container.setAttribute("appeal-buttons-processed", "true");
+        console.info(
+            `[Хелпер] - [АРМ] - [Обращения] Добавлено кнопок редактирования обращений в окне: ${appealLinks.length}`,
+        );
+    }).observe(document.body, {childList: true, subtree: true});
 }
