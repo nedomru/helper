@@ -2,6 +2,7 @@ console.log("background script loaded");
 
 import {handleSendClientCard} from "./handlers/sendClientCard";
 import {handleMACLookup} from "./handlers/macLookup";
+import {handleGetCookie} from "./handlers/getCookie";
 
 // Handle all messages from content scripts
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
@@ -17,6 +18,14 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     if (request.type === "LOOKUP_MAC") {
         handleMACLookup(request)
             .then(result => sendResponse(result))
+            .catch(err => sendResponse({ok: false, err: String(err)}));
+        return true;
+    }
+
+    // Get cookie action
+    if (request.action === "getCookie") {
+        handleGetCookie(request)
+            .then(result => sendResponse({ok: true, data: result}))
             .catch(err => sendResponse({ok: false, err: String(err)}));
         return true;
     }

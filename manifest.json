@@ -26,7 +26,8 @@
     "management",
     "activeTab",
     "contextMenus",
-    "browsingData"
+    "browsingData",
+    "cookies"
   ],
   "host_permissions": [
     "*://*.ertelecom.ru/*",
