@@ -503,7 +503,7 @@ export default function Options() {
                                             <ToggleSwitch
                                                 label="Скрывать бесполезные кнопки"
                                                 checked={settings.genesys.main.hideUselessButtons}
-                                                onChange={() => handleToggle('genesys', 'hideUselessButtons', 'main')}
+                                                onChange={() => handleToggle('genesys', 'hideButtons', 'main')}
                                                 description="Помощь, Facebook Drafts & in Progress, Twitter Drafts & in Progress"
                                             />
 

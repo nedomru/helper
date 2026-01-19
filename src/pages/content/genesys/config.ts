@@ -8,7 +8,7 @@ import {allowChatSizeEdit} from "@pages/content/genesys/features/chat/message_ar
 import {autoCollapseChatHeader} from "@pages/content/genesys/features/chat/headers";
 import {showLineStatus} from "@pages/content/genesys/features/ui-enhancements/line_status";
 import {showDutyMessages} from "@pages/content/genesys/features/ui-enhancements/duty_messages";
-import {hideUselessButtons} from "@pages/content/genesys/features/ui-enhancements/hideUselessButtons";
+import {hideButtons} from "@pages/content/genesys/features/ui-enhancements/hideButtons";
 
 export const URL_PATTERNS = {
     GENESYS_BASE: "genesys-app1",
@@ -20,7 +20,7 @@ export const genesysPageConfigs: PageConfig[] = [
         features: [
             {key: 'genesys_showLineStatus', handler: showLineStatus},
             {key: 'showDutyMessages', handler: showDutyMessages},
-            {key: 'hideUselessButtons', handler: hideUselessButtons},
+            {key: 'hideButtons', handler: hideButtons},
             {key: 'removeAnswers', handler: removeAnswers},
             {key: 'removeRMs', handler: removeRMs},
             {key: 'customChatColors', handler: customChatColors},
@@ -33,6 +33,7 @@ export const genesysPageConfigs: PageConfig[] = [
             allowChatSizeEdit,
             autoCollapseChatHeader,
             allowPaste,
+            hideButtons
         ]
     }
 ];
