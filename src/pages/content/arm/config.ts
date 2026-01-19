@@ -28,6 +28,7 @@ import {copyIPAddress} from "@pages/content/arm/features/network-info/ipCopy";
 import {filterSessions} from "@pages/content/arm/features/sessions-history/filters";
 import {loadLastDayClientSessions} from "@pages/content/arm/features/ui-enhancements/sessionsLastDay";
 import {smsButtons} from "@pages/content/arm/features/sms/fast_choose";
+import {copyClientNumber} from "@pages/content/arm/features/client-number/copyButton";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -72,7 +73,8 @@ export const armPageConfigs: PageConfig[] = [
             searchOpenedAppeals,
             removeGenerationTimes,
             addAppealIframeButtons,
-            smsButtons
+            smsButtons,
+            copyClientNumber,
         ],
     },
 
