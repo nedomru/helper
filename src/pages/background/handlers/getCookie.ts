@@ -8,7 +8,7 @@ export async function handleGetCookie(request: {
     name: string;
 }): Promise<string | null> {
     try {
-        const cookie = await new Promise<chrome.cookies | null>((resolve) => {
+        const cookie = await new Promise<chrome.cookies.Cookie | null>((resolve) => {
             chrome.cookies.get(
                 {
                     url: request.url,
