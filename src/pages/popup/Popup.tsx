@@ -1,5 +1,8 @@
 import {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
 import {fetchMNAData, fetchRoutersData, type MNAProvider, type Router} from '@src/utils/api';
+import {TelegramUser} from "@src/shared/types/auth";
+import {getAuthState, isAuthenticated, logout} from "@src/utils/auth";
+import Auth from "@src/components/Auth";
 
 type Tab = 'Главная' | 'MnA' | 'Роутеры' | 'РМы' | 'Инструменты';
 
@@ -11,6 +14,8 @@ interface ToolState {
 }
 
 export default function Popup(): ReactNode {
+    const [isAuthenticatedState, setIsAuthenticatedState] = useState<boolean | null>(null);
+    const [currentUser, setCurrentUser] = useState<TelegramUser | null>(null);
     const [activeTab, setActiveTab] = useState<Tab>('Главная');
     const [searchProvider, setSearchProvider] = useState('');
     const [searchRouter, setSearchRouter] = useState('');
@@ -25,6 +30,26 @@ export default function Popup(): ReactNode {
     const [routersData, setRoutersData] = useState<Router[]>([]);
     const [loadingMna, setLoadingMna] = useState(false);
     const [loadingRouters, setLoadingRouters] = useState(false);
+
+    // Check authentication on mount
+    useEffect(() => {
+        const checkAuth = async () => {
+            const authenticated = await isAuthenticated();
+            setIsAuthenticatedState(authenticated);
+            if (authenticated) {
+                const state = await getAuthState();
+                if (state?.user) {
+                    setCurrentUser(state.user);
+                }
+            }
+        };
+        checkAuth();
+    }, []);
+
+    const handleAuthorized = useCallback((user: TelegramUser) => {
+        setCurrentUser(user);
+        setIsAuthenticatedState(true);
+    }, []);
 
     const handleOpenSettings = useCallback(() => {
         chrome.runtime.openOptionsPage();
@@ -115,8 +140,46 @@ export default function Popup(): ReactNode {
         {title: 'Поддержать проект', icon: '💰', onClick: () => handleOpenLink('https://pay.cloudtips.ru/p/787b494c')},
     ] as const;
 
+    // Show loading while checking auth
+    if (isAuthenticatedState === null) {
+        return (
+            <div className="w-160 min-h-145 bg-white flex items-center justify-center">
+                <div className="text-gray-600">Загрузка...</div>
+            </div>
+        );
+    }
+
+    // Show auth screen if not authenticated
+    if (!isAuthenticatedState) {
+        return <Auth onAuthorized={handleAuthorized}/>;
+    }
+
     return (
         <div className="w-160 min-h-145 bg-white">
+            {/* User info bar */}
+            {currentUser && (
+                <div className="bg-cyan-50 px-4 py-2 border-b border-cyan-200 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            {currentUser.first_name[0]}
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">
+                            {currentUser.first_name} {currentUser.last_name || ''}
+                        </span>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            await logout();
+                            setIsAuthenticatedState(false);
+                            setCurrentUser(null);
+                        }}
+                        className="text-xs text-red-600 hover:text-red-700 font-medium"
+                    >
+                        Выйти
+                    </button>
+                </div>
+            )}
             {/* Toolbar */}
             <div className="flex items-center gap-2 p-4 border-b border-gray-200">
                 <div className="flex gap-1">

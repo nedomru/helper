@@ -1,4 +1,7 @@
-import React, {useEffect, useState} from 'react';
+import React, {useCallback, useEffect, useState} from 'react';
+import {getAuthState, isAuthenticated, logout} from '@src/utils/auth';
+import Auth from '@src/components/Auth';
+import type {TelegramUser} from '@src/shared/types/auth';
 
 interface Settings {
     general: object,
@@ -37,6 +40,44 @@ interface Settings {
 }
 
 export default function Options() {
+    const [isAuthenticatedState, setIsAuthenticatedState] = useState<boolean | null>(null);
+    const [currentUser, setCurrentUser] = useState<TelegramUser | null>(null);
+
+    // Check authentication on mount
+    useEffect(() => {
+        const checkAuth = async () => {
+            const authenticated = await isAuthenticated();
+            setIsAuthenticatedState(authenticated);
+            if (authenticated) {
+                const state = await getAuthState();
+                if (state?.user) {
+                    setCurrentUser(state.user);
+                }
+            }
+        };
+        checkAuth();
+    }, []);
+
+    const handleAuthorized = useCallback((user: TelegramUser) => {
+        setCurrentUser(user);
+        setIsAuthenticatedState(true);
+    }, []);
+
+    // Show loading while checking auth
+    if (isAuthenticatedState === null) {
+        return (
+            <div
+                className="min-h-screen bg-gradient-to-br from-cyan-400 to-blue-600 p-8 flex items-center justify-center">
+                <div className="text-white text-xl">Загрузка...</div>
+            </div>
+        );
+    }
+
+    // Show auth screen if not authenticated
+    if (!isAuthenticatedState) {
+        return <Auth onAuthorized={handleAuthorized}/>;
+    }
+
     const availableSounds = [
         'Sound_1.mp3',
         'Sound_2.mp3',
@@ -374,360 +415,393 @@ export default function Options() {
     );
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-cyan-400 to-blue-600 p-8">
-            <div className="max-w-4xl mx-auto bg-white rounded-xl overflow-hidden shadow-2xl">
-                <nav className="flex bg-gray-50 border-b border-gray-200 px-4">
-                    <TabButton tab="general" label="Общие"/>
-                    <TabButton tab="genesys" label="Генезис"/>
-                    <TabButton tab="features" label="АРМ"/>
-                    <TabButton tab="advanced" label="Линия"/>
-                </nav>
-
-                <div className="p-8">
-                    {activeTab === 'general' && (
-
-                        <div className="animate-fadeIn">
-
-                            <div>
-                                <div className="bg-gradient-to-r from-pink-50 to-indigo-50 rounded-lg p-4 mb-4">
-                                    <h3 className="text-lg font-bold text-black mb-3">Общие настройки</h3>
-                                    <div className="space-y-3 ml-7">
-                                        <div className="flex justify-between items-center border-b border-gray-100">
-                                            <div className="flex-1">
-                                                <div className="text-base font-medium text-gray-900 mb-1">Импорт/экспорт
-                                                    настроек расширения
-                                                </div>
-                                                <div className="text-sm text-gray-500 mt-1">Сохраните или загрузите все
-                                                    настройки расширения
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={exportSettings}
-                                                    className="px-4 py-2 text-sm bg-cyan-600 text-white rounded hover:bg-cyan-700 transition-colors"
-                                                >
-                                                    Экспорт
-                                                </button>
-                                                <label
-                                                    className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors cursor-pointer">
-                                                    Импорт
-                                                    <input
-                                                        type="file"
-                                                        accept=".json"
-                                                        onChange={importSettings}
-                                                        className="hidden"
-                                                    />
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div
-                                            className="flex justify-between items-center border-b border-gray-100 last:border-b-0">
-                                            <div className="flex-1">
-                                                <div className="text-base font-medium text-gray-900 mb-1">Импорт/экспорт
-                                                    вкладок браузера
-                                                </div>
-                                                <div className="text-sm text-gray-500 mt-1">Сохраните или восстановите
-                                                    все вкладки в исходном порядке
-                                                </div>
-                                            </div>
-                                            <div className="flex gap-2">
-                                                <button
-                                                    onClick={exportTabs}
-                                                    className="px-4 py-2 text-sm bg-cyan-600 text-white rounded hover:bg-cyan-700 transition-colors"
-                                                >
-                                                    Экспорт
-                                                </button>
-                                                <label
-                                                    className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors cursor-pointer">
-                                                    Импорт
-                                                    <input
-                                                        type="file"
-                                                        accept=".json"
-                                                        onChange={importTabs}
-                                                        className="hidden"
-                                                    />
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
+        <div className="min-h-screen bg-gradient-to-br from-cyan-400 to-blue-600">
+            {/* User info bar */}
+            {currentUser && (
+                <div className="bg-white bg-opacity-95 px-8 py-3 shadow-md flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div
+                            className="w-10 h-10 bg-cyan-600 rounded-full flex items-center justify-center text-white font-bold">
+                            {currentUser.first_name[0]}
                         </div>
-                    )}
-
-                    {activeTab === 'genesys' && (
-                        <div className="animate-fadeIn">
-                            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Настройки генезиса</h2>
-
-                            <div className="flex gap-3 mb-6 border-b border-gray-200">
-                                <button
-                                    className={`px-4 py-2 text-sm font-medium transition-all ${
-                                        genesysSubTab === 'main'
-                                            ? 'text-cyan-600 border-b-2 border-cyan-600'
-                                            : 'text-gray-600 hover:text-cyan-600'
-                                    }`}
-                                    onClick={() => setGenesysSubTab('main')}
-                                >
-                                    Основное
-                                </button>
-                                <button
-                                    className={`px-4 py-2 text-sm font-medium transition-all ${
-                                        genesysSubTab === 'chats'
-                                            ? 'text-cyan-600 border-b-2 border-cyan-600'
-                                            : 'text-gray-600 hover:text-cyan-600'
-                                    }`}
-                                    onClick={() => setGenesysSubTab('chats')}
-                                >
-                                    Чаты
-                                </button>
+                        <div>
+                            <div className="font-medium text-gray-900">
+                                {currentUser.first_name} {currentUser.last_name || ''}
                             </div>
+                            <div className="text-xs text-gray-500">Настройки расширения</div>
+                        </div>
+                    </div>
+                    <button
+                        onClick={async () => {
+                            await logout();
+                            setIsAuthenticatedState(false);
+                            setCurrentUser(null);
+                        }}
+                        className="px-4 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors font-medium"
+                    >
+                        Выйти
+                    </button>
+                </div>
+            )}
+            <div className="p-8">
+                <div className="max-w-4xl mx-auto bg-white rounded-xl overflow-hidden shadow-2xl">
+                    <nav className="flex bg-gray-50 border-b border-gray-200 px-4">
+                        <TabButton tab="general" label="Общие"/>
+                        <TabButton tab="genesys" label="Генезис"/>
+                        <TabButton tab="features" label="АРМ"/>
+                        <TabButton tab="advanced" label="Линия"/>
+                    </nav>
 
-                            {genesysSubTab === 'main' && (
+                    <div className="p-8">
+                        {activeTab === 'general' && (
+
+                            <div className="animate-fadeIn">
+
                                 <div>
-                                    <div className="bg-gradient-to-r from-green-50 to-sky-50 rounded-lg p-4 mb-4">
-                                        <h3 className="text-lg font-bold text-black mb-3">Общий функционал</h3>
+                                    <div className="bg-gradient-to-r from-pink-50 to-indigo-50 rounded-lg p-4 mb-4">
+                                        <h3 className="text-lg font-bold text-black mb-3">Общие настройки</h3>
                                         <div className="space-y-3 ml-7">
-                                            <ToggleSwitch
-                                                label="Отображать статус линии"
-                                                checked={settings.genesys.main.showLineStatus}
-                                                onChange={() => handleToggle('genesys', 'showLineStatus', 'main')}
-                                                description="Добавляет статус линии в Генезис: кол-во слотов, статус аварийности"
-                                            />
-                                            <ToggleSwitch
-                                                label="Отображать сообщения дежурных"
-                                                checked={settings.genesys.main.showDutyMessages}
-                                                onChange={() => handleToggle('genesys', 'showDutyMessages', 'main')}
-                                                description="При появлении сообщения на линии оно будет отображено в Генезисе"
-                                            />
-                                            <ToggleSwitch
-                                                label="Скрывать бесполезные кнопки"
-                                                checked={settings.genesys.main.hideUselessButtons}
-                                                onChange={() => handleToggle('genesys', 'hideButtons', 'main')}
-                                                description="Помощь, Facebook Drafts & in Progress, Twitter Drafts & in Progress"
-                                            />
-
+                                            <div className="flex justify-between items-center border-b border-gray-100">
+                                                <div className="flex-1">
+                                                    <div
+                                                        className="text-base font-medium text-gray-900 mb-1">Импорт/экспорт
+                                                        настроек расширения
+                                                    </div>
+                                                    <div className="text-sm text-gray-500 mt-1">Сохраните или загрузите
+                                                        все
+                                                        настройки расширения
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={exportSettings}
+                                                        className="px-4 py-2 text-sm bg-cyan-600 text-white rounded hover:bg-cyan-700 transition-colors"
+                                                    >
+                                                        Экспорт
+                                                    </button>
+                                                    <label
+                                                        className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors cursor-pointer">
+                                                        Импорт
+                                                        <input
+                                                            type="file"
+                                                            accept=".json"
+                                                            onChange={importSettings}
+                                                            className="hidden"
+                                                        />
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            <div
+                                                className="flex justify-between items-center border-b border-gray-100 last:border-b-0">
+                                                <div className="flex-1">
+                                                    <div
+                                                        className="text-base font-medium text-gray-900 mb-1">Импорт/экспорт
+                                                        вкладок браузера
+                                                    </div>
+                                                    <div className="text-sm text-gray-500 mt-1">Сохраните или
+                                                        восстановите
+                                                        все вкладки в исходном порядке
+                                                    </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={exportTabs}
+                                                        className="px-4 py-2 text-sm bg-cyan-600 text-white rounded hover:bg-cyan-700 transition-colors"
+                                                    >
+                                                        Экспорт
+                                                    </button>
+                                                    <label
+                                                        className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 transition-colors cursor-pointer">
+                                                        Импорт
+                                                        <input
+                                                            type="file"
+                                                            accept=".json"
+                                                            onChange={importTabs}
+                                                            className="hidden"
+                                                        />
+                                                    </label>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            )}
 
-                            {genesysSubTab === 'chats' && (
-                                <div>
-                                    <div className="bg-gradient-to-r from-green-50 to-sky-50 rounded-lg p-4 mb-4">
-                                        <h3 className="text-lg font-bold text-blue-700 mb-3">🗂️ Вертикальные
-                                            вкладки</h3>
-                                        <div className="space-y-3 ml-7">
-                                            <ToggleSwitch
-                                                label="Добавлять Фломастер"
-                                                checked={settings.genesys.chats.addMarkerToVerticalMenu}
-                                                onChange={() => handleToggle('genesys', 'addFlomaster', 'chats')}
-                                                description="В вертикальное меню каждого чата добавляется кнопка Фломастер. Работает как Личные РМы"
-                                            />
-                                            <ToggleSwitch
-                                                label="Скрывать Ответы"
-                                                checked={settings.genesys.chats.addMarkerToVerticalMenu}
-                                                onChange={() => handleToggle('genesys', 'removeAnswers', 'chats')}
-                                                description="Скрывает во всех чатах вкладку Ответы "
-                                            />
-                                            <ToggleSwitch
-                                                label="Скрывать Личные РМы"
-                                                checked={settings.genesys.chats.addMarkerToVerticalMenu}
-                                                onChange={() => handleToggle('genesys', 'removeRMs', 'chats')}
-                                                description="Скрывает во всех чатах вкладку Личные РМы  "
-                                            />
-                                        </div>
-                                    </div>
+                            </div>
+                        )}
 
-                                    <div className="bg-gradient-to-r from-sky-50 to-red-50 rounded-lg p-4 mb-4">
-                                        <h3 className="text-lg font-bold text-cyan-700 mb-3">🎨 Цвета чата</h3>
-                                        <div className="space-y-3 ml-7">
-                                            <ToggleSwitch
-                                                label="Кастомные цвета"
-                                                checked={settings.genesys.chats.customChatColors}
-                                                onChange={() => handleToggle('genesys', 'customChatColors', 'chats')}
-                                                description="Функция активирует выбранные в пунктах ниже цвета. Для применения обнови страницу Генезиса"
-                                            />
-                                            <ColorPicker
-                                                label="Цвет имени оператора"
-                                                value={settings.genesys.chats.operatorNameColor}
-                                                onChange={(color) => handleColorChange('genesys', 'operatorNameColor', color, 'chats')}
-                                                description="Изменяет цвет имени оператора"
-                                                disabled={!settings.genesys.chats.customChatColors}
-                                            />
-                                            <ColorPicker
-                                                label="Цвет сообщения оператора"
-                                                value={settings.genesys.chats.operatorMessageColor}
-                                                onChange={(color) => handleColorChange('genesys', 'operatorMessageColor', color, 'chats')}
-                                                description="Изменяет цвет текста сообщения оператора"
-                                                disabled={!settings.genesys.chats.customChatColors}
-                                            />
-                                            <ColorPicker
-                                                label="Цвет имени клиента"
-                                                value={settings.genesys.chats.clientNameColor}
-                                                onChange={(color) => handleColorChange('genesys', 'clientNameColor', color, 'chats')}
-                                                description="Изменяет цвет имени клиента"
-                                                disabled={!settings.genesys.chats.customChatColors}
-                                            />
-                                            <ColorPicker
-                                                label="Цвет сообщения клиента"
-                                                value={settings.genesys.chats.clientMessageColor}
-                                                onChange={(color) => handleColorChange('genesys', 'clientMessageColor', color, 'chats')}
-                                                description="Изменяет цвет текста сообщения клиента"
-                                                disabled={!settings.genesys.chats.customChatColors}
-                                            />
-                                        </div>
-                                    </div>
+                        {activeTab === 'genesys' && (
+                            <div className="animate-fadeIn">
+                                <h2 className="text-2xl font-semibold text-gray-900 mb-6">Настройки генезиса</h2>
 
-                                    <div className="bg-gradient-to-r from-red-50 to-cyan-50 rounded-lg p-4 mb-4">
-                                        <h3 className="text-lg font-bold text-cyan-700 mb-3">🔊 Звуки чата</h3>
-                                        <div className="space-y-3 ml-7">
-                                            <ToggleSwitch
-                                                label="Кастомные звуки"
-                                                checked={settings.genesys.chats.customChatSounds}
-                                                onChange={() => handleToggle('genesys', 'customChatSounds', 'chats')}
-                                                description="Функция активирует выбранные ниже звуки чата"
-                                            />
-                                            <SoundPicker
-                                                label="Звук нового чата"
-                                                value={settings.genesys.chats.incomingChatSound}
-                                                onChange={(sound) => handleColorChange('genesys', 'incomingChatSound', sound, 'chats')}
-                                                description="Воспроизводится при получении нового чата"
-                                                disabled={!settings.genesys.chats.customChatSounds}
-                                            />
-                                            <SoundPicker
-                                                label="Звук нового сообщения"
-                                                value={settings.genesys.chats.incomingMessageSound}
-                                                onChange={(sound) => handleColorChange('genesys', 'incomingMessageSound', sound, 'chats')}
-                                                description="Воспроизводится при получении сообщения от клиента"
-                                                disabled={!settings.genesys.chats.customChatSounds}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-gradient-to-r from-cyan-50 to-orange-50 rounded-lg p-4 mb-4">
-                                        <h3 className="text-lg font-bold text-cyan-700 mb-3">🧨 Нестабильные
-                                            настройки</h3>
-                                        <div className="space-y-3 ml-7">
-                                            <ToggleSwitch
-                                                label="Сворачивание заголовок чата"
-                                                checked={settings.genesys.chats.CollapseChatHeader}
-                                                onChange={() => handleToggle('genesys', 'CollapseChatHeader', 'chats')}
-                                                description="Сворачивает заголовок нового чата автоматически"
-                                            />
-                                            <ToggleSwitch
-                                                label="Изменение размера окна чата"
-                                                checked={settings.genesys.chats.ChatSizeEdit}
-                                                onChange={() => handleToggle('genesys', 'ChatSizeEdit', 'chats')}
-                                                description="Разрешает изменение размера текстового поля в чате"
-                                            />
-                                            <ToggleSwitch
-                                                label="Загрузка картинок в чат из буфера обмена"
-                                                checked={settings.genesys.chats.allowPaste}
-                                                onChange={() => handleToggle('genesys', 'allowPaste', 'chats')}
-                                                description="Разрешает вставку изображений в чат через ПКМ-Вставить или ctrl+v"
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {activeTab === 'features' && (
-                        <div className="animate-fadeIn">
-                            <h2 className="text-2xl font-semibold text-gray-900 mb-6">АРМ</h2>
-
-                            <div className="mb-6">
-                                <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg p-4 mb-4">
-                                    <h3 className="text-lg font-bold text-cyan-700 mb-3 flex items-center gap-2">
-                                        <span className="text-xl">📋</span>
-                                        Копирование
-                                    </h3>
-                                    <div className="space-y-3 ml-7">
-                                        <ToggleSwitch
-                                            label="Копирование номера телефона"
-                                            checked={settings.features.armIntegration}
-                                            onChange={() => handleToggle('features', 'copyPhoneNumbber')}
-                                            description="Автоматическое копирование при клике на номер"
-                                        />
-                                        <ToggleSwitch
-                                            label="Копирование адреса"
-                                            checked={settings.features.genesysIntegration}
-                                            onChange={() => handleToggle('features', 'genesysIntegration')}
-                                            description="Быстрое копирование адреса клиента"
-                                        />
-                                    </div>
+                                <div className="flex gap-3 mb-6 border-b border-gray-200">
+                                    <button
+                                        className={`px-4 py-2 text-sm font-medium transition-all ${
+                                            genesysSubTab === 'main'
+                                                ? 'text-cyan-600 border-b-2 border-cyan-600'
+                                                : 'text-gray-600 hover:text-cyan-600'
+                                        }`}
+                                        onClick={() => setGenesysSubTab('main')}
+                                    >
+                                        Основное
+                                    </button>
+                                    <button
+                                        className={`px-4 py-2 text-sm font-medium transition-all ${
+                                            genesysSubTab === 'chats'
+                                                ? 'text-cyan-600 border-b-2 border-cyan-600'
+                                                : 'text-gray-600 hover:text-cyan-600'
+                                        }`}
+                                        onClick={() => setGenesysSubTab('chats')}
+                                    >
+                                        Чаты
+                                    </button>
                                 </div>
 
-                                <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-lg p-4 mb-4">
-                                    <h3 className="text-lg font-bold text-blue-700 mb-3 flex items-center gap-2">
-                                        <span className="text-xl">👁️</span>
-                                        Скрытие элементов
-                                    </h3>
-                                    <div className="space-y-3 ml-7">
-                                        <ToggleSwitch
-                                            label="Скрывать баннеры"
-                                            checked={settings.features.lineIntegration}
-                                            onChange={() => handleToggle('features', 'lineIntegration')}
-                                            description="Убрать рекламные баннеры из интерфейса"
-                                        />
-                                        <ToggleSwitch
-                                            label="Скрывать подсказки"
-                                            checked={settings.features.autoFillForms}
-                                            onChange={() => handleToggle('features', 'autoFillForms')}
-                                            description="Скрыть всплывающие подсказки"
-                                        />
-                                    </div>
-                                </div>
+                                {genesysSubTab === 'main' && (
+                                    <div>
+                                        <div className="bg-gradient-to-r from-green-50 to-sky-50 rounded-lg p-4 mb-4">
+                                            <h3 className="text-lg font-bold text-black mb-3">Общий функционал</h3>
+                                            <div className="space-y-3 ml-7">
+                                                <ToggleSwitch
+                                                    label="Отображать статус линии"
+                                                    checked={settings.genesys.main.showLineStatus}
+                                                    onChange={() => handleToggle('genesys', 'showLineStatus', 'main')}
+                                                    description="Добавляет статус линии в Генезис: кол-во слотов, статус аварийности"
+                                                />
+                                                <ToggleSwitch
+                                                    label="Отображать сообщения дежурных"
+                                                    checked={settings.genesys.main.showDutyMessages}
+                                                    onChange={() => handleToggle('genesys', 'showDutyMessages', 'main')}
+                                                    description="При появлении сообщения на линии оно будет отображено в Генезисе"
+                                                />
+                                                <ToggleSwitch
+                                                    label="Скрывать бесполезные кнопки"
+                                                    checked={settings.genesys.main.hideUselessButtons}
+                                                    onChange={() => handleToggle('genesys', 'hideButtons', 'main')}
+                                                    description="Помощь, Facebook Drafts & in Progress, Twitter Drafts & in Progress"
+                                                />
 
-                                <div className="bg-gradient-to-r from-sky-50 to-teal-50 rounded-lg p-4">
-                                    <h3 className="text-lg font-bold text-sky-700 mb-3 flex items-center gap-2">
-                                        <span className="text-xl">✨</span>
-                                        Подсветка
-                                    </h3>
-                                    <div className="space-y-3 ml-7">
-                                        <ToggleSwitch
-                                            label="Подсветка активных элементов"
-                                            checked={settings.features.armIntegration}
-                                            onChange={() => handleToggle('features', 'armIntegration')}
-                                            description="Визуальное выделение интерактивных элементов"
-                                        />
-                                        <ToggleSwitch
-                                            label="Подсветка ошибок"
-                                            checked={settings.features.genesysIntegration}
-                                            onChange={() => handleToggle('features', 'genesysIntegration')}
-                                            description="Цветовое выделение полей с ошибками"
-                                        />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {genesysSubTab === 'chats' && (
+                                    <div>
+                                        <div className="bg-gradient-to-r from-green-50 to-sky-50 rounded-lg p-4 mb-4">
+                                            <h3 className="text-lg font-bold text-blue-700 mb-3">🗂️ Вертикальные
+                                                вкладки</h3>
+                                            <div className="space-y-3 ml-7">
+                                                <ToggleSwitch
+                                                    label="Добавлять Фломастер"
+                                                    checked={settings.genesys.chats.addMarkerToVerticalMenu}
+                                                    onChange={() => handleToggle('genesys', 'addFlomaster', 'chats')}
+                                                    description="В вертикальное меню каждого чата добавляется кнопка Фломастер. Работает как Личные РМы"
+                                                />
+                                                <ToggleSwitch
+                                                    label="Скрывать Ответы"
+                                                    checked={settings.genesys.chats.addMarkerToVerticalMenu}
+                                                    onChange={() => handleToggle('genesys', 'removeAnswers', 'chats')}
+                                                    description="Скрывает во всех чатах вкладку Ответы "
+                                                />
+                                                <ToggleSwitch
+                                                    label="Скрывать Личные РМы"
+                                                    checked={settings.genesys.chats.addMarkerToVerticalMenu}
+                                                    onChange={() => handleToggle('genesys', 'removeRMs', 'chats')}
+                                                    description="Скрывает во всех чатах вкладку Личные РМы  "
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gradient-to-r from-sky-50 to-red-50 rounded-lg p-4 mb-4">
+                                            <h3 className="text-lg font-bold text-cyan-700 mb-3">🎨 Цвета чата</h3>
+                                            <div className="space-y-3 ml-7">
+                                                <ToggleSwitch
+                                                    label="Кастомные цвета"
+                                                    checked={settings.genesys.chats.customChatColors}
+                                                    onChange={() => handleToggle('genesys', 'customChatColors', 'chats')}
+                                                    description="Функция активирует выбранные в пунктах ниже цвета. Для применения обнови страницу Генезиса"
+                                                />
+                                                <ColorPicker
+                                                    label="Цвет имени оператора"
+                                                    value={settings.genesys.chats.operatorNameColor}
+                                                    onChange={(color) => handleColorChange('genesys', 'operatorNameColor', color, 'chats')}
+                                                    description="Изменяет цвет имени оператора"
+                                                    disabled={!settings.genesys.chats.customChatColors}
+                                                />
+                                                <ColorPicker
+                                                    label="Цвет сообщения оператора"
+                                                    value={settings.genesys.chats.operatorMessageColor}
+                                                    onChange={(color) => handleColorChange('genesys', 'operatorMessageColor', color, 'chats')}
+                                                    description="Изменяет цвет текста сообщения оператора"
+                                                    disabled={!settings.genesys.chats.customChatColors}
+                                                />
+                                                <ColorPicker
+                                                    label="Цвет имени клиента"
+                                                    value={settings.genesys.chats.clientNameColor}
+                                                    onChange={(color) => handleColorChange('genesys', 'clientNameColor', color, 'chats')}
+                                                    description="Изменяет цвет имени клиента"
+                                                    disabled={!settings.genesys.chats.customChatColors}
+                                                />
+                                                <ColorPicker
+                                                    label="Цвет сообщения клиента"
+                                                    value={settings.genesys.chats.clientMessageColor}
+                                                    onChange={(color) => handleColorChange('genesys', 'clientMessageColor', color, 'chats')}
+                                                    description="Изменяет цвет текста сообщения клиента"
+                                                    disabled={!settings.genesys.chats.customChatColors}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gradient-to-r from-red-50 to-cyan-50 rounded-lg p-4 mb-4">
+                                            <h3 className="text-lg font-bold text-cyan-700 mb-3">🔊 Звуки чата</h3>
+                                            <div className="space-y-3 ml-7">
+                                                <ToggleSwitch
+                                                    label="Кастомные звуки"
+                                                    checked={settings.genesys.chats.customChatSounds}
+                                                    onChange={() => handleToggle('genesys', 'customChatSounds', 'chats')}
+                                                    description="Функция активирует выбранные ниже звуки чата"
+                                                />
+                                                <SoundPicker
+                                                    label="Звук нового чата"
+                                                    value={settings.genesys.chats.incomingChatSound}
+                                                    onChange={(sound) => handleColorChange('genesys', 'incomingChatSound', sound, 'chats')}
+                                                    description="Воспроизводится при получении нового чата"
+                                                    disabled={!settings.genesys.chats.customChatSounds}
+                                                />
+                                                <SoundPicker
+                                                    label="Звук нового сообщения"
+                                                    value={settings.genesys.chats.incomingMessageSound}
+                                                    onChange={(sound) => handleColorChange('genesys', 'incomingMessageSound', sound, 'chats')}
+                                                    description="Воспроизводится при получении сообщения от клиента"
+                                                    disabled={!settings.genesys.chats.customChatSounds}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="bg-gradient-to-r from-cyan-50 to-orange-50 rounded-lg p-4 mb-4">
+                                            <h3 className="text-lg font-bold text-cyan-700 mb-3">🧨 Нестабильные
+                                                настройки</h3>
+                                            <div className="space-y-3 ml-7">
+                                                <ToggleSwitch
+                                                    label="Сворачивание заголовок чата"
+                                                    checked={settings.genesys.chats.CollapseChatHeader}
+                                                    onChange={() => handleToggle('genesys', 'CollapseChatHeader', 'chats')}
+                                                    description="Сворачивает заголовок нового чата автоматически"
+                                                />
+                                                <ToggleSwitch
+                                                    label="Изменение размера окна чата"
+                                                    checked={settings.genesys.chats.ChatSizeEdit}
+                                                    onChange={() => handleToggle('genesys', 'ChatSizeEdit', 'chats')}
+                                                    description="Разрешает изменение размера текстового поля в чате"
+                                                />
+                                                <ToggleSwitch
+                                                    label="Загрузка картинок в чат из буфера обмена"
+                                                    checked={settings.genesys.chats.allowPaste}
+                                                    onChange={() => handleToggle('genesys', 'allowPaste', 'chats')}
+                                                    description="Разрешает вставку изображений в чат через ПКМ-Вставить или ctrl+v"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab === 'features' && (
+                            <div className="animate-fadeIn">
+                                <h2 className="text-2xl font-semibold text-gray-900 mb-6">АРМ</h2>
+
+                                <div className="mb-6">
+                                    <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-lg p-4 mb-4">
+                                        <h3 className="text-lg font-bold text-cyan-700 mb-3 flex items-center gap-2">
+                                            <span className="text-xl">📋</span>
+                                            Копирование
+                                        </h3>
+                                        <div className="space-y-3 ml-7">
+                                            <ToggleSwitch
+                                                label="Копирование номера телефона"
+                                                checked={settings.features.armIntegration}
+                                                onChange={() => handleToggle('features', 'copyPhoneNumbber')}
+                                                description="Автоматическое копирование при клике на номер"
+                                            />
+                                            <ToggleSwitch
+                                                label="Копирование адреса"
+                                                checked={settings.features.genesysIntegration}
+                                                onChange={() => handleToggle('features', 'genesysIntegration')}
+                                                description="Быстрое копирование адреса клиента"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-lg p-4 mb-4">
+                                        <h3 className="text-lg font-bold text-blue-700 mb-3 flex items-center gap-2">
+                                            <span className="text-xl">👁️</span>
+                                            Скрытие элементов
+                                        </h3>
+                                        <div className="space-y-3 ml-7">
+                                            <ToggleSwitch
+                                                label="Скрывать баннеры"
+                                                checked={settings.features.lineIntegration}
+                                                onChange={() => handleToggle('features', 'lineIntegration')}
+                                                description="Убрать рекламные баннеры из интерфейса"
+                                            />
+                                            <ToggleSwitch
+                                                label="Скрывать подсказки"
+                                                checked={settings.features.autoFillForms}
+                                                onChange={() => handleToggle('features', 'autoFillForms')}
+                                                description="Скрыть всплывающие подсказки"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="bg-gradient-to-r from-sky-50 to-teal-50 rounded-lg p-4">
+                                        <h3 className="text-lg font-bold text-sky-700 mb-3 flex items-center gap-2">
+                                            <span className="text-xl">✨</span>
+                                            Подсветка
+                                        </h3>
+                                        <div className="space-y-3 ml-7">
+                                            <ToggleSwitch
+                                                label="Подсветка активных элементов"
+                                                checked={settings.features.armIntegration}
+                                                onChange={() => handleToggle('features', 'armIntegration')}
+                                                description="Визуальное выделение интерактивных элементов"
+                                            />
+                                            <ToggleSwitch
+                                                label="Подсветка ошибок"
+                                                checked={settings.features.genesysIntegration}
+                                                onChange={() => handleToggle('features', 'genesysIntegration')}
+                                                description="Цветовое выделение полей с ошибками"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
+                        )}
 
-                    {activeTab === 'advanced' && (
-                        <div className="animate-fadeIn">
-                            <h2 className="text-2xl font-semibold text-gray-900 mb-6">Линия</h2>
-                            <ToggleSwitch
-                                label="Режим отладки"
-                                checked={settings.advanced.debugMode}
-                                onChange={() => handleToggle('advanced', 'debugMode')}
-                                description="Включить подробное логирование для разработчиков"
-                            />
-                            <ToggleSwitch
-                                label="Кэширование"
-                                checked={settings.advanced.cacheEnabled}
-                                onChange={() => handleToggle('advanced', 'cacheEnabled')}
-                                description="Использовать кэш для ускорения работы"
-                            />
-                            <ToggleSwitch
-                                label="Телеметрия"
-                                checked={settings.advanced.telemetry}
-                                onChange={() => handleToggle('advanced', 'telemetry')}
-                                description="Отправлять анонимные данные об использовании для улучшения расширения"
-                            />
-                        </div>
-                    )}
+                        {activeTab === 'advanced' && (
+                            <div className="animate-fadeIn">
+                                <h2 className="text-2xl font-semibold text-gray-900 mb-6">Линия</h2>
+                                <ToggleSwitch
+                                    label="Режим отладки"
+                                    checked={settings.advanced.debugMode}
+                                    onChange={() => handleToggle('advanced', 'debugMode')}
+                                    description="Включить подробное логирование для разработчиков"
+                                />
+                                <ToggleSwitch
+                                    label="Кэширование"
+                                    checked={settings.advanced.cacheEnabled}
+                                    onChange={() => handleToggle('advanced', 'cacheEnabled')}
+                                    description="Использовать кэш для ускорения работы"
+                                />
+                                <ToggleSwitch
+                                    label="Телеметрия"
+                                    checked={settings.advanced.telemetry}
+                                    onChange={() => handleToggle('advanced', 'telemetry')}
+                                    description="Отправлять анонимные данные об использовании для улучшения расширения"
+                                />
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
