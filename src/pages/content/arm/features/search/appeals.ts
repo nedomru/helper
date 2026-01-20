@@ -123,10 +123,31 @@ export async function searchOpenedAppeals(): Promise<void> {
         agrId: document.querySelector("#agreement_id")?.getAttribute("value"),
     });
 
-    const createLoadingBlock = (message: string): HTMLElement => {
+    const createLoadingBlock = (message: string, withRefresh = false): HTMLElement => {
         const block = document.createElement("div");
-        block.className = "bl_antic";
-        block.innerHTML = `<div class="bl_antic_head_n">${message}</div>`;
+        block.className = "bl_antic appeals-check-block";
+
+        const headerDiv = document.createElement("div");
+        headerDiv.className = "bl_antic_head_n";
+        headerDiv.textContent = message;
+
+        if (withRefresh) {
+            const refreshBtn = document.createElement("span");
+            Object.assign(refreshBtn, {
+                textContent: "↻",
+                style: "cursor: pointer; margin-left: 5px",
+                title: "Проверить снова",
+            });
+            refreshBtn.onclick = async () => {
+                container.removeAttribute("appeals-checked");
+                const existingAppealsBlock = container.querySelector(".appeals-check-block");
+                existingAppealsBlock?.remove();
+                await displayAppeals();
+            };
+            headerDiv.appendChild(refreshBtn);
+        }
+
+        block.appendChild(headerDiv);
         return block;
     };
 
@@ -192,14 +213,30 @@ export async function searchOpenedAppeals(): Promise<void> {
 
     const createAppealsTable = (rows: NodeListOf<Element>): HTMLElement => {
         const wrapper = document.createElement("div");
-        wrapper.className = "bl_antic";
+        wrapper.className = "bl_antic appeals-check-block";
 
         const toggleHeader = document.createElement("div");
-        Object.assign(toggleHeader, {
-            className: "bl_antic_head_r",
-            textContent: `Открытые обращения (${rows.length})`,
-            style: "cursor: pointer;",
+        toggleHeader.className = "bl_antic_head_r";
+        toggleHeader.style.cursor = "pointer";
+
+        const countSpan = document.createElement("span");
+        countSpan.textContent = `Открытые обращения (${rows.length})`;
+        toggleHeader.appendChild(countSpan);
+
+        const refreshBtn = document.createElement("span");
+        Object.assign(refreshBtn, {
+            textContent: " ↻",
+            style: "cursor: pointer; margin-left: 10px; font-size: 1.2em;",
+            title: "Проверить снова",
         });
+        refreshBtn.onclick = async (e) => {
+            e.stopPropagation();
+            container.removeAttribute("appeals-checked");
+            const existingAppealsBlock = container.querySelector(".appeals-check-block");
+            existingAppealsBlock?.remove();
+            await displayAppeals();
+        };
+        toggleHeader.appendChild(refreshBtn);
 
         const collapsible = document.createElement("div");
         collapsible.style.display = "none";
@@ -271,7 +308,7 @@ export async function searchOpenedAppeals(): Promise<void> {
             loading.remove();
 
             if (!appeals || appeals.length === 0) {
-                const noAppeals = createLoadingBlock("Нет открытых обращений");
+                const noAppeals = createLoadingBlock("Нет открытых обращений", true);
                 noAppeals.querySelector("div")!.className = "bl_antic_head_g";
                 container.insertBefore(noAppeals, container.firstChild);
             } else {
@@ -282,14 +319,15 @@ export async function searchOpenedAppeals(): Promise<void> {
             console.info(`[Хелпер] - [АРМ] - [Открытые обращения] Найдено: ${appeals?.length || 0}`);
         } catch (error) {
             loading.remove();
-            const errorBlock = createLoadingBlock("Ошибка при загрузке обращений");
+            const errorBlock = createLoadingBlock("Ошибка при загрузке обращений", true);
             errorBlock.querySelector("div")!.className = "bl_antic_head_r";
             container.insertBefore(errorBlock, container.firstChild);
+
             console.error("[Хелпер] - [АРМ] - [Открытые обращения] Ошибка:", error);
         }
     };
 
-    if (container.offsetParent !== null) displayAppeals();
+    if (container.offsetParent !== null) await displayAppeals();
 
     new MutationObserver(() => {
         if (container.offsetParent !== null && !container.getAttribute("appeals-checked")) {
