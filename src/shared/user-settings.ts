@@ -225,3 +225,68 @@ export function getModuleSettings(
 
     return null;
 }
+
+/**
+ * Types for quick appeals presets and categories
+ */
+export interface QuickAppealsPreset {
+    id: string;
+    name: string;
+    product: number;
+    processing: string;
+    processingLabel: string;
+    category: string;
+    categoryLabel: string;
+    subcategory?: string;
+    subcategoryLabel?: string;
+    categoryId?: string | null;
+}
+
+export interface QuickAppealsPresetCategory {
+    id: string;
+    name: string;
+}
+
+/**
+ * Gets quick appeals presets from user settings
+ * @returns Array of presets or empty array
+ */
+export async function getQuickAppealsPresets(): Promise<QuickAppealsPreset[]> {
+    const settings = await getUserSettings();
+    if (!settings) {
+        return [];
+    }
+    const presets = settings.quickAppealsPresets as QuickAppealsPreset[] | undefined;
+    return Array.isArray(presets) ? presets : [];
+}
+
+/**
+ * Saves quick appeals presets to user settings
+ * @param presets - Array of presets to save
+ * @returns true if successful, false otherwise
+ */
+export async function saveQuickAppealsPresets(presets: QuickAppealsPreset[]): Promise<boolean> {
+    return updateUserSettings({quickAppealsPresets: presets});
+}
+
+/**
+ * Gets quick appeals preset categories from user settings
+ * @returns Array of categories or default categories
+ */
+export async function getQuickAppealsPresetCategories(): Promise<QuickAppealsPresetCategory[]> {
+    const settings = await getUserSettings();
+    if (!settings) {
+        return [];
+    }
+    const categories = settings.quickAppealsPresetCategories as QuickAppealsPresetCategory[] | undefined;
+    return Array.isArray(categories) ? categories : [];
+}
+
+/**
+ * Saves quick appeals preset categories to user settings
+ * @param categories - Array of categories to save
+ * @returns true if successful, false otherwise
+ */
+export async function saveQuickAppealsPresetCategories(categories: QuickAppealsPresetCategory[]): Promise<boolean> {
+    return updateUserSettings({quickAppealsPresetCategories: categories});
+}

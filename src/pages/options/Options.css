@@ -836,3 +836,55 @@ input:focus-visible + .slider {
         align-self: flex-end;
     }
 }
+
+/* Status Indicator */
+.status-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 50%;
+    font-weight: 600;
+    font-size: 0.875rem;
+    flex-shrink: 0;
+}
+
+.status-indicator.success {
+    background-color: var(--positive-light, rgba(34, 197, 94, 0.15));
+    color: var(--positive, #22c55e);
+}
+
+.status-indicator.error {
+    background-color: var(--destructive-light, rgba(239, 68, 68, 0.15));
+    color: var(--destructive, #ef4444);
+}
+
+/* Primary Button */
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background-color: #0e7490;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(8, 145, 178, 0.3);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-primary:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-primary:disabled:hover {
+    background-color: var(--primary);
+    transform: none;
+    box-shadow: none;
+}

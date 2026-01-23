@@ -1,6 +1,16 @@
 import React, {useCallback, useEffect, useState} from 'react';
 import {getAuthState, isAuthenticated, logout} from '@src/utils/auth';
-import {getModuleSettings, getUserSettings, updateUserSettings} from '@src/shared/user-settings';
+import {
+    getModuleSettings,
+    getQuickAppealsPresetCategories,
+    getQuickAppealsPresets,
+    getUserSettings,
+    type QuickAppealsPreset,
+    type QuickAppealsPresetCategory,
+    saveQuickAppealsPresetCategories,
+    saveQuickAppealsPresets,
+    updateUserSettings
+} from '@src/shared/user-settings';
 import {notify} from '@src/utils/notify';
 import Auth from '@src/components/Auth';
 import type {TelegramUser} from '@src/shared/types/auth';
@@ -33,6 +43,555 @@ export default function Options() {
         hasUpdate: null,
         latestVersion: null,
     });
+    const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+    const [appealsCategories, setAppealsCategories] = useState<Array<{
+        value: string;
+        label: string;
+        title: string
+    }>>([]);
+    const [quickAppealsPresets, setQuickAppealsPresets] = useState<QuickAppealsPreset[]>([]);
+
+    // Wizard state
+    const [wizardOpen, setWizardOpen] = useState(false);
+    const [wizardStep, setWizardStep] = useState<'product' | 'processing' | 'category' | 'subcategory' | 'name'>('product');
+    const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
+    const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
+    const [selectedProcessing, setSelectedProcessing] = useState<{ value: string; label: string } | null>(null);
+    const [selectedCategory, setSelectedCategory] = useState<{ value: string; label: string } | null>(null);
+    const [selectedSubcategory, setSelectedSubcategory] = useState<{ value: string; label: string } | null>(null);
+    const [subcategories, setSubcategories] = useState<Array<{ value: string; label: string }>>([]);
+    const [isLoadingSubcategories, setIsLoadingSubcategories] = useState(false);
+    const [presetName, setPresetName] = useState('');
+
+    // Category management state
+    const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+    const [editingCategoryName, setEditingCategoryName] = useState('');
+
+    // Preset categories and search
+    const [presetCategories, setPresetCategories] = useState<QuickAppealsPresetCategory[]>([]);
+    const [selectedPresetCategory, setSelectedPresetCategory] = useState<string | null>(null);
+    const [newCategoryName, setNewCategoryName] = useState('');
+    const [processingSearchQuery, setProcessingSearchQuery] = useState('');
+    const [categorySearchQuery, setCategorySearchQuery] = useState('');
+    const [subcategorySearchQuery, setSubcategorySearchQuery] = useState('');
+    const [presetSearchQuery, setPresetSearchQuery] = useState('');
+
+    // Products available
+    const products = [
+        {id: 70, name: 'Интернет'},
+        {id: 101, name: 'Цифровое TV'},
+        {id: 71, name: 'Кабельное TV'},
+        {id: 1451, name: 'Домофония'},
+        {id: 72, name: 'Телефония'},
+    ];
+
+    // Processing groups (Обработка)
+    const processingGroups = [
+        {value: '378', label: 'Группа обработки договоров'},
+        {value: '380', label: 'Клиентская группа'},
+        {value: '2286', label: 'НПК - Входящая связь'},
+        {value: '2268', label: 'НТП первая линия - Входящая связь'},
+        {value: '2277', label: 'НТП первая линия - Исходящая связь'},
+        {value: '1195', label: 'Направление сохранения Клиентов - Входящая связь'},
+        {value: '1521', label: 'Направление сохранения Клиентов - Исходящая связь'},
+        {value: '616', label: 'ОКЦ - Исходящая связь'},
+        {value: '1005', label: 'ОЦТП - Входящая связь'},
+        {value: '1520', label: 'ОЦТП - Исходящая связь'},
+        {value: '2296', label: 'Онлайн - Входящая связь'},
+        {value: '2322', label: 'Онлайн - Исходящая связь'},
+        {value: '1031', label: 'Отдел согласования'},
+        {value: '2270', label: 'Передано ТТК (БП FVNO)'},
+        {value: '2330', label: 'Поставщик агентского IPTV'},
+        {value: '382', label: 'Служба по подключениям'},
+        {value: '383', label: 'Служба эксплуатации сети'},
+        {value: '2086', label: 'ТП MnA - Входящая связь'},
+        {value: '2087', label: 'ТП MnA - Исходящая связь'},
+        {value: '-1', label: 'Не требует дальнейшей обработки'},
+    ];
+
+    // Load presets from backend on mount
+    useEffect(() => {
+        const loadPresets = async () => {
+            const presets = await getQuickAppealsPresets();
+            setQuickAppealsPresets(presets);
+        };
+        loadPresets();
+    }, []);
+
+    // Load preset categories from backend on mount
+    useEffect(() => {
+        const loadCategories = async () => {
+            const categories = await getQuickAppealsPresetCategories();
+            if (categories.length > 0) {
+                setPresetCategories(categories);
+            } else {
+                // Initialize with default categories matching products
+                const defaultCategories = [
+                    {id: 'internet-70', name: 'Интернет'},
+                    {id: 'tv-101', name: 'Цифровое TV'},
+                ];
+                setPresetCategories(defaultCategories);
+                await saveQuickAppealsPresetCategories(defaultCategories);
+            }
+        };
+        loadCategories();
+    }, []);
+
+    // Function to load categories based on product ID and processing group
+    const loadCategories = async (productId: number, processingGroupId: string) => {
+        setIsLoadingCategories(true);
+        setAppealsCategories([]);
+        try {
+            // Get cookies
+            const cookieUrl = 'https://perm.db.ertelecom.ru/cgi-bin/ppo/excells';
+            const cookieResponse = await new Promise<{
+                ok: boolean;
+                data?: Record<string, string | null>;
+                err?: string;
+            }>((resolve) => {
+                chrome.runtime.sendMessage(
+                    {
+                        action: 'getMultipleCookies',
+                        url: cookieUrl,
+                        names: ['wccUsrName', 'wccSsnName'],
+                    },
+                    (response) => resolve(response as {
+                        ok: boolean;
+                        data?: Record<string, string | null>;
+                        err?: string
+                    })
+                );
+            });
+
+            if (!cookieResponse.ok || !cookieResponse.data?.wccUsrName || !cookieResponse.data?.wccSsnName) {
+                throw new Error('Not authorized');
+            }
+
+            const {wccUsrName, wccSsnName} = cookieResponse.data;
+
+            console.log('[Хелпер] - [Быстрые обращения] - Загрузка категорий:', {
+                product: productId,
+                processingGroup: processingGroupId,
+                ssn: wccSsnName,
+                usr: wccUsrName,
+            });
+
+            // Load categories with step_id=processing group and prod_id=selected product
+            // Note: Need to use literal $ in parameter names, not URL-encoded %24
+            const agrId = productId === 69 ? 0 : 2453379;
+            const formData = `ssn$c=${encodeURIComponent(wccSsnName)}&usr$i=${encodeURIComponent(wccUsrName)}&prod_id$i=${productId}&step_id$i=${processingGroupId}&agr_id$i=${agrId}`;
+
+            console.log('[Хелпер] - [Быстрые обращения] - Request data:', formData);
+
+            const response = await fetch(
+                'https://perm.db.ertelecom.ru/cgi-bin/ppo/excells/wcc_unified_classifier_reasons.ajax_get_uni_obj_reasons',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: formData,
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to load categories');
+            }
+
+            // Decode Windows-1251
+            const buffer = await response.arrayBuffer();
+            const decoder = new TextDecoder('windows-1251');
+            const htmlText = decoder.decode(buffer);
+
+            console.log('[Хелпер] - [Быстрые обращения] - Response HTML (first 200 chars):', htmlText.substring(0, 200));
+
+            // Parse HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            const selectElement = doc.querySelector('.uni_load_obj_reason');
+
+            if (!selectElement) {
+                throw new Error('Invalid response format: select element not found');
+            }
+
+            const options = selectElement.querySelectorAll('option');
+            const cats: Array<{ value: string; label: string; title: string }> = [];
+
+            options.forEach((option) => {
+                const value = option.getAttribute('value');
+                const label = option.textContent?.trim() || '';
+                const title = option.getAttribute('title') || '';
+
+                if (value && value !== '-1' && label) {
+                    cats.push({value, label, title});
+                }
+            });
+
+            console.log('[Хелпер] - [Быстрые обращения] - Загружено категорий:', cats);
+
+            setAppealsCategories(cats);
+        } catch (error) {
+            console.error('[Хелпер] - [Быстрые обращения] - Ошибка при загрузке категорий:', error);
+            notify('Быстрые обращения', 'Не удалось загрузить категории', 'error');
+        } finally {
+            setIsLoadingCategories(false);
+        }
+    };
+
+    // Function to load subcategories based on selected category
+    const loadSubcategories = async (categoryId: string) => {
+        if (selectedProduct === null || !selectedProcessing) return;
+
+        setIsLoadingSubcategories(true);
+        try {
+            // Get cookies
+            const cookieUrl = 'https://perm.db.ertelecom.ru/cgi-bin/ppo/excells';
+            const cookieResponse = await new Promise<{
+                ok: boolean;
+                data?: Record<string, string | null>;
+                err?: string;
+            }>((resolve) => {
+                chrome.runtime.sendMessage(
+                    {
+                        action: 'getMultipleCookies',
+                        url: cookieUrl,
+                        names: ['wccUsrName', 'wccSsnName'],
+                    },
+                    (response) => resolve(response as {
+                        ok: boolean;
+                        data?: Record<string, string | null>;
+                        err?: string
+                    })
+                );
+            });
+
+            if (!cookieResponse.ok || !cookieResponse.data?.wccUsrName || !cookieResponse.data?.wccSsnName) {
+                throw new Error('Not authorized');
+            }
+
+            const {wccUsrName, wccSsnName} = cookieResponse.data;
+
+            console.log('[Хелпер] - [Быстрые обращения] - Загрузка подкатегорий:', {
+                product: selectedProduct,
+                processingGroup: selectedProcessing.value,
+                category: categoryId,
+                ssn: wccSsnName,
+                usr: wccUsrName,
+            });
+
+            // Load subcategories with step_id=processing group AND object_id=category
+            // Note: Use different endpoint: .ajax_get_uni_main_reasons
+            // Note: Need to use literal $ in parameter names, not URL-encoded %24
+            const agrId = selectedProduct === 69 ? 0 : 2453379;
+            const formData = `ssn$c=${encodeURIComponent(wccSsnName)}&usr$i=${encodeURIComponent(wccUsrName)}&prod_id$i=${selectedProduct}&step_id$i=${selectedProcessing.value}&object_id$i=${categoryId}&agr_id$i=${agrId}`;
+
+            console.log('[Хелпер] - [Быстрые обращения] - Request data:', formData);
+
+            const response = await fetch(
+                'https://perm.db.ertelecom.ru/cgi-bin/ppo/excells/wcc_unified_classifier_reasons.ajax_get_uni_main_reasons',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: formData,
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to load subcategories');
+            }
+
+            // Decode Windows-1251
+            const buffer = await response.arrayBuffer();
+            const decoder = new TextDecoder('windows-1251');
+            const htmlText = decoder.decode(buffer);
+
+            console.log('[Хелпер] - [Быстрые обращения] - Response HTML (first 200 chars):', htmlText.substring(0, 200));
+
+            // Parse HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            const selectElement = doc.querySelector('.uni_load_main_reason');
+
+            if (!selectElement) {
+                // No more subcategories, this is the final selection
+                setSubcategories([]);
+                return;
+            }
+
+            const options = selectElement.querySelectorAll('option');
+            const subs: Array<{ value: string; label: string }> = [];
+
+            options.forEach((option) => {
+                const value = option.getAttribute('value');
+                const label = option.textContent?.trim() || '';
+
+                if (value && value !== '-1' && label) {
+                    subs.push({value, label});
+                }
+            });
+
+            console.log('[Хелпер] - [Быстрые обращения] - Загружено подкатегорий:', subs);
+
+            setSubcategories(subs);
+        } catch (error) {
+            console.error('[Хелпер] - [Быстрые обращения] - Ошибка при загрузке подкатегорий:', error);
+            notify('Быстрые обращения', 'Не удалось загрузить подкатегории', 'error');
+        } finally {
+            setIsLoadingSubcategories(false);
+        }
+    };
+
+    // Function to start creating a new preset
+    const startWizard = () => {
+        setEditingPresetId(null);
+        setWizardStep('product');
+        setSelectedProduct(null);
+        setSelectedProcessing(null);
+        setSelectedCategory(null);
+        setSelectedSubcategory(null);
+        setSubcategories([]);
+        setAppealsCategories([]);
+        setPresetName('');
+        setSelectedPresetCategory(null);
+        setNewCategoryName('');
+        setProcessingSearchQuery('');
+        setCategorySearchQuery('');
+        setSubcategorySearchQuery('');
+        setWizardOpen(true);
+    };
+
+    // Function to edit an existing preset
+    const editPreset = async (presetId: string) => {
+        const preset = quickAppealsPresets.find(p => p.id === presetId);
+        if (!preset) return;
+
+        setEditingPresetId(presetId);
+        setPresetName(preset.name);
+        setSelectedPresetCategory(preset.categoryId || null);
+        setSelectedProduct(preset.product);
+        setSelectedProcessing({value: preset.processing, label: preset.processingLabel});
+        setSelectedCategory({value: preset.category, label: preset.categoryLabel});
+        if (preset.subcategory && preset.subcategoryLabel) {
+            setSelectedSubcategory({value: preset.subcategory, label: preset.subcategoryLabel});
+        } else {
+            setSelectedSubcategory(null);
+        }
+
+        // Load categories and subcategories based on preset data
+        await loadCategories(preset.product, preset.processing);
+        if (preset.subcategory) {
+            await loadSubcategories(preset.category);
+        }
+
+        setWizardStep('name');
+        setWizardOpen(true);
+    };
+
+    // Function to select product
+    const selectProduct = (productId: number) => {
+        setSelectedProduct(productId);
+        setWizardStep('processing');
+    };
+
+    // Function to select processing group and load categories
+    const selectProcessing = async (processing: { value: string; label: string }) => {
+        setSelectedProcessing(processing);
+        if (selectedProduct === null) return;
+        await loadCategories(selectedProduct, processing.value);
+        setWizardStep('category');
+    };
+
+    // Function to select category
+    const selectCategory = async (category: { value: string; label: string }) => {
+        setSelectedCategory(category);
+        // Load subcategories for this category
+        await loadSubcategories(category.value);
+        // Move to next step after loading
+        setWizardStep('subcategory');
+    };
+
+    // Function to select subcategory
+    const selectSubcategory = (subcategory: { value: string; label: string }) => {
+        setSelectedSubcategory(subcategory);
+        setWizardStep('name');
+    };
+
+    // Function to skip subcategory (if no subcategories available)
+    const skipSubcategory = () => {
+        setSelectedSubcategory(null);
+        setWizardStep('name');
+    };
+
+    // Function to save the preset
+    const savePreset = async () => {
+        if (selectedProduct === null || !selectedProcessing || !selectedCategory || !presetName.trim()) {
+            notify('Быстрые обращения', 'Заполните все поля', 'error');
+            return;
+        }
+
+        const categoryId = selectedPresetCategory || null;
+
+        if (editingPresetId) {
+            // Update existing preset
+            const updatedPresets = quickAppealsPresets.map(preset => {
+                if (preset.id === editingPresetId) {
+                    return {
+                        ...preset,
+                        name: presetName.trim(),
+                        product: selectedProduct,
+                        processing: selectedProcessing.value,
+                        processingLabel: selectedProcessing.label,
+                        category: selectedCategory.value,
+                        categoryLabel: selectedCategory.label,
+                        subcategory: selectedSubcategory?.value,
+                        subcategoryLabel: selectedSubcategory?.label,
+                        categoryId: categoryId,
+                    };
+                }
+                return preset;
+            });
+            setQuickAppealsPresets(updatedPresets);
+
+            const success = await saveQuickAppealsPresets(updatedPresets);
+            if (success) {
+                notify('Быстрые обращения', `Пресет "${presetName}" обновлён!`, 'success');
+                setWizardOpen(false);
+                setEditingPresetId(null);
+            } else {
+                notify('Быстрые обращения', 'Не удалось сохранить пресет', 'error');
+            }
+        } else {
+            // Create new preset
+            const newPreset = {
+                id: Date.now().toString(),
+                name: presetName.trim(),
+                product: selectedProduct,
+                processing: selectedProcessing.value,
+                processingLabel: selectedProcessing.label,
+                category: selectedCategory.value,
+                categoryLabel: selectedCategory.label,
+                subcategory: selectedSubcategory?.value,
+                subcategoryLabel: selectedSubcategory?.label,
+                categoryId: categoryId,
+            };
+
+            const updatedPresets = [...quickAppealsPresets, newPreset];
+            setQuickAppealsPresets(updatedPresets);
+
+            const success = await saveQuickAppealsPresets(updatedPresets);
+            if (success) {
+                notify('Быстрые обращения', `Пресет "${presetName}" сохранён!`, 'success');
+                setWizardOpen(false);
+            } else {
+                notify('Быстрые обращения', 'Не удалось сохранить пресет', 'error');
+            }
+        }
+    };
+
+    // Function to create a new category
+    const createNewCategory = async () => {
+        if (!newCategoryName.trim()) {
+            notify('Категории', 'Введите название категории', 'error');
+            return;
+        }
+
+        const newCategory = {
+            id: Date.now().toString(),
+            name: newCategoryName.trim(),
+        };
+
+        const updatedCategories = [...presetCategories, newCategory];
+        setPresetCategories(updatedCategories);
+        setSelectedPresetCategory(newCategory.id);
+        setNewCategoryName('');
+
+        const success = await saveQuickAppealsPresetCategories(updatedCategories);
+        if (success) {
+            notify('Категории', `Категория "${newCategory.name}" создана!`, 'success');
+        } else {
+            notify('Категории', 'Не удалось создать категорию', 'error');
+        }
+    };
+
+    // Function to delete a category
+    const deleteCategory = async (categoryId: string) => {
+        const updatedCategories = presetCategories.filter(cat => cat.id !== categoryId);
+        setPresetCategories(updatedCategories);
+
+        // Also update presets that belong to this category to remove category reference
+        const updatedPresets = quickAppealsPresets.map(preset => {
+            if (preset.categoryId === categoryId) {
+                return {...preset, categoryId: null};
+            }
+            return preset;
+        });
+        setQuickAppealsPresets(updatedPresets);
+
+        const success1 = await saveQuickAppealsPresetCategories(updatedCategories);
+        const success2 = await saveQuickAppealsPresets(updatedPresets);
+        if (success1 && success2) {
+            notify('Категории', 'Категория удалена', 'success');
+        } else {
+            notify('Категории', 'Не удалось удалить категорию', 'error');
+        }
+    };
+
+    // Function to start editing a category
+    const startEditCategory = (categoryId: string) => {
+        const category = presetCategories.find(cat => cat.id === categoryId);
+        if (category) {
+            setEditingCategoryId(categoryId);
+            setEditingCategoryName(category.name);
+        }
+    };
+
+    // Function to save edited category
+    const saveEditCategory = async () => {
+        if (!editingCategoryId || !editingCategoryName.trim()) {
+            notify('Категории', 'Введите название категории', 'error');
+            return;
+        }
+
+        const updatedCategories = presetCategories.map(cat => {
+            if (cat.id === editingCategoryId) {
+                return {...cat, name: editingCategoryName.trim()};
+            }
+            return cat;
+        });
+        setPresetCategories(updatedCategories);
+        setEditingCategoryId(null);
+        setEditingCategoryName('');
+
+        const success = await saveQuickAppealsPresetCategories(updatedCategories);
+        if (success) {
+            notify('Категории', 'Категория обновлена', 'success');
+        } else {
+            notify('Категории', 'Не удалось обновить категорию', 'error');
+        }
+    };
+
+    // Function to cancel editing category
+    const cancelEditCategory = () => {
+        setEditingCategoryId(null);
+        setEditingCategoryName('');
+    };
+
+    // Function to remove a preset
+    const removePreset = async (presetId: string) => {
+        const updatedPresets = quickAppealsPresets.filter(preset => preset.id !== presetId);
+        setQuickAppealsPresets(updatedPresets);
+
+        const success = await saveQuickAppealsPresets(updatedPresets);
+        if (success) {
+            notify('Быстрые обращения', 'Пресет удалён', 'success');
+        } else {
+            notify('Быстрые обращения', 'Не удалось удалить пресет', 'error');
+        }
+    };
 
     // Single effect to handle auth check and settings loading
     useEffect(() => {
@@ -250,7 +809,7 @@ export default function Options() {
 
                     notify('Обновление', `Начата загрузка версии ${latestVersion}`, 'success');
                 } else if (!hasUpdate && !autoCheck) {
-                    notify('Обновление', 'установлена последняя версия!', 'success');
+                    notify('Обновление', 'Установлена последняя версия!', 'success');
                 }
             } else {
                 throw new Error('Invalid version data');
@@ -310,6 +869,69 @@ export default function Options() {
     if (!isAuthenticatedState) {
         return <Auth onAuthorized={handleAuthorized}/>;
     }
+
+    // Helper component to show selected options in wizard
+    const SelectedOptionsSummary = () => {
+        const options = [];
+
+        if (selectedProduct !== null) {
+            if (selectedProduct === 69) {
+                options.push({label: 'Продукт', value: 'Без продукта'});
+            } else {
+                const product = products.find(p => p.id === selectedProduct);
+                if (product) options.push({label: 'Продукт', value: product.name});
+            }
+        }
+
+        if (selectedProcessing) {
+            options.push({label: 'Обработка', value: selectedProcessing.label});
+        }
+
+        if (selectedCategory) {
+            options.push({label: 'Категория', value: selectedCategory.label});
+        }
+
+        if (selectedSubcategory) {
+            options.push({label: 'Подкатегория', value: selectedSubcategory.label});
+        }
+
+        if (options.length === 0) return null;
+
+        return (
+            <div style={{
+                padding: '0.75rem',
+                backgroundColor: 'var(--muted)',
+                borderRadius: '0.5rem',
+                marginBottom: '1rem',
+                fontSize: '0.875rem',
+            }}>
+                <div style={{
+                    fontWeight: 600,
+                    marginBottom: '0.5rem',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.75rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                }}>
+                    Выбрано:
+                </div>
+                {options.map((opt, idx) => (
+                    <div
+                        key={idx}
+                        style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            padding: '0.25rem 0',
+                            borderBottom: idx < options.length - 1 ? '1px solid var(--border-color)' : 'none',
+                        }}
+                    >
+                        <span style={{color: 'var(--text-secondary)'}}>{opt.label}:</span>
+                        <span style={{fontWeight: 500}}>{opt.value}</span>
+                    </div>
+                ))}
+            </div>
+        );
+    };
 
     const armFeatureGroups = [
         {
@@ -390,6 +1012,13 @@ export default function Options() {
                 {key: 'smsButtons', label: 'Кнопки СМС', description: 'Быстрый выбор СМС'},
             ],
         },
+        {
+            title: 'Быстрые обращения',
+            icon: '⚡',
+            description: 'Создание быстрых шаблонов для обращений',
+            features: [],
+            isCustom: true,
+        },
     ];
 
     const genesysFeatureGroups = [
@@ -439,48 +1068,1090 @@ export default function Options() {
             title: string;
             icon: string;
             description: string;
-            features: Array<{ key: string; label: string; description: string }>
+            features: Array<{ key: string; label: string; description: string }>;
+            isCustom?: boolean;
         }
-    ) => (
-        <div key={group.title} className="card">
-            <div className="card-header">
-                <div className="card-header-content">
-                    <span className="card-icon">{group.icon}</span>
-                    <div className="card-header-text">
-                        <h3 className="card-title">{group.title}</h3>
-                        <p className="card-description">{group.description}</p>
+    ) => {
+        // Custom rendering for "Быстрые обращения" section
+        if (group.isCustom && group.title === 'Быстрые обращения') {
+            return (
+                <div key={group.title} className="card">
+                    <div className="card-header">
+                        <div className="card-header-content">
+                            <span className="card-icon">{group.icon}</span>
+                            <div className="card-header-text">
+                                <h3 className="card-title">{group.title}</h3>
+                                <p className="card-description">{group.description}</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="feature-list">
+                        {/* Create new preset button */}
+                        <div className="feature-item">
+                            <div className="feature-info">
+                                <label className="feature-label">Создать новый пресет</label>
+                                <span className="feature-description">
+                                Создать быстрое обращение с помощью мастера
+                                    </span>
+                            </div>
+                            <button
+                                className="btn btn-primary btn-sm"
+                                onClick={startWizard}
+                            >
+                                ➕ Создать
+                            </button>
+                        </div>
+
+                        {/* Show saved presets organized by category */}
+                        {quickAppealsPresets.length > 0 && (
+                            <div className="feature-item">
+                                <div className="feature-info" style={{width: '100%'}}>
+                                    <label className="feature-label">Мои пресеты ({quickAppealsPresets.length})</label>
+                                    <span className="feature-description">
+                                        Сохранённые быстрые обращения
+                                    </span>
+                                    {/* Search field */}
+                                    <input
+                                        type="text"
+                                        placeholder="Поиск пресетов..."
+                                        value={presetSearchQuery}
+                                        onChange={(e) => setPresetSearchQuery(e.target.value)}
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.5rem',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: '0.375rem',
+                                            backgroundColor: 'var(--card-bg)',
+                                            color: 'var(--text-primary)',
+                                            fontSize: '0.875rem',
+                                            marginTop: '0.75rem',
+                                            marginBottom: '0.75rem',
+                                        }}
+                                    />
+                                    {/* Display by category */}
+                                    {presetCategories.length > 0 ? (
+                                        <div style={{marginTop: '0.75rem'}}>
+                                            {presetCategories.map((category) => {
+                                                const categoryPresets = quickAppealsPresets.filter(preset =>
+                                                    preset.categoryId === category.id &&
+                                                    (preset.name.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                                                        preset.processingLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                                                        preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()))
+                                                );
+                                                if (categoryPresets.length === 0) return null;
+                                                return (
+                                                    <div key={category.id} style={{marginBottom: '1rem'}}>
+                                                        <div style={{
+                                                            fontWeight: 600,
+                                                            fontSize: '0.875rem',
+                                                            marginBottom: '0.5rem',
+                                                            color: 'var(--primary)',
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            alignItems: 'center',
+                                                        }}>
+                                                            <span>{category.name}</span>
+                                                            <button
+                                                                className="btn btn-secondary btn-sm"
+                                                                style={{
+                                                                    padding: '0.25rem 0.5rem',
+                                                                    minWidth: 'auto',
+                                                                    fontSize: '0.75rem',
+                                                                }}
+                                                                title="Удалить категорию"
+                                                                onClick={() => deleteCategory(category.id)}
+                                                            >
+                                                                🗑️
+                                                            </button>
+                                                        </div>
+                                                        <div style={{
+                                                            display: 'grid',
+                                                            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+                                                            gap: '0.5rem',
+                                                        }}>
+                                                            {categoryPresets.map((preset) => (
+                                                                <div
+                                                                    key={preset.id}
+                                                                    style={{
+                                                                        position: 'relative',
+                                                                        display: 'flex',
+                                                                        alignItems: 'flex-start',
+                                                                        gap: '0.5rem',
+                                                                        padding: '0.75rem',
+                                                                        backgroundColor: 'var(--muted)',
+                                                                        borderRadius: '0.5rem',
+                                                                    }}
+                                                                >
+                                                                    <div style={{flex: 1, minWidth: 0}}>
+                                                                        <div style={{
+                                                                            fontWeight: 600,
+                                                                            fontSize: '0.875rem',
+                                                                            marginBottom: '0.25rem',
+                                                                            overflow: 'hidden',
+                                                                            textOverflow: 'ellipsis',
+                                                                            whiteSpace: 'nowrap',
+                                                                        }}>
+                                                                            {preset.name}
+                                                                        </div>
+                                                                        <div style={{
+                                                                            fontSize: '0.75rem',
+                                                                            color: 'var(--text-secondary)',
+                                                                            overflow: 'hidden',
+                                                                            textOverflow: 'ellipsis',
+                                                                            whiteSpace: 'nowrap',
+                                                                        }}>
+                                                                            {products.find(p => p.id === preset.product)?.name} → {preset.processingLabel} → {preset.categoryLabel}
+                                                                            {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
+                                                                        </div>
+                                                                    </div>
+                                                                    <div style={{display: 'flex', gap: '0.25rem'}}>
+                                                                        <button
+                                                                            className="btn btn-secondary btn-sm"
+                                                                            style={{
+                                                                                padding: '0.25rem 0.5rem',
+                                                                                minWidth: 'auto',
+                                                                                fontSize: '0.75rem',
+                                                                            }}
+                                                                            title="Редактировать"
+                                                                            onClick={() => editPreset(preset.id)}
+                                                                        >
+                                                                            ✏️
+                                                                        </button>
+                                                                        <button
+                                                                            className="btn btn-secondary btn-sm"
+                                                                            style={{
+                                                                                padding: '0.25rem 0.5rem',
+                                                                                minWidth: 'auto',
+                                                                                fontSize: '0.75rem',
+                                                                            }}
+                                                                            title="Удалить"
+                                                                            onClick={() => removePreset(preset.id)}
+                                                                        >
+                                                                            ✕
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                            {/* Uncategorized presets */}
+                                            {quickAppealsPresets.filter(preset => !preset.categoryId).length > 0 && (
+                                                <div style={{marginBottom: '1rem'}}>
+                                                    <div style={{
+                                                        fontWeight: 600,
+                                                        fontSize: '0.875rem',
+                                                        marginBottom: '0.5rem',
+                                                        color: 'var(--text-secondary)',
+                                                    }}>
+                                                        Без категории
+                                                    </div>
+                                                    <div style={{
+                                                        display: 'grid',
+                                                        gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+                                                        gap: '0.5rem',
+                                                    }}>
+                                                        {quickAppealsPresets.filter(preset =>
+                                                            !preset.categoryId &&
+                                                            (preset.name.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                                                                preset.processingLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                                                                preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()))
+                                                        ).map((preset) => (
+                                                            <div
+                                                                key={preset.id}
+                                                                style={{
+                                                                    position: 'relative',
+                                                                    display: 'flex',
+                                                                    alignItems: 'flex-start',
+                                                                    gap: '0.5rem',
+                                                                    padding: '0.75rem',
+                                                                    backgroundColor: 'var(--muted)',
+                                                                    borderRadius: '0.5rem',
+                                                                }}
+                                                            >
+                                                                <div style={{flex: 1, minWidth: 0}}>
+                                                                    <div style={{
+                                                                        fontWeight: 600,
+                                                                        fontSize: '0.875rem',
+                                                                        marginBottom: '0.25rem',
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                        whiteSpace: 'nowrap',
+                                                                    }}>
+                                                                        {preset.name}
+                                                                    </div>
+                                                                    <div style={{
+                                                                        fontSize: '0.75rem',
+                                                                        color: 'var(--text-secondary)',
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                        whiteSpace: 'nowrap',
+                                                                    }}>
+                                                                        {products.find(p => p.id === preset.product)?.name} → {preset.processingLabel} → {preset.categoryLabel}
+                                                                        {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
+                                                                    </div>
+                                                                </div>
+                                                                <div style={{display: 'flex', gap: '0.25rem'}}>
+                                                                    <button
+                                                                        className="btn btn-secondary btn-sm"
+                                                                        style={{
+                                                                            padding: '0.25rem 0.5rem',
+                                                                            minWidth: 'auto',
+                                                                            fontSize: '0.75rem',
+                                                                        }}
+                                                                        title="Редактировать"
+                                                                        onClick={() => editPreset(preset.id)}
+                                                                    >
+                                                                        ✏️
+                                                                    </button>
+                                                                    <button
+                                                                        className="btn btn-secondary btn-sm"
+                                                                        style={{
+                                                                            padding: '0.25rem 0.5rem',
+                                                                            minWidth: 'auto',
+                                                                            fontSize: '0.75rem',
+                                                                        }}
+                                                                        title="Удалить"
+                                                                        onClick={() => removePreset(preset.id)}
+                                                                    >
+                                                                        ✕
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        // No categories - show all presets flat
+                                        <div style={{
+                                            display: 'grid',
+                                            gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
+                                            gap: '0.5rem',
+                                            marginTop: '0.75rem'
+                                        }}>
+                                            {quickAppealsPresets
+                                                .filter(preset =>
+                                                    preset.name.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                                                    preset.processingLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                                                    preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()))
+                                                .map((preset) => (
+                                                    <div
+                                                        key={preset.id}
+                                                        style={{
+                                                            position: 'relative',
+                                                            display: 'flex',
+                                                            alignItems: 'flex-start',
+                                                            gap: '0.5rem',
+                                                            padding: '0.75rem',
+                                                            backgroundColor: 'var(--muted)',
+                                                            borderRadius: '0.5rem',
+                                                        }}
+                                                    >
+                                                        <div style={{flex: 1, minWidth: 0}}>
+                                                            <div style={{
+                                                                fontWeight: 600,
+                                                                fontSize: '0.875rem',
+                                                                marginBottom: '0.25rem',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap',
+                                                            }}>
+                                                                {preset.name}
+                                                            </div>
+                                                            <div style={{
+                                                                fontSize: '0.75rem',
+                                                                color: 'var(--text-secondary)',
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap',
+                                                            }}>
+                                                                {products.find(p => p.id === preset.product)?.name} → {preset.processingLabel} → {preset.categoryLabel}
+                                                                {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
+                                                            </div>
+                                                        </div>
+                                                        <div style={{display: 'flex', gap: '0.25rem'}}>
+                                                            <button
+                                                                className="btn btn-secondary btn-sm"
+                                                                style={{
+                                                                    padding: '0.25rem 0.5rem',
+                                                                    minWidth: 'auto',
+                                                                    fontSize: '0.75rem',
+                                                                }}
+                                                                title="Редактировать"
+                                                                onClick={() => editPreset(preset.id)}
+                                                            >
+                                                                ✏️
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-secondary btn-sm"
+                                                                style={{
+                                                                    padding: '0.25rem 0.5rem',
+                                                                    minWidth: 'auto',
+                                                                    fontSize: '0.75rem',
+                                                                }}
+                                                                title="Удалить"
+                                                                onClick={() => removePreset(preset.id)}
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Category Management */}
+                        <div className="feature-item">
+                            <div className="feature-info" style={{width: '100%'}}>
+                                <label className="feature-label">Управление категориями
+                                    ({presetCategories.length})</label>
+                                <span className="feature-description">
+                                    Создавайте, редактируйте и удаляйте категории для организации пресетов
+                                </span>
+
+                                {/* Create new category */}
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '0.5rem',
+                                    marginTop: '0.75rem',
+                                    marginBottom: '1rem',
+                                }}>
+                                    <input
+                                        type="text"
+                                        value={newCategoryName}
+                                        onChange={(e) => setNewCategoryName(e.target.value)}
+                                        placeholder="Новая категория..."
+                                        style={{
+                                            flex: 1,
+                                            padding: '0.5rem',
+                                            border: '1px solid var(--border-color)',
+                                            borderRadius: '0.375rem',
+                                            backgroundColor: 'var(--card-bg)',
+                                            color: 'var(--text-primary)',
+                                            fontSize: '0.875rem',
+                                        }}
+                                    />
+                                    <button
+                                        className="btn btn-primary btn-sm"
+                                        onClick={createNewCategory}
+                                        disabled={!newCategoryName.trim()}
+                                    >
+                                        ➕ Создать
+                                    </button>
+                                </div>
+
+                                {/* Categories list */}
+                                {presetCategories.length > 0 ? (
+                                    <div style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
+                                        gap: '0.75rem',
+                                        marginTop: '0.75rem',
+                                    }}>
+                                        {presetCategories.map((category) => {
+                                            const presetCount = quickAppealsPresets.filter(p => p.categoryId === category.id).length;
+                                            const isEditing = editingCategoryId === category.id;
+
+                                            return (
+                                                <div
+                                                    key={category.id}
+                                                    style={{
+                                                        padding: '0.75rem',
+                                                        backgroundColor: 'var(--muted)',
+                                                        borderRadius: '0.5rem',
+                                                        border: '1px solid var(--border-color)',
+                                                    }}
+                                                >
+                                                    {isEditing ? (
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            gap: '0.5rem',
+                                                            alignItems: 'center'
+                                                        }}>
+                                                            <input
+                                                                type="text"
+                                                                value={editingCategoryName}
+                                                                onChange={(e) => setEditingCategoryName(e.target.value)}
+                                                                autoFocus
+                                                                style={{
+                                                                    flex: 1,
+                                                                    padding: '0.375rem',
+                                                                    border: '1px solid var(--border-color)',
+                                                                    borderRadius: '0.375rem',
+                                                                    backgroundColor: 'var(--card-bg)',
+                                                                    color: 'var(--text-primary)',
+                                                                    fontSize: '0.875rem',
+                                                                }}
+                                                            />
+                                                            <button
+                                                                className="btn btn-primary btn-sm"
+                                                                onClick={saveEditCategory}
+                                                                style={{padding: '0.25rem 0.5rem'}}
+                                                            >
+                                                                ✓
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-secondary btn-sm"
+                                                                onClick={cancelEditCategory}
+                                                                style={{padding: '0.25rem 0.5rem'}}
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            alignItems: 'center'
+                                                        }}>
+                                                            <div style={{flex: 1, minWidth: 0}}>
+                                                                <div style={{
+                                                                    fontWeight: 600,
+                                                                    fontSize: '0.875rem',
+                                                                    marginBottom: '0.25rem',
+                                                                    overflow: 'hidden',
+                                                                    textOverflow: 'ellipsis',
+                                                                    whiteSpace: 'nowrap',
+                                                                }}>
+                                                                    {category.name}
+                                                                </div>
+                                                                <div style={{
+                                                                    fontSize: '0.75rem',
+                                                                    color: 'var(--text-secondary)',
+                                                                }}>
+                                                                    {presetCount} {presetCount === 1 ? 'пресет' : presetCount >= 2 && presetCount <= 4 ? 'пресета' : 'пресетов'}
+                                                                </div>
+                                                            </div>
+                                                            <div style={{display: 'flex', gap: '0.25rem'}}>
+                                                                <button
+                                                                    className="btn btn-secondary btn-sm"
+                                                                    onClick={() => startEditCategory(category.id)}
+                                                                    style={{padding: '0.25rem 0.5rem'}}
+                                                                    title="Редактировать"
+                                                                >
+                                                                    ✏️
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-secondary btn-sm"
+                                                                    onClick={() => {
+                                                                        if (confirm(`Удалить категорию "${category.name}"? Все пресеты в этой категории станут без категории.`)) {
+                                                                            deleteCategory(category.id);
+                                                                        }
+                                                                    }}
+                                                                    style={{padding: '0.25rem 0.5rem'}}
+                                                                    title="Удалить"
+                                                                >
+                                                                    🗑️
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div style={{
+                                        padding: '1rem',
+                                        textAlign: 'center',
+                                        color: 'var(--text-secondary)',
+                                        fontSize: '0.875rem',
+                                        backgroundColor: 'var(--muted)',
+                                        borderRadius: '0.5rem',
+                                        marginTop: '0.75rem',
+                                    }}>
+                                        Пока нет категорий. Создайте первую категорию выше!
+                                    </div>
+                                )}
+
+                                {/* Uncategorized presets info */}
+                                {quickAppealsPresets.filter(p => !p.categoryId).length > 0 && (
+                                    <div style={{
+                                        marginTop: '1rem',
+                                        padding: '0.75rem',
+                                        backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                                        border: '1px solid rgba(255, 193, 7, 0.3)',
+                                        borderRadius: '0.5rem',
+                                        fontSize: '0.875rem',
+                                        color: 'var(--text-primary)',
+                                    }}>
+                                        <span
+                                            style={{fontWeight: 500}}>Без категории:</span> {quickAppealsPresets.filter(p => !p.categoryId).length} {quickAppealsPresets.filter(p => !p.categoryId).length === 1 ? 'пресет' : quickAppealsPresets.filter(p => !p.categoryId).length >= 2 && quickAppealsPresets.filter(p => !p.categoryId).length <= 4 ? 'пресета' : 'пресетов'}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Wizard Modal */}
+                        {wizardOpen && (
+                            <div style={{
+                                position: 'fixed',
+                                top: 0,
+                                left: 0,
+                                right: 0,
+                                bottom: 0,
+                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                zIndex: 1000,
+                                padding: '1rem',
+                            }}>
+                                <div style={{
+                                    backgroundColor: 'var(--card-bg)',
+                                    borderRadius: '0.75rem',
+                                    padding: '1.5rem',
+                                    maxWidth: '500px',
+                                    width: '100%',
+                                    maxHeight: '80vh',
+                                    overflow: 'auto',
+                                    boxShadow: 'var(--shadow-lg)',
+                                }}>
+                                    {/* Header */}
+                                    <div style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        marginBottom: '1rem',
+                                    }}>
+                                        <h3 style={{margin: 0, fontSize: '1.125rem', fontWeight: 600}}>
+                                            {editingPresetId ? 'Редактирование пресета' : 'Создание быстрого обращения'}
+                                        </h3>
+                                        <button
+                                            className="btn btn-secondary btn-sm"
+                                            onClick={() => {
+                                                setWizardOpen(false);
+                                                setEditingPresetId(null);
+                                            }}
+                                            style={{padding: '0.25rem 0.5rem'}}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+
+                                    {/* Progress indicator */}
+                                    <div style={{
+                                        display: 'flex',
+                                        gap: '0.25rem',
+                                        marginBottom: '1.5rem',
+                                    }}>
+                                        {['product', 'processing', 'category', 'subcategory', 'name'].map((step, index) => {
+                                            const stepLabels = ['Продукт', 'Обработка', 'Категория', 'Подкатегория', 'Название'];
+                                            const isCurrentStep = wizardStep === step;
+                                            const isPastStep = ['product', 'processing', 'category', 'subcategory', 'name'].indexOf(wizardStep) > index;
+                                            return (
+                                                <div
+                                                    key={step}
+                                                    style={{
+                                                        flex: 1,
+                                                        height: '4px',
+                                                        backgroundColor: isCurrentStep ? 'var(--primary)' : isPastStep ? 'var(--positive)' : 'var(--muted)',
+                                                        borderRadius: '2px',
+                                                    }}
+                                                    title={stepLabels[index]}
+                                                />
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Step content */}
+                                    {wizardStep === 'product' && (
+                                        <>
+                                            <div style={{marginBottom: '1rem'}}>
+                                                <label style={{
+                                                    display: 'block',
+                                                    fontWeight: 500,
+                                                    marginBottom: '0.5rem',
+                                                }}>
+                                                    Шаг 1: Выберите продукт
+                                                </label>
+                                                <div style={{
+                                                    display: 'grid',
+                                                    gap: '0.5rem',
+                                                }}>
+                                                    <button
+                                                        className="btn btn-secondary"
+                                                        style={{
+                                                            width: '100%',
+                                                            justifyContent: 'flex-start',
+                                                            border: selectedProduct === 69 ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                                                        }}
+                                                        onClick={() => selectProduct(69)}
+                                                    >
+                                                        Без продукта
+                                                    </button>
+                                                    {products.map((product) => (
+                                                        <button
+                                                            key={product.id}
+                                                            className="btn btn-secondary"
+                                                            style={{
+                                                                width: '100%',
+                                                                justifyContent: 'flex-start',
+                                                                border: selectedProduct === product.id ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                                                            }}
+                                                            onClick={() => selectProduct(product.id)}
+                                                        >
+                                                            {product.name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {wizardStep === 'processing' && (
+                                        <>
+                                            <SelectedOptionsSummary/>
+                                            <div style={{marginBottom: '1rem'}}>
+                                                <label style={{
+                                                    display: 'block',
+                                                    fontWeight: 500,
+                                                    marginBottom: '0.5rem',
+                                                }}>
+                                                    Шаг 2: Выберите обработку
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    placeholder="Поиск по обработке..."
+                                                    value={processingSearchQuery}
+                                                    onChange={(e) => setProcessingSearchQuery(e.target.value)}
+                                                    style={{
+                                                        width: '100%',
+                                                        padding: '0.5rem',
+                                                        border: '1px solid var(--border-color)',
+                                                        borderRadius: '0.375rem',
+                                                        backgroundColor: 'var(--card-bg)',
+                                                        color: 'var(--text-primary)',
+                                                        fontSize: '0.875rem',
+                                                        marginBottom: '0.75rem',
+                                                    }}
+                                                />
+                                                <div style={{
+                                                    display: 'grid',
+                                                    gap: '0.5rem',
+                                                    maxHeight: '300px',
+                                                    overflow: 'auto',
+                                                }}>
+                                                    {processingGroups
+                                                        .filter(group => group.label.toLowerCase().includes(processingSearchQuery.toLowerCase()))
+                                                        .map((group) => (
+                                                            <button
+                                                                key={group.value}
+                                                                className="btn btn-secondary"
+                                                                style={{
+                                                                    width: '100%',
+                                                                    justifyContent: 'flex-start',
+                                                                    textAlign: 'left',
+                                                                    border: selectedProcessing?.value === group.value ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                                                                }}
+                                                                onClick={() => selectProcessing(group)}
+                                                            >
+                                                                {group.label}
+                                                            </button>
+                                                        ))}
+                                                </div>
+                                            </div>
+                                            <button
+                                                className="btn btn-secondary btn-sm"
+                                                onClick={() => setWizardStep('product')}
+                                            >
+                                                ← Назад
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {wizardStep === 'category' && (
+                                        <>
+                                            <SelectedOptionsSummary/>
+                                            <div style={{marginBottom: '1rem'}}>
+                                                <label style={{
+                                                    display: 'block',
+                                                    fontWeight: 500,
+                                                    marginBottom: '0.5rem',
+                                                }}>
+                                                    Шаг 3: Выберите категорию обращения
+                                                </label>
+                                                {!isLoadingCategories && appealsCategories.length > 0 && (
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Поиск по категории..."
+                                                        value={categorySearchQuery}
+                                                        onChange={(e) => setCategorySearchQuery(e.target.value)}
+                                                        style={{
+                                                            width: '100%',
+                                                            padding: '0.5rem',
+                                                            border: '1px solid var(--border-color)',
+                                                            borderRadius: '0.375rem',
+                                                            backgroundColor: 'var(--card-bg)',
+                                                            color: 'var(--text-primary)',
+                                                            fontSize: '0.875rem',
+                                                            marginBottom: '0.75rem',
+                                                        }}
+                                                    />
+                                                )}
+                                                {isLoadingCategories ? (
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        justifyContent: 'center',
+                                                        padding: '1rem',
+                                                    }}>
+                                                        <div className="spinner"/>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{
+                                                        display: 'grid',
+                                                        gap: '0.5rem',
+                                                        maxHeight: '300px',
+                                                        overflow: 'auto',
+                                                    }}>
+                                                        {appealsCategories
+                                                            .filter(cat => cat.label.toLowerCase().includes(categorySearchQuery.toLowerCase()))
+                                                            .map((category) => (
+                                                                <button
+                                                                    key={category.value}
+                                                                    className="btn btn-secondary"
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        justifyContent: 'flex-start',
+                                                                        textAlign: 'left',
+                                                                    }}
+                                                                    onClick={() => selectCategory({
+                                                                        value: category.value,
+                                                                        label: category.label
+                                                                    })}
+                                                                >
+                                                                    {category.label}
+                                                                </button>
+                                                            ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <button
+                                                className="btn btn-secondary btn-sm"
+                                                onClick={() => setWizardStep('processing')}
+                                            >
+                                                ← Назад
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {wizardStep === 'subcategory' && (
+                                        <>
+                                            <SelectedOptionsSummary/>
+                                            <div style={{marginBottom: '1rem'}}>
+                                                <label style={{
+                                                    display: 'block',
+                                                    fontWeight: 500,
+                                                    marginBottom: '0.5rem',
+                                                }}>
+                                                    {subcategories.length > 0 ? 'Шаг 4: Выберите подкатегорию' : 'Шаг 4: Подкатегории'}
+                                                </label>
+                                                {!isLoadingSubcategories && subcategories.length > 0 && (
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Поиск по подкатегории..."
+                                                        value={subcategorySearchQuery}
+                                                        onChange={(e) => setSubcategorySearchQuery(e.target.value)}
+                                                        style={{
+                                                            width: '100%',
+                                                            padding: '0.5rem',
+                                                            border: '1px solid var(--border-color)',
+                                                            borderRadius: '0.375rem',
+                                                            backgroundColor: 'var(--card-bg)',
+                                                            color: 'var(--text-primary)',
+                                                            fontSize: '0.875rem',
+                                                            marginBottom: '0.75rem',
+                                                        }}
+                                                    />
+                                                )}
+                                                {isLoadingSubcategories ? (
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        justifyContent: 'center',
+                                                        padding: '1rem',
+                                                    }}>
+                                                        <div className="spinner"/>
+                                                    </div>
+                                                ) : subcategories.length > 0 ? (
+                                                    <div style={{
+                                                        display: 'grid',
+                                                        gap: '0.5rem',
+                                                        maxHeight: '300px',
+                                                        overflow: 'auto',
+                                                    }}>
+                                                        {subcategories
+                                                            .filter(sub => sub.label.toLowerCase().includes(subcategorySearchQuery.toLowerCase()))
+                                                            .map((subcategory) => (
+                                                                <button
+                                                                    key={subcategory.value}
+                                                                    className="btn btn-secondary"
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        justifyContent: 'flex-start',
+                                                                        textAlign: 'left',
+                                                                    }}
+                                                                    onClick={() => selectSubcategory(subcategory)}
+                                                                >
+                                                                    {subcategory.label}
+                                                                </button>
+                                                            ))}
+                                                    </div>
+                                                ) : (
+                                                    <div style={{
+                                                        padding: '1rem',
+                                                        textAlign: 'center',
+                                                        color: 'var(--text-secondary)',
+                                                    }}>
+                                                        Для выбранной категории нет подкатегорий
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div style={{display: 'flex', gap: '0.5rem'}}>
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
+                                                    onClick={() => setWizardStep('category')}
+                                                >
+                                                    ← Назад
+                                                </button>
+                                                {!isLoadingSubcategories && (
+                                                    <button
+                                                        className="btn btn-primary btn-sm"
+                                                        onClick={skipSubcategory}
+                                                        style={{flex: 1}}
+                                                    >
+                                                        Пропустить →
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {wizardStep === 'name' && (
+                                        <>
+                                            {/* Full summary of all selections */}
+                                            <div style={{
+                                                padding: '1rem',
+                                                backgroundColor: 'var(--muted)',
+                                                borderRadius: '0.5rem',
+                                                marginBottom: '1rem',
+                                            }}>
+                                                <div style={{
+                                                    fontWeight: 600,
+                                                    marginBottom: '0.75rem',
+                                                    color: 'var(--text-secondary)',
+                                                    fontSize: '0.75rem',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.05em',
+                                                }}>
+                                                    Итоговый обзор:
+                                                </div>
+                                                <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                                                    {selectedProduct && (
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            fontSize: '0.875rem'
+                                                        }}>
+                                                            <span
+                                                                style={{color: 'var(--text-secondary)'}}>Продукт:</span>
+                                                            <span
+                                                                style={{fontWeight: 500}}>{products.find(p => p.id === selectedProduct)?.name}</span>
+                                                        </div>
+                                                    )}
+                                                    {selectedProcessing && (
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            fontSize: '0.875rem'
+                                                        }}>
+                                                            <span
+                                                                style={{color: 'var(--text-secondary)'}}>Обработка:</span>
+                                                            <span
+                                                                style={{fontWeight: 500}}>{selectedProcessing.label}</span>
+                                                        </div>
+                                                    )}
+                                                    {selectedCategory && (
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            fontSize: '0.875rem'
+                                                        }}>
+                                                            <span
+                                                                style={{color: 'var(--text-secondary)'}}>Категория:</span>
+                                                            <span
+                                                                style={{fontWeight: 500}}>{selectedCategory.label}</span>
+                                                        </div>
+                                                    )}
+                                                    {selectedSubcategory && (
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            fontSize: '0.875rem'
+                                                        }}>
+                                                            <span
+                                                                style={{color: 'var(--text-secondary)'}}>Подкатегория:</span>
+                                                            <span
+                                                                style={{fontWeight: 500}}>{selectedSubcategory.label}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div style={{marginBottom: '1rem'}}>
+                                                <label style={{
+                                                    display: 'block',
+                                                    fontWeight: 500,
+                                                    marginBottom: '0.5rem',
+                                                }}>
+                                                    Шаг 5: Название пресета
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={presetName}
+                                                    onChange={(e) => setPresetName(e.target.value)}
+                                                    placeholder="Например: Нет интернета - Претензии"
+                                                    style={{
+                                                        width: '100%',
+                                                        padding: '0.5rem',
+                                                        border: '1px solid var(--border-color)',
+                                                        borderRadius: '0.375rem',
+                                                        backgroundColor: 'var(--card-bg)',
+                                                        color: 'var(--text-primary)',
+                                                        fontSize: '0.875rem',
+                                                        marginBottom: '1rem',
+                                                    }}
+                                                    autoFocus
+                                                />
+                                            </div>
+
+                                            <div style={{marginBottom: '1rem'}}>
+                                                <label style={{
+                                                    display: 'block',
+                                                    fontWeight: 500,
+                                                    marginBottom: '0.5rem',
+                                                }}>
+                                                    Категория для пресета
+                                                </label>
+                                                <div style={{
+                                                    display: 'grid',
+                                                    gap: '0.5rem',
+                                                    marginBottom: '0.75rem',
+                                                }}>
+                                                    {presetCategories.map((cat) => (
+                                                        <button
+                                                            key={cat.id}
+                                                            className="btn btn-secondary"
+                                                            style={{
+                                                                width: '100%',
+                                                                justifyContent: 'flex-start',
+                                                                textAlign: 'left',
+                                                                border: selectedPresetCategory === cat.id ? '2px solid var(--primary)' : '1px solid var(--border-color)',
+                                                            }}
+                                                            onClick={() => setSelectedPresetCategory(cat.id)}
+                                                        >
+                                                            {cat.name}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                                <div style={{display: 'flex', gap: '0.5rem'}}>
+                                                    <input
+                                                        type="text"
+                                                        value={newCategoryName}
+                                                        onChange={(e) => setNewCategoryName(e.target.value)}
+                                                        placeholder="Новая категория..."
+                                                        style={{
+                                                            flex: 1,
+                                                            padding: '0.5rem',
+                                                            border: '1px solid var(--border-color)',
+                                                            borderRadius: '0.375rem',
+                                                            backgroundColor: 'var(--card-bg)',
+                                                            color: 'var(--text-primary)',
+                                                            fontSize: '0.875rem',
+                                                        }}
+                                                    />
+                                                    <button
+                                                        className="btn btn-secondary btn-sm"
+                                                        onClick={createNewCategory}
+                                                        disabled={!newCategoryName.trim()}
+                                                    >
+                                                        ➕
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div style={{display: 'flex', gap: '0.5rem'}}>
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
+                                                    onClick={() => setWizardStep('subcategory')}
+                                                >
+                                                    ← Назад
+                                                </button>
+                                                <button
+                                                    className="btn btn-primary btn-sm"
+                                                    onClick={savePreset}
+                                                    style={{flex: 1}}
+                                                    disabled={!presetName.trim()}
+                                                >
+                                                    Сохранить
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
-            </div>
-            <div className="feature-list">
-                {group.features
-                    .filter((f) => f.label.toLowerCase().includes(searchQuery.toLowerCase()) || f.description.toLowerCase().includes(searchQuery.toLowerCase()))
-                    .map((feature) => {
-                        const isChecked = settings[category]?.[feature.key] === true;
-                        return (
-                            <div key={feature.key} className="feature-item">
-                                <div className="feature-info">
-                                    <label className="feature-label" htmlFor={`feature-${feature.key}`}>
-                                        {feature.label}
+            );
+        }
+
+        return (
+            <div key={group.title} className="card">
+                <div className="card-header">
+                    <div className="card-header-content">
+                        <span className="card-icon">{group.icon}</span>
+                        <div className="card-header-text">
+                            <h3 className="card-title">{group.title}</h3>
+                            <p className="card-description">{group.description}</p>
+                        </div>
+                    </div>
+                </div>
+                <div className="feature-list">
+                    {group.features
+                        .filter((f) => f.label.toLowerCase().includes(searchQuery.toLowerCase()) || f.description.toLowerCase().includes(searchQuery.toLowerCase()))
+                        .map((feature) => {
+                            const isChecked = settings[category]?.[feature.key] === true;
+                            return (
+                                <div key={feature.key} className="feature-item">
+                                    <div className="feature-info">
+                                        <label className="feature-label" htmlFor={`feature-${feature.key}`}>
+                                            {feature.label}
+                                        </label>
+                                        <span className="feature-description">{feature.description}</span>
+                                    </div>
+                                    <label className="switch">
+                                        <input
+                                            id={`feature-${feature.key}`}
+                                            type="checkbox"
+                                            checked={isChecked}
+                                            onChange={(e) => updateSetting(category, feature.key, e.target.checked)}
+                                            disabled={isSaving}
+                                        />
+                                        <span className="slider"/>
                                     </label>
-                                    <span className="feature-description">{feature.description}</span>
                                 </div>
-                                <label className="switch">
-                                    <input
-                                        id={`feature-${feature.key}`}
-                                        type="checkbox"
-                                        checked={isChecked}
-                                        onChange={(e) => updateSetting(category, feature.key, e.target.checked)}
-                                        disabled={isSaving}
-                                    />
-                                    <span className="slider"/>
-                                </label>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                </div>
             </div>
-        </div>
-    );
+        );
+    };
 
     return (
         <div className="options-page">
