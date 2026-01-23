@@ -132,6 +132,44 @@ async function clearAuthState(): Promise<void> {
 }
 
 /**
+ * Updates user settings on the backend
+ * @param settings - The settings object to update
+ * @returns true if successful, false otherwise
+ */
+export async function updateUserSettings(settings: Record<string, unknown>): Promise<boolean> {
+    try {
+        const token = await getAccessToken();
+        if (!token) {
+            console.error('[UserSettings] No access token found');
+            return false;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/auth/settings`, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({settings}),
+        });
+
+        if (!response.ok) {
+            console.error('[UserSettings] Failed to update settings:', response.status, response.statusText);
+            return false;
+        }
+
+        // Clear cache after successful update
+        await clearSettingsCache();
+
+        console.log('[UserSettings] Settings updated successfully');
+        return true;
+    } catch (error) {
+        console.error('[UserSettings] Error updating settings:', error);
+        return false;
+    }
+}
+
+/**
  * Checks if a feature is enabled based on user settings
  * @param featureKey - The key of the feature (e.g., 'foldSpas', 'allowPaste', or 'arm_foldSpas')
  * @param settings - The user settings object
