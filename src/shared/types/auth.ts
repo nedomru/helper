@@ -3,11 +3,13 @@
  */
 
 export interface TelegramUser {
-    id: number;
-    first_name: string;
+    userId: string;
+    first_name?: string;
     last_name?: string;
     username?: string;
     language_code?: string;
+    access?: boolean;
+    settings?: Record<string, unknown>;
 }
 
 export type SessionStatus = 'pending' | 'authorized' | 'expired' | 'consumed';
@@ -69,6 +71,11 @@ export interface MeResponse {
         sessionId: string;
         issuedAt: string;
         expiresAt: string;
+        user: {
+            userId: string;
+            access: boolean;
+            settings: Record<string, unknown>;
+        };
     };
     error?: string;
 }

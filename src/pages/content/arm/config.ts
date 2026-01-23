@@ -46,14 +46,14 @@ export const armPageConfigs: PageConfig[] = [
     {
         pattern: URL_PATTERNS.EXCELLS,
         features: [
-            {key: 'arm_foldSpas', handler: foldSpas},
-            {key: 'arm_foldTabInfo', handler: foldTabInfo},
-            {key: 'arm_foldTabApplications', handler: foldTabApplications},
-            {key: 'arm_foldTabAppeals', handler: foldTabAppeals},
-            {key: 'arm_foldTabSRequests', handler: foldTabSRequests},
-            {key: 'arm_foldTabCRequests', handler: foldTabCRequests},
-            {key: 'arm_removeDiagnosticTabs', handler: removeDiagnosticTabs},
-            {key: 'arm_removeAppealsColumns', handler: removeAppealsColumns},
+            {key: 'foldSpas', handler: foldSpas},
+            {key: 'foldTabInfo', handler: foldTabInfo},
+            {key: 'foldTabApplications', handler: foldTabApplications},
+            {key: 'foldTabAppeals', handler: foldTabAppeals},
+            {key: 'foldTabSRequests', handler: foldTabSRequests},
+            {key: 'foldTabCRequests', handler: foldTabCRequests},
+            {key: 'removeDiagnosticTabs', handler: removeDiagnosticTabs},
+            {key: 'removeAppealsColumns', handler: removeAppealsColumns},
         ],
         alwaysRun: [
             allowCopy,

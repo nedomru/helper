@@ -7,6 +7,7 @@ import type {
     AuthSession,
     AuthState,
     CompleteResponse,
+    MeResponse,
     SessionResponse,
     SessionStatus,
     StatusResponse,
@@ -20,7 +21,7 @@ const POLL_INTERVAL = 5000;
 export async function getAuthState(): Promise<AuthState | null> {
     return new Promise((resolve) => {
         chrome.storage.local.get([STORAGE_KEY], (result) => {
-            resolve(result[STORAGE_KEY] || null);
+            resolve((result[STORAGE_KEY] as AuthState) || null);
         });
     });
 }
@@ -39,7 +40,41 @@ export async function clearAuthState(): Promise<void> {
 
 export async function isAuthenticated(): Promise<boolean> {
     const state = await getAuthState();
-    return !!(state?.accessToken && state?.user);
+    if (!(state?.accessToken && state?.user)) {
+        return false;
+    }
+
+    // Verify user still has access
+    try {
+        const meData = await getMe();
+        console.log('[Auth] User access check:', meData.data?.user);
+
+        if (!meData.data?.user.access) {
+            console.log('[Auth] Access denied, clearing session');
+            await clearAuthState();
+            throw new Error('ACCESS_DENIED');
+        }
+
+        console.log('[Auth] Access granted, updating settings:', meData.data.user.settings);
+
+        // Update state with latest settings
+        await saveAuthState({
+            ...state,
+            user: {
+                ...state.user,
+                access: meData.data.user.access,
+                settings: meData.data.user.settings,
+            },
+        });
+        return true;
+    } catch (err) {
+        if (err instanceof Error && err.message === 'ACCESS_DENIED') {
+            throw err; // Re-throw ACCESS_DENIED to be caught by UI
+        }
+        console.error('[Auth] Error checking access:', err);
+        await clearAuthState();
+        return false;
+    }
 }
 
 export async function getAccessToken(): Promise<string | null> {
@@ -141,7 +176,50 @@ export async function completeAuthentication(sessionId: string): Promise<AuthSta
     };
 
     await saveAuthState(authState);
-    return authState;
+
+    // Fetch user profile to check access and get settings
+    console.log('[Auth] Checking access after login...');
+    const meData = await getMe();
+    console.log('[Auth] User data from /me:', meData.data?.user);
+
+    if (!meData.data?.user.access) {
+        console.log('[Auth] Access denied after login');
+        await clearAuthState();
+        throw new Error('ACCESS_DENIED');
+    }
+
+    console.log('[Auth] Access granted, settings:', meData.data.user.settings);
+
+    // Update auth state with user settings
+    const updatedState: AuthState = {
+        ...authState,
+        user: {
+            ...result.data.user,
+            access: meData.data.user.access,
+            settings: meData.data.user.settings,
+        },
+    };
+
+    await saveAuthState(updatedState);
+    return updatedState;
+}
+
+export async function getMe(): Promise<MeResponse> {
+    const token = await getAccessToken();
+
+    if (!token) {
+        throw new Error('Not authenticated');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+        headers: {Authorization: `Bearer ${token}`},
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to fetch user profile: ${response.status}`);
+    }
+
+    return response.json();
 }
 
 export async function logout(): Promise<void> {

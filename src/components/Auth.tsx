@@ -13,7 +13,7 @@ interface AuthProps {
     onAuthorized?: (user: TelegramUser) => void;
 }
 
-type AuthStep = 'loading' | 'qr' | 'waiting' | 'success' | 'error';
+type AuthStep = 'loading' | 'qr' | 'waiting' | 'success' | 'error' | 'access_denied';
 
 export default function Auth({onAuthorized}: AuthProps) {
     const [step, setStep] = useState<AuthStep>('loading');
@@ -57,9 +57,16 @@ export default function Auth({onAuthorized}: AuthProps) {
                 }
 
                 setStep('qr');
-            } catch {
-                setError('Failed to initialize authorization');
-                setStep('error');
+            } catch (err) {
+                console.error('[Auth] Init error:', err);
+                if (err instanceof Error && err.message === 'ACCESS_DENIED') {
+                    console.log('[Auth] Showing access denied screen');
+                    setStep('access_denied');
+                } else {
+                    console.error('[Auth] Generic auth error:', err);
+                    setError('Failed to initialize authorization');
+                    setStep('error');
+                }
             }
         };
 
@@ -96,9 +103,13 @@ export default function Auth({onAuthorized}: AuthProps) {
             await completeAuthentication(sessionId);
             setStep('success');
             onAuthorized?.(user);
-        } catch {
-            setError('Failed to complete authentication');
-            setStep('error');
+        } catch (err) {
+            if (err instanceof Error && err.message === 'ACCESS_DENIED') {
+                setStep('access_denied');
+            } else {
+                setError('Failed to complete authentication');
+                setStep('error');
+            }
         }
     }, [sessionId, onAuthorized]);
 
@@ -164,6 +175,37 @@ export default function Auth({onAuthorized}: AuthProps) {
                             className="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         >
                             Создать новую сессию
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    if (step === 'access_denied') {
+        return (
+            <div className="flex items-center justify-center min-h-screen bg-white p-4">
+                <div
+                    className="bg-white rounded-2xl shadow-lg border border-gray-200 max-w-md w-full mx-4 overflow-hidden">
+                    <div className="p-8 text-center">
+                        <div
+                            className="w-16 h-16 mx-auto mb-4 bg-orange-100 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-orange-600" fill="none" stroke="currentColor"
+                                 viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+                        <h2 className="text-2xl font-bold text-gray-900 mb-2">Доступ запрещен</h2>
+                        <p className="text-gray-600 mb-8">
+                            У вас нет доступа к использованию расширения. Обратитесь к администратору для получения
+                            доступа.
+                        </p>
+                        <button
+                            onClick={handleCreateSession}
+                            className="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                        >
+                            Попробовать снова
                         </button>
                     </div>
                 </div>

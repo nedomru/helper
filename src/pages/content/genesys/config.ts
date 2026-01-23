@@ -16,19 +16,15 @@ export const genesysPageConfigs: PageConfig[] = [
     {
         pattern: URL_PATTERNS.GENESYS_BASE,
         features: [
-            {key: 'genesys_showLineStatus', handler: showLineStatus},
-            {key: 'genesys_showDutyMessages', handler: showDutyMessages},
-            {key: 'genesys_hideButtons', handler: hideButtons},
-            {key: 'genesys_customChatColors', handler: customChatColors},
-            {key: 'genesys_customChatSounds', handler: customChatSounds},
-            {key: 'genesys_allowChatSizeEdit', handler: allowChatSizeEdit},
-            {key: 'genesys_autoCollapseChatHeader', handler: autoCollapseChatHeader},
-            {key: 'genesys_allowPaste', handler: allowPaste},
+            {key: 'showLineStatus', handler: showLineStatus},
+            {key: 'showDutyMessages', handler: showDutyMessages},
+            {key: 'hideButtons', handler: hideButtons},
+            {key: 'customChatColors', handler: customChatColors},
+            {key: 'customChatSounds', handler: customChatSounds},
+            {key: 'allowChatSizeEdit', handler: allowChatSizeEdit},
+            {key: 'autoCollapseChatHeader', handler: autoCollapseChatHeader},
+            {key: 'allowPaste', handler: allowPaste},
         ],
-        alwaysRun: [
-            allowChatSizeEdit,
-            autoCollapseChatHeader,
-            allowPaste
-        ]
+        alwaysRun: []
     }
 ];
