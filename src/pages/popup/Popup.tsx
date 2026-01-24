@@ -1,10 +1,9 @@
-import {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
-import {fetchMNAData, fetchRoutersData, type MNAProvider, type Router} from '@src/utils/api';
+import {type ReactNode, useCallback, useEffect, useState} from 'react';
 import {TelegramUser} from "@src/shared/types/auth";
 import {getAuthState, isAuthenticated, logout} from "@src/utils/auth";
 import Auth from "@src/components/Auth";
 
-type Tab = 'Главная' | 'MnA' | 'Роутеры' | 'РМы' | 'Инструменты';
+type Tab = 'Главная' | 'Инструменты';
 
 interface ToolState {
     macAddress: string;
@@ -17,19 +16,12 @@ export default function Popup(): ReactNode {
     const [isAuthenticatedState, setIsAuthenticatedState] = useState<boolean | null>(null);
     const [currentUser, setCurrentUser] = useState<TelegramUser | null>(null);
     const [activeTab, setActiveTab] = useState<Tab>('Главная');
-    const [searchProvider, setSearchProvider] = useState('');
-    const [searchRouter, setSearchRouter] = useState('');
     const [tools, setTools] = useState<ToolState>({
         macAddress: '',
         ipAddress: '',
         link: '',
         specialist: '',
     });
-
-    const [mnaData, setMnaData] = useState<MNAProvider[]>([]);
-    const [routersData, setRoutersData] = useState<Router[]>([]);
-    const [loadingMna, setLoadingMna] = useState(false);
-    const [loadingRouters, setLoadingRouters] = useState(false);
 
     // Check authentication on mount
     useEffect(() => {
@@ -59,76 +51,7 @@ export default function Popup(): ReactNode {
         window.open(url, '_blank', 'noopener,noreferrer');
     }, []);
 
-    useEffect(() => {
-        if (activeTab === 'MnA' && mnaData.length === 0 && !loadingMna) {
-            setLoadingMna(true);
-            fetchMNAData()
-                .then((data) => setMnaData(data.mna))
-                .catch((error) => console.error('Error loading MNA data:', error))
-                .finally(() => setLoadingMna(false));
-        }
-    }, [activeTab, mnaData.length, loadingMna]);
-
-    useEffect(() => {
-        if (activeTab === 'Роутеры' && routersData.length === 0 && !loadingRouters) {
-            setLoadingRouters(true);
-            fetchRoutersData()
-                .then((data) => setRoutersData(data.routers))
-                .catch((error) => console.error('Error loading routers data:', error))
-                .finally(() => setLoadingRouters(false));
-        }
-    }, [activeTab, routersData.length, loadingRouters]);
-
-    const filteredMnaData = useMemo(() => {
-        if (!searchProvider.trim()) return mnaData;
-        const search = searchProvider.trim().toUpperCase();
-        return mnaData.filter(
-            ({name, authorization, connection}) =>
-                name.toUpperCase().includes(search) ||
-                authorization.toUpperCase().includes(search) ||
-                connection.toUpperCase().includes(search)
-        );
-    }, [mnaData, searchProvider]);
-
-    const filteredRoutersData = useMemo(() => {
-        if (!searchRouter.trim()) return routersData;
-        const search = searchRouter.trim().toUpperCase();
-        return routersData.filter(({Name, Settings}) =>
-            Name.toUpperCase().includes(search) || Settings.toUpperCase().includes(search)
-        );
-    }, [routersData, searchRouter]);
-
-    const createLinkOrText = useCallback((value: string | string[], text: string, isEmulator = false): ReactNode => {
-        if (value === 'Нет') return 'Нет';
-
-        const linkClass = "text-blue-600 hover:underline";
-
-        if (Array.isArray(value)) {
-            if (isEmulator) {
-                return value.map((link, index) => (
-                    <span key={link}>
-            {index > 0 && ', '}
-                        <a href={link} target="_blank" rel="noopener noreferrer" className={linkClass}>
-              {text}
-            </a>
-          </span>
-                ));
-            }
-            return (
-                <a href={value[0]} target="_blank" rel="noopener noreferrer" className={linkClass}>
-                    {text}
-                </a>
-            );
-        }
-
-        return (
-            <a href={value} target="_blank" rel="noopener noreferrer" className={linkClass}>
-                {text}
-            </a>
-        );
-    }, []);
-
-    const TABS: Tab[] = ['Главная', 'MnA', 'Роутеры', 'РМы', 'Инструменты'];
+    const TABS: Tab[] = ['Главная', 'Инструменты'];
 
     const TOOLBAR_BUTTONS = [
         {title: 'Перейти в настройки', icon: '⚙️', onClick: handleOpenSettings},
@@ -370,123 +293,6 @@ export default function Popup(): ReactNode {
                                        className="text-blue-600 hover:underline text-sm">Генератор ленты</a></li>
                             </ul>
                         </div>
-                    </div>
-                )}
-
-                {activeTab === 'MnA' && (
-                    <div>
-                        <input
-                            type="text"
-                            value={searchProvider}
-                            onChange={(e) => setSearchProvider(e.target.value)}
-                            placeholder="Поиск провайдера"
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-                            autoFocus
-                        />
-                        {loadingMna ? (
-                            <div className="text-center py-8 text-gray-600">Загрузка данных...</div>
-                        ) : (
-                            <div className="overflow-auto" style={{maxHeight: '480px'}}>
-                                <table className="w-full border-collapse border border-gray-300 text-sm">
-                                    <thead className="bg-gray-100 sticky top-0">
-                                    <tr>
-                                        <th className="border border-gray-300 px-3 py-2 text-left">Провайдер</th>
-                                        <th className="border border-gray-300 px-3 py-2 text-left">Авторизация</th>
-                                        <th className="border border-gray-300 px-3 py-2 text-left">Подключение</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {filteredMnaData.map((provider, index) => (
-                                        <tr key={index} className="hover:bg-gray-50">
-                                            <td className="border border-gray-300 px-3 py-2">
-                                                <a href={provider.link} target="_blank" rel="noopener noreferrer"
-                                                   className="text-blue-600 hover:underline">
-                                                    {provider.name}
-                                                </a>
-                                            </td>
-                                            <td className="border border-gray-300 px-3 py-2">{provider.authorization}</td>
-                                            <td className="border border-gray-300 px-3 py-2">{provider.connection}</td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'Роутеры' && (
-                    <div>
-                        <input
-                            type="text"
-                            value={searchRouter}
-                            onChange={(e) => setSearchRouter(e.target.value)}
-                            placeholder="Поиск роутера"
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-                            autoFocus
-                        />
-                        {loadingRouters ? (
-                            <div className="text-center py-8 text-gray-600">Загрузка данных...</div>
-                        ) : (
-                            <div className="overflow-y-auto" style={{maxHeight: '480px'}}>
-                                <table className="w-full border-collapse border border-gray-300 text-xs table-fixed">
-                                    <thead className="bg-gray-100 sticky top-0">
-                                    <tr>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '20%'}}>Название
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '10%'}}>PPPoE
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '10%'}}>DHCP
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '10%'}}>IPoE
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '10%'}}>Каналы
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '15%'}}>Интерфейс
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '10%'}}>БЗ
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '15%'}}>Эмулятор
-                                        </th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {filteredRoutersData.map((router, index) => (
-                                        <tr key={index} className="hover:bg-gray-50">
-                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{router.Name}</td>
-                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.PPPoE, 'PPPoE')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.DHCP, 'DHCP')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.IPoE, 'IPoE')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.Channels, 'Каналы')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{router.Settings}</td>
-                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.KnowledgeBase, 'БЗ')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 wrap-break-word">{createLinkOrText(router.Emulator, 'Эмулятор', true)}</td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'РМы' && (
-                    <div className="border border-gray-300 overflow-hidden w-full" style={{height: '527px'}}>
-                        <iframe
-                            src="https://flomaster.chrsnv.ru/phrases"
-                            className="w-full h-full border-0"
-                            loading="lazy"
-                            sandbox="allow-downloads allow-scripts allow-same-origin allow-popups allow-forms"
-                            referrerPolicy="no-referrer"
-                        />
                     </div>
                 )}
 
