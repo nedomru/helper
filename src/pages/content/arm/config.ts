@@ -30,6 +30,7 @@ import {loadLastDayClientSessions} from "@pages/content/arm/features/ui-enhancem
 import {smsButtons} from "@pages/content/arm/features/sms/fast_choose";
 import {copyClientNumber} from "@pages/content/arm/features/client-number/copyButton";
 import quickAppeals from "@pages/content/arm/features/fast-appeals/buttons";
+import {showClientAge} from "@pages/content/arm/features/ui-enhancements/client-age";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -68,6 +69,7 @@ export const armPageConfigs: PageConfig[] = [
             showWarrantyExpiration,
             showAppealsHighlights,
             showSubscriptionStatus,
+            showClientAge,
             searchByAppeal,
             searchByLog,
             searchByProperty,
