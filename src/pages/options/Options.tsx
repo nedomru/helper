@@ -3,11 +3,12 @@ import Auth from '@src/components/Auth';
 import type {QuickAppealsPreset} from '@src/shared/user-settings';
 import {updateUserSettings} from '@src/shared/user-settings';
 import {notify} from '@src/utils/notify';
-import type {Settings, UpdateStatus} from './types';
+import type {SelectOption, Settings, UpdateStatus} from './types';
 import {armFeatureGroups, genesysFeatureGroups} from './constants/feature-groups';
 import {importSettings} from './utils/export-import';
 import {useAuth} from './hooks/useAuth';
-import {useQuickAppeals, useWizard} from './hooks/useWizard';
+import {useQuickAppeals} from './hooks/useQuickAppeals';
+import {useWizard} from './hooks/useWizard';
 import Header from './components/Header';
 import TabsNav from './components/TabsNav';
 import SearchBar from './components/SearchBar';
@@ -125,6 +126,10 @@ export default function Options() {
     // Wizard handlers
     const handleStartWizard = () => {
         wizard.startWizard();
+    };
+
+    const handleSelectProcessing = async (processing: SelectOption) => {
+        await wizard.selectProcessing(processing, quickAppeals.loadCategoriesFromArm);
     };
 
     const handleEditPreset = async (presetId: string) => {
@@ -363,7 +368,7 @@ export default function Options() {
                 childReasonSearchQuery={childReasonSearchQuery}
                 presetCategories={quickAppeals.presetCategories}
                 onSelectProduct={wizard.selectProduct}
-                onSelectProcessing={wizard.selectProcessing}
+                onSelectProcessing={handleSelectProcessing}
                 onSelectCategory={wizard.selectCategory}
                 onSelectSubcategory={wizard.selectSubcategory}
                 onSelectChildReason={wizard.selectChildReason}

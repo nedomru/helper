@@ -1,8 +1,9 @@
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import type {QuickAppealsPreset, QuickAppealsPresetCategory} from '@src/shared/user-settings';
 import {saveQuickAppealsPresetCategories, saveQuickAppealsPresets} from '@src/shared/user-settings';
-import {products} from '../constants/products';
 import {copySinglePreset, exportPresets, importPresets} from '../utils/export-import';
+import PresetCard from './PresetCard';
+import CategoryCard from './CategoryCard';
 
 interface QuickAppealsSectionProps {
     quickAppealsPresets: QuickAppealsPreset[];
@@ -30,9 +31,10 @@ export default function QuickAppealsSection({
                                                 onSaveEditCategory,
                                             }: QuickAppealsSectionProps) {
     const [presetSearchQuery, setPresetSearchQuery] = useState('');
+    const [newCategoryName, setNewCategoryName] = useState('');
     const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
     const [editingCategoryName, setEditingCategoryName] = useState('');
-    const [newCategoryName, setNewCategoryName] = useState('');
+    const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(presetCategories.map(c => c.id)));
 
     const handleExport = () => {
         exportPresets(presetCategories, quickAppealsPresets);
@@ -64,16 +66,16 @@ export default function QuickAppealsSection({
     };
 
     const handleStartEditCategory = (categoryId: string) => {
+        setEditingCategoryId(categoryId);
         const category = presetCategories.find((cat) => cat.id === categoryId);
         if (category) {
-            setEditingCategoryId(categoryId);
             setEditingCategoryName(category.name);
         }
     };
 
     const handleSaveEditCategory = () => {
-        if (editingCategoryId) {
-            onSaveEditCategory(editingCategoryId, editingCategoryName);
+        if (editingCategoryId && editingCategoryName.trim()) {
+            onSaveEditCategory(editingCategoryId, editingCategoryName.trim());
             setEditingCategoryId(null);
             setEditingCategoryName('');
         }
@@ -84,10 +86,110 @@ export default function QuickAppealsSection({
         setEditingCategoryName('');
     };
 
+    useEffect(() => {
+        setExpandedCategories((prev) => {
+            const newSet = new Set(prev);
+            presetCategories.forEach((category) => {
+                newSet.add(category.id);
+            });
+            return newSet;
+        });
+    }, [presetCategories]);
+
+    const toggleCategoryExpanded = (categoryId: string) => {
+        setExpandedCategories((prev) => {
+            const newSet = new Set(prev);
+            if (newSet.has(categoryId)) {
+                newSet.delete(categoryId);
+            } else {
+                newSet.add(categoryId);
+            }
+            return newSet;
+        });
+    };
+
     const presetCountText = (count: number) => {
         if (count === 1) return 'пресет';
         if (count >= 2 && count <= 4) return 'пресета';
         return 'пресетов';
+    };
+
+    const filterPresets = (presets: QuickAppealsPreset[]) => {
+        return presets.filter(
+            (preset) =>
+                preset.name.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                preset.processingLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                (preset.childReasonLabel &&
+                    preset.childReasonLabel.toLowerCase().includes(presetSearchQuery.toLowerCase())) ||
+                (preset.comment && preset.comment.toLowerCase().includes(presetSearchQuery.toLowerCase()))
+        );
+    };
+
+    const renderPresetCards = (presets: QuickAppealsPreset[]) => {
+        return (
+            <div className="preset-cards-grid">
+                {presets.map((preset) => (
+                    <PresetCard
+                        key={preset.id}
+                        preset={preset}
+                        onEdit={() => onEditPreset(preset.id)}
+                        onDuplicate={() => onDuplicatePreset(preset.id)}
+                        onCopy={() => handleCopySinglePreset(preset.id)}
+                        onDelete={() => onRemovePreset(preset.id)}
+                    />
+                ))}
+            </div>
+        );
+    };
+
+    const renderCategoryCards = () => {
+        if (presetCategories.length === 0) {
+            return (
+                <div
+                    style={{
+                        padding: '1rem',
+                        textAlign: 'center',
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.875rem',
+                        backgroundColor: 'var(--muted)',
+                        borderRadius: '0.5rem',
+                        marginTop: '0.75rem',
+                    }}
+                >
+                    Пока нет категорий. Создайте первую категорию выше!
+                </div>
+            );
+        }
+
+        return (
+            <div className="category-cards-grid">
+                {presetCategories.map((category) => {
+                    const categoryPresets = quickAppealsPresets.filter((p) => p.categoryId === category.id);
+                    const isEditing = editingCategoryId === category.id;
+
+                    return (
+                        <CategoryCard
+                            key={category.id}
+                            category={category}
+                            presets={categoryPresets}
+                            isEditing={isEditing}
+                            editName={editingCategoryName}
+                            onEditChange={setEditingCategoryName}
+                            onEditStart={() => handleStartEditCategory(category.id)}
+                            onEdit={handleSaveEditCategory}
+                            onCancelEdit={handleCancelEditCategory}
+                            onDuplicate={() => onDuplicateCategory(category.id)}
+                            onDelete={() => {
+                                if (confirm(`Удалить категорию "${category.name}"? Все пресеты в этой категории станут без категории.`)) {
+                                    onDeleteCategory(category.id);
+                                }
+                            }}
+                        />
+                    );
+                })}
+            </div>
+        );
     };
 
     return (
@@ -133,391 +235,50 @@ export default function QuickAppealsSection({
                                 onChange={(e) => setPresetSearchQuery(e.target.value)}
                                 style={{
                                     width: '100%',
-                                    padding: '0.5rem',
+                                    padding: '0.5rem 0.75rem',
                                     border: '1px solid var(--border-color)',
                                     borderRadius: '0.375rem',
                                     backgroundColor: 'var(--card-bg)',
                                     color: 'var(--text-primary)',
                                     fontSize: '0.875rem',
                                     marginTop: '0.75rem',
-                                    marginBottom: '0.75rem',
+                                    marginBottom: '1rem',
                                 }}
                             />
                             {presetCategories.length > 0 ? (
-                                <div style={{marginTop: '0.75rem'}}>
+                                <div>
                                     {presetCategories.map((category) => {
-                                        const categoryPresets = quickAppealsPresets.filter(
-                                            (preset) =>
-                                                preset.categoryId === category.id &&
-                                                (preset.name.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                    preset.processingLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                    preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                    (preset.childReasonLabel &&
-                                                        preset.childReasonLabel.toLowerCase().includes(presetSearchQuery.toLowerCase())))
+                                        const categoryPresets = filterPresets(
+                                            quickAppealsPresets.filter((preset) => preset.categoryId === category.id)
                                         );
                                         if (categoryPresets.length === 0) return null;
+
+                                        const isExpanded = expandedCategories.has(category.id);
+
                                         return (
                                             <div key={category.id} style={{marginBottom: '1rem'}}>
                                                 <div
-                                                    style={{
-                                                        fontWeight: 600,
-                                                        fontSize: '0.875rem',
-                                                        marginBottom: '0.5rem',
-                                                        color: 'var(--primary)',
-                                                    }}
+                                                    className="preset-category-header"
+                                                    onClick={() => toggleCategoryExpanded(category.id)}
+                                                    style={{cursor: 'pointer', userSelect: 'none'}}
                                                 >
                                                     {category.name}
                                                 </div>
-                                                <div
-                                                    style={{
-                                                        display: 'grid',
-                                                        gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                                                        gap: '0.5rem',
-                                                    }}
-                                                >
-                                                    {categoryPresets.map((preset) => (
-                                                        <div
-                                                            key={preset.id}
-                                                            style={{
-                                                                position: 'relative',
-                                                                display: 'flex',
-                                                                alignItems: 'flex-start',
-                                                                gap: '0.5rem',
-                                                                padding: '0.75rem',
-                                                                backgroundColor: 'var(--muted)',
-                                                                borderRadius: '0.5rem',
-                                                            }}
-                                                        >
-                                                            <div style={{flex: 1, minWidth: 0}}>
-                                                                <div
-                                                                    style={{
-                                                                        fontWeight: 600,
-                                                                        fontSize: '0.875rem',
-                                                                        marginBottom: '0.25rem',
-                                                                        overflow: 'hidden',
-                                                                        textOverflow: 'ellipsis',
-                                                                        whiteSpace: 'nowrap',
-                                                                    }}
-                                                                >
-                                                                    {preset.name}
-                                                                </div>
-                                                                <div
-                                                                    style={{
-                                                                        fontSize: '0.75rem',
-                                                                        color: 'var(--text-secondary)',
-                                                                        overflow: 'hidden',
-                                                                        textOverflow: 'ellipsis',
-                                                                        whiteSpace: 'nowrap',
-                                                                    }}
-                                                                >
-                                                                    {products.find((p) => p.id === preset.product)?.name} →{' '}
-                                                                    {preset.processingLabel} → {preset.categoryLabel}
-                                                                    {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
-                                                                    {preset.childReasonLabel && ` → ${preset.childReasonLabel}`}
-                                                                </div>
-                                                            </div>
-                                                            <div style={{
-                                                                display: 'flex',
-                                                                gap: '0.25rem',
-                                                                flexWrap: 'wrap'
-                                                            }}>
-                                                                <button
-                                                                    className="btn btn-secondary btn-sm"
-                                                                    style={{
-                                                                        padding: '0.25rem 0.5rem',
-                                                                        minWidth: 'auto',
-                                                                        fontSize: '0.75rem'
-                                                                    }}
-                                                                    title="Редактировать"
-                                                                    onClick={() => onEditPreset(preset.id)}
-                                                                >
-                                                                    ✏️
-                                                                </button>
-                                                                <button
-                                                                    className="btn btn-secondary btn-sm"
-                                                                    style={{
-                                                                        padding: '0.25rem 0.5rem',
-                                                                        minWidth: 'auto',
-                                                                        fontSize: '0.75rem'
-                                                                    }}
-                                                                    title="Дублировать"
-                                                                    onClick={() => onDuplicatePreset(preset.id)}
-                                                                >
-                                                                    📋
-                                                                </button>
-                                                                <button
-                                                                    className="btn btn-secondary btn-sm"
-                                                                    style={{
-                                                                        padding: '0.25rem 0.5rem',
-                                                                        minWidth: 'auto',
-                                                                        fontSize: '0.75rem'
-                                                                    }}
-                                                                    title="Копировать в буфер"
-                                                                    onClick={() => handleCopySinglePreset(preset.id)}
-                                                                >
-                                                                    📤
-                                                                </button>
-                                                                <button
-                                                                    className="btn btn-secondary btn-sm"
-                                                                    style={{
-                                                                        padding: '0.25rem 0.5rem',
-                                                                        minWidth: 'auto',
-                                                                        fontSize: '0.75rem'
-                                                                    }}
-                                                                    title="Удалить"
-                                                                    onClick={() => onRemovePreset(preset.id)}
-                                                                >
-                                                                    ✕
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
+                                                {isExpanded && renderPresetCards(categoryPresets)}
                                             </div>
                                         );
                                     })}
-                                    {quickAppealsPresets.filter((p) => !p.categoryId).length > 0 && (
-                                        <div style={{marginBottom: '1rem'}}>
-                                            <div
-                                                style={{
-                                                    fontWeight: 600,
-                                                    fontSize: '0.875rem',
-                                                    marginBottom: '0.5rem',
-                                                    color: 'var(--text-secondary)',
-                                                }}
-                                            >
+                                    {filterPresets(quickAppealsPresets.filter((p) => !p.categoryId)).length > 0 && (
+                                        <div>
+                                            <div className="preset-category-header uncategorized">
                                                 Без категории
                                             </div>
-                                            <div
-                                                style={{
-                                                    display: 'grid',
-                                                    gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                                                    gap: '0.5rem',
-                                                }}
-                                            >
-                                                {quickAppealsPresets
-                                                    .filter(
-                                                        (preset) =>
-                                                            !preset.categoryId &&
-                                                            (preset.name.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                                preset.processingLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                                preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                                (preset.childReasonLabel &&
-                                                                    preset.childReasonLabel.toLowerCase().includes(presetSearchQuery.toLowerCase())))
-                                                    )
-                                                    .map((preset) => (
-                                                        <div
-                                                            key={preset.id}
-                                                            style={{
-                                                                position: 'relative',
-                                                                display: 'flex',
-                                                                alignItems: 'flex-start',
-                                                                gap: '0.5rem',
-                                                                padding: '0.75rem',
-                                                                backgroundColor: 'var(--muted)',
-                                                                borderRadius: '0.5rem',
-                                                            }}
-                                                        >
-                                                            <div style={{flex: 1, minWidth: 0}}>
-                                                                <div
-                                                                    style={{
-                                                                        fontWeight: 600,
-                                                                        fontSize: '0.875rem',
-                                                                        marginBottom: '0.25rem',
-                                                                        overflow: 'hidden',
-                                                                        textOverflow: 'ellipsis',
-                                                                        whiteSpace: 'nowrap',
-                                                                    }}
-                                                                >
-                                                                    {preset.name}
-                                                                </div>
-                                                                <div
-                                                                    style={{
-                                                                        fontSize: '0.75rem',
-                                                                        color: 'var(--text-secondary)',
-                                                                        overflow: 'hidden',
-                                                                        textOverflow: 'ellipsis',
-                                                                        whiteSpace: 'nowrap',
-                                                                    }}
-                                                                >
-                                                                    {products.find((p) => p.id === preset.product)?.name} →{' '}
-                                                                    {preset.processingLabel} → {preset.categoryLabel}
-                                                                    {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
-                                                                    {preset.childReasonLabel && ` → ${preset.childReasonLabel}`}
-                                                                </div>
-                                                            </div>
-                                                            <div style={{
-                                                                display: 'flex',
-                                                                gap: '0.25rem',
-                                                                flexWrap: 'wrap'
-                                                            }}>
-                                                                <button
-                                                                    className="btn btn-secondary btn-sm"
-                                                                    style={{
-                                                                        padding: '0.25rem 0.5rem',
-                                                                        minWidth: 'auto',
-                                                                        fontSize: '0.75rem'
-                                                                    }}
-                                                                    title="Редактировать"
-                                                                    onClick={() => onEditPreset(preset.id)}
-                                                                >
-                                                                    ✏️
-                                                                </button>
-                                                                <button
-                                                                    className="btn btn-secondary btn-sm"
-                                                                    style={{
-                                                                        padding: '0.25rem 0.5rem',
-                                                                        minWidth: 'auto',
-                                                                        fontSize: '0.75rem'
-                                                                    }}
-                                                                    title="Дублировать"
-                                                                    onClick={() => onDuplicatePreset(preset.id)}
-                                                                >
-                                                                    📋
-                                                                </button>
-                                                                <button
-                                                                    className="btn btn-secondary btn-sm"
-                                                                    style={{
-                                                                        padding: '0.25rem 0.5rem',
-                                                                        minWidth: 'auto',
-                                                                        fontSize: '0.75rem'
-                                                                    }}
-                                                                    title="Копировать в буфер"
-                                                                    onClick={() => handleCopySinglePreset(preset.id)}
-                                                                >
-                                                                    📤
-                                                                </button>
-                                                                <button
-                                                                    className="btn btn-secondary btn-sm"
-                                                                    style={{
-                                                                        padding: '0.25rem 0.5rem',
-                                                                        minWidth: 'auto',
-                                                                        fontSize: '0.75rem'
-                                                                    }}
-                                                                    title="Удалить"
-                                                                    onClick={() => onRemovePreset(preset.id)}
-                                                                >
-                                                                    ✕
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                            </div>
+                                            {renderPresetCards(filterPresets(quickAppealsPresets.filter((p) => !p.categoryId)))}
                                         </div>
                                     )}
                                 </div>
                             ) : (
-                                <div
-                                    style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))',
-                                        gap: '0.5rem',
-                                        marginTop: '0.75rem',
-                                    }}
-                                >
-                                    {quickAppealsPresets
-                                        .filter(
-                                            (preset) =>
-                                                preset.name.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                preset.processingLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                (preset.childReasonLabel &&
-                                                    preset.childReasonLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()))
-                                        )
-                                        .map((preset) => (
-                                            <div
-                                                key={preset.id}
-                                                style={{
-                                                    position: 'relative',
-                                                    display: 'flex',
-                                                    alignItems: 'flex-start',
-                                                    gap: '0.5rem',
-                                                    padding: '0.75rem',
-                                                    backgroundColor: 'var(--muted)',
-                                                    borderRadius: '0.5rem',
-                                                }}
-                                            >
-                                                <div style={{flex: 1, minWidth: 0}}>
-                                                    <div
-                                                        style={{
-                                                            fontWeight: 600,
-                                                            fontSize: '0.875rem',
-                                                            marginBottom: '0.25rem',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis',
-                                                            whiteSpace: 'nowrap',
-                                                        }}
-                                                    >
-                                                        {preset.name}
-                                                    </div>
-                                                    <div
-                                                        style={{
-                                                            fontSize: '0.75rem',
-                                                            color: 'var(--text-secondary)',
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis',
-                                                            whiteSpace: 'nowrap',
-                                                        }}
-                                                    >
-                                                        {products.find((p) => p.id === preset.product)?.name} →{' '}
-                                                        {preset.processingLabel} → {preset.categoryLabel}
-                                                        {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
-                                                        {preset.childReasonLabel && ` → ${preset.childReasonLabel}`}
-                                                    </div>
-                                                </div>
-                                                <div style={{display: 'flex', gap: '0.25rem', flexWrap: 'wrap'}}>
-                                                    <button
-                                                        className="btn btn-secondary btn-sm"
-                                                        style={{
-                                                            padding: '0.25rem 0.5rem',
-                                                            minWidth: 'auto',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                        title="Редактировать"
-                                                        onClick={() => onEditPreset(preset.id)}
-                                                    >
-                                                        ✏️
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-secondary btn-sm"
-                                                        style={{
-                                                            padding: '0.25rem 0.5rem',
-                                                            minWidth: 'auto',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                        title="Дублировать"
-                                                        onClick={() => onDuplicatePreset(preset.id)}
-                                                    >
-                                                        📋
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-secondary btn-sm"
-                                                        style={{
-                                                            padding: '0.25rem 0.5rem',
-                                                            minWidth: 'auto',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                        title="Копировать в буфер"
-                                                        onClick={() => handleCopySinglePreset(preset.id)}
-                                                    >
-                                                        📤
-                                                    </button>
-                                                    <button
-                                                        className="btn btn-secondary btn-sm"
-                                                        style={{
-                                                            padding: '0.25rem 0.5rem',
-                                                            minWidth: 'auto',
-                                                            fontSize: '0.75rem'
-                                                        }}
-                                                        title="Удалить"
-                                                        onClick={() => onRemovePreset(preset.id)}
-                                                    >
-                                                        ✕
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        ))}
-                                </div>
+                                renderPresetCards(filterPresets(quickAppealsPresets))
                             )}
                         </div>
                     </div>
@@ -538,7 +299,7 @@ export default function QuickAppealsSection({
                                 placeholder="Новая категория..."
                                 style={{
                                     flex: 1,
-                                    padding: '0.5rem',
+                                    padding: '0.5rem 0.75rem',
                                     border: '1px solid var(--border-color)',
                                     borderRadius: '0.375rem',
                                     backgroundColor: 'var(--card-bg)',
@@ -552,140 +313,13 @@ export default function QuickAppealsSection({
                             </button>
                         </div>
 
-                        {presetCategories.length > 0 ? (
-                            <div
-                                style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))',
-                                    gap: '0.75rem',
-                                    marginTop: '0.75rem',
-                                }}
-                            >
-                                {presetCategories.map((category) => {
-                                    const presetCount = quickAppealsPresets.filter((p) => p.categoryId === category.id).length;
-                                    const isEditing = editingCategoryId === category.id;
-
-                                    return (
-                                        <div
-                                            key={category.id}
-                                            style={{
-                                                padding: '0.75rem',
-                                                backgroundColor: 'var(--muted)',
-                                                borderRadius: '0.5rem',
-                                                border: '1px solid var(--border-color)',
-                                            }}
-                                        >
-                                            {isEditing ? (
-                                                <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
-                                                    <input
-                                                        type="text"
-                                                        value={editingCategoryName}
-                                                        onChange={(e) => setEditingCategoryName(e.target.value)}
-                                                        autoFocus
-                                                        style={{
-                                                            flex: 1,
-                                                            padding: '0.375rem',
-                                                            border: '1px solid var(--border-color)',
-                                                            borderRadius: '0.375rem',
-                                                            backgroundColor: 'var(--card-bg)',
-                                                            color: 'var(--text-primary)',
-                                                            fontSize: '0.875rem',
-                                                        }}
-                                                    />
-                                                    <button className="btn btn-primary btn-sm"
-                                                            onClick={handleSaveEditCategory}
-                                                            style={{padding: '0.25rem 0.5rem'}}>
-                                                        ✓
-                                                    </button>
-                                                    <button className="btn btn-secondary btn-sm"
-                                                            onClick={handleCancelEditCategory}
-                                                            style={{padding: '0.25rem 0.5rem'}}>
-                                                        ✕
-                                                    </button>
-                                                </div>
-                                            ) : (
-                                                <div style={{
-                                                    display: 'flex',
-                                                    justifyContent: 'space-between',
-                                                    alignItems: 'center'
-                                                }}>
-                                                    <div style={{flex: 1, minWidth: 0}}>
-                                                        <div
-                                                            style={{
-                                                                fontWeight: 600,
-                                                                fontSize: '0.875rem',
-                                                                marginBottom: '0.25rem',
-                                                                overflow: 'hidden',
-                                                                textOverflow: 'ellipsis',
-                                                                whiteSpace: 'nowrap',
-                                                            }}
-                                                        >
-                                                            {category.name}
-                                                        </div>
-                                                        <div style={{
-                                                            fontSize: '0.75rem',
-                                                            color: 'var(--text-secondary)'
-                                                        }}>
-                                                            {presetCount} {presetCountText(presetCount)}
-                                                        </div>
-                                                    </div>
-                                                    <div style={{display: 'flex', gap: '0.25rem', flexWrap: 'wrap'}}>
-                                                        <button
-                                                            className="btn btn-secondary btn-sm"
-                                                            onClick={() => handleStartEditCategory(category.id)}
-                                                            style={{padding: '0.25rem 0.5rem'}}
-                                                            title="Редактировать"
-                                                        >
-                                                            ✏️
-                                                        </button>
-                                                        <button
-                                                            className="btn btn-secondary btn-sm"
-                                                            onClick={() => onDuplicateCategory(category.id)}
-                                                            style={{padding: '0.25rem 0.5rem'}}
-                                                            title="Дублировать"
-                                                        >
-                                                            📋
-                                                        </button>
-                                                        <button
-                                                            className="btn btn-secondary btn-sm"
-                                                            onClick={() => {
-                                                                if (confirm(`Удалить категорию "${category.name}"? Все пресеты в этой категории станут без категории.`)) {
-                                                                    onDeleteCategory(category.id);
-                                                                }
-                                                            }}
-                                                            style={{padding: '0.25rem 0.5rem'}}
-                                                            title="Удалить"
-                                                        >
-                                                            🗑️
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            )}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-                        ) : (
-                            <div
-                                style={{
-                                    padding: '1rem',
-                                    textAlign: 'center',
-                                    color: 'var(--text-secondary)',
-                                    fontSize: '0.875rem',
-                                    backgroundColor: 'var(--muted)',
-                                    borderRadius: '0.5rem',
-                                    marginTop: '0.75rem',
-                                }}
-                            >
-                                Пока нет категорий. Создайте первую категорию выше!
-                            </div>
-                        )}
+                        {renderCategoryCards()}
 
                         {quickAppealsPresets.filter((p) => !p.categoryId).length > 0 && (
                             <div
                                 style={{
                                     marginTop: '1rem',
-                                    padding: '0.75rem',
+                                    padding: '0.625rem 0.875rem',
                                     backgroundColor: 'rgba(255, 193, 7, 0.1)',
                                     border: '1px solid rgba(255, 193, 7, 0.3)',
                                     borderRadius: '0.5rem',

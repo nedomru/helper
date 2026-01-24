@@ -162,12 +162,7 @@ export function useQuickAppeals() {
         });
         setPresetCategories(updatedCategories);
 
-        const success = await saveQuickAppealsPresetCategories(updatedCategories);
-        if (success) {
-            notify('Категории', 'Категория обновлена', 'success');
-        } else {
-            notify('Категории', 'Не удалось обновить категорию', 'error');
-        }
+        await saveQuickAppealsPresetCategories(updatedCategories);
     };
 
     const savePreset = async (preset: QuickAppealsPreset, isEditing: boolean) => {
