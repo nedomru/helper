@@ -239,7 +239,10 @@ export interface QuickAppealsPreset {
     categoryLabel: string;
     subcategory?: string;
     subcategoryLabel?: string;
+    childReason?: string;
+    childReasonLabel?: string;
     categoryId?: string | null;
+    comment?: string;
 }
 
 export interface QuickAppealsPresetCategory {

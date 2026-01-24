@@ -29,6 +29,7 @@ import {filterSessions} from "@pages/content/arm/features/sessions-history/filte
 import {loadLastDayClientSessions} from "@pages/content/arm/features/ui-enhancements/sessionsLastDay";
 import {smsButtons} from "@pages/content/arm/features/sms/fast_choose";
 import {copyClientNumber} from "@pages/content/arm/features/client-number/copyButton";
+import quickAppeals from "@pages/content/arm/features/fast-appeals/buttons";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -96,7 +97,9 @@ export const armPageConfigs: PageConfig[] = [
     {
         pattern: URL_PATTERNS.LEFT_FRAME,
         features: [],
-        alwaysRun: [],
+        alwaysRun: [
+            quickAppeals
+        ],
     },
 
     {
