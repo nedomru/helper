@@ -186,6 +186,7 @@ function setDropdownValue(
     selector: string,
     newValue: string,
     label: string,
+    dispatchEvent = true,
 ): boolean {
     const select = document.querySelector<HTMLSelectElement>(selector);
     if (!select) return false;
@@ -197,7 +198,9 @@ function setDropdownValue(
     }
 
     select.value = newValue;
-    select.dispatchEvent(new Event("change", {bubbles: true}));
+    if (dispatchEvent) {
+        select.dispatchEvent(new Event("change", {bubbles: true}));
+    }
     console.log(`[Helper] ${label} changed from ${currentValue} to ${newValue}`);
     return true;
 }
@@ -229,43 +232,6 @@ function waitForElement<T extends HTMLElement>(
 }
 
 /**
- * Verify and retry setting textarea value
- */
-async function verifyAndSetTextarea(
-    selector: string,
-    value: string,
-    label: string,
-    retries = 2,
-): Promise<boolean> {
-    const textarea = document.querySelector<HTMLTextAreaElement>(selector);
-    if (!textarea) return false;
-
-    const setValue = () => {
-        textarea.value = value;
-        textarea.dispatchEvent(new Event("input", {bubbles: true}));
-    };
-
-    for (let attempt = 0; attempt <= retries; attempt++) {
-        setValue();
-
-        // Wait and verify
-        await new Promise((r) => setTimeout(r, 100));
-
-        if (textarea.value === value) {
-            console.log(`[Helper] ${label}${attempt > 0 ? " reapplied" : " set successfully"}`);
-            return true;
-        }
-
-        if (attempt < retries) {
-            console.warn(`[Helper] ${label} verification failed, retrying...`);
-        }
-    }
-
-    console.error(`[Helper] ${label} failed after ${retries + 1} attempts`);
-    return false;
-}
-
-/**
  * Execute a preset by setting form values
  */
 async function executePreset(preset: QuickAppealsPreset) {
@@ -286,11 +252,11 @@ async function executePreset(preset: QuickAppealsPreset) {
         }
 
         // Set step
-        setDropdownValue(".uni_reas_step", preset.processing, "Step");
+        setDropdownValue(".uni_reas_step", preset.processing, "Step", true);
 
         // Set category
         await waitForElement(".uni_load_obj_reason", async () => {
-            setDropdownValue(".uni_load_obj_reason", preset.category, "Category");
+            setDropdownValue(".uni_load_obj_reason", preset.category, "Category", true);
 
             // Set subcategory if needed
             if (preset.subcategory) {
@@ -299,6 +265,7 @@ async function executePreset(preset: QuickAppealsPreset) {
                         ".uni_load_main_reason",
                         preset.subcategory!,
                         "Subcategory",
+                        true,
                     );
 
                     // Set child reason if needed
@@ -308,6 +275,7 @@ async function executePreset(preset: QuickAppealsPreset) {
                                 ".uni_load_child_reason",
                                 preset.childReason!,
                                 "Child reason",
+                                false,
                             );
                         });
                     }
@@ -317,12 +285,8 @@ async function executePreset(preset: QuickAppealsPreset) {
 
         // Set comment if exists
         if (preset.comment?.trim()) {
-            await waitForElement(".comment_text", async () => {
-                await verifyAndSetTextarea(
-                    ".comment_text",
-                    preset.comment!,
-                    "Comment",
-                );
+            await waitForElement<HTMLTextAreaElement>(".comment_text", (substep) => {
+                substep.value = preset.comment!;
             });
         }
 
