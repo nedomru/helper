@@ -769,12 +769,6 @@ export default function Options() {
         setWizardStep('name');
     };
 
-    // Function to skip child reason (if no child reasons available)
-    const skipChildReason = () => {
-        setSelectedChildReason(null);
-        setWizardStep('name');
-    };
-
     // Function to save the preset
     const savePreset = async () => {
         if (selectedProduct === null || !selectedProcessing || !selectedCategory || !presetName.trim()) {
@@ -2229,12 +2223,22 @@ export default function Options() {
                                                         ))}
                                                 </div>
                                             </div>
-                                            <button
-                                                className="btn btn-secondary btn-sm"
-                                                onClick={() => setWizardStep('product')}
-                                            >
-                                                ← Назад
-                                            </button>
+                                            <div style={{display: 'flex', gap: '0.5rem'}}>
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
+                                                    onClick={() => setWizardStep('product')}
+                                                >
+                                                    ← Назад
+                                                </button>
+                                                <button
+                                                    className="btn btn-primary btn-sm"
+                                                    onClick={() => setWizardStep('name')}
+                                                    style={{flex: 1}}
+                                                    disabled={!selectedProduct}
+                                                >
+                                                    Завершить →
+                                                </button>
+                                            </div>
                                         </>
                                     )}
 
@@ -2304,12 +2308,22 @@ export default function Options() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <button
-                                                className="btn btn-secondary btn-sm"
-                                                onClick={() => setWizardStep('processing')}
-                                            >
-                                                ← Назад
-                                            </button>
+                                            <div style={{display: 'flex', gap: '0.5rem'}}>
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
+                                                    onClick={() => setWizardStep('processing')}
+                                                >
+                                                    ← Назад
+                                                </button>
+                                                <button
+                                                    className="btn btn-primary btn-sm"
+                                                    onClick={() => setWizardStep('name')}
+                                                    style={{flex: 1}}
+                                                    disabled={!selectedProduct}
+                                                >
+                                                    Завершить →
+                                                </button>
+                                            </div>
                                         </>
                                     )}
 
@@ -2390,6 +2404,14 @@ export default function Options() {
                                                     onClick={() => setWizardStep('category')}
                                                 >
                                                     ← Назад
+                                                </button>
+                                                <button
+                                                    className="btn btn-primary btn-sm"
+                                                    onClick={() => setWizardStep('name')}
+                                                    style={{flex: 1}}
+                                                    disabled={!selectedProduct}
+                                                >
+                                                    Завершить →
                                                 </button>
                                             </div>
                                         </>
@@ -2473,15 +2495,14 @@ export default function Options() {
                                                 >
                                                     ← Назад
                                                 </button>
-                                                {!isLoadingChildReasons && (
-                                                    <button
-                                                        className="btn btn-primary btn-sm"
-                                                        onClick={skipChildReason}
-                                                        style={{flex: 1}}
-                                                    >
-                                                        Пропустить →
-                                                    </button>
-                                                )}
+                                                <button
+                                                    className="btn btn-primary btn-sm"
+                                                    onClick={() => setWizardStep('name')}
+                                                    style={{flex: 1}}
+                                                    disabled={!selectedProduct}
+                                                >
+                                                    Завершить →
+                                                </button>
                                             </div>
                                         </>
                                     )}
