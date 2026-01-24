@@ -1,18 +1,23 @@
 import type {AppealsCategory, SelectOption} from '../types';
 import {notify} from '@src/utils/notify';
 
-const ARM_COOKIE_URL = 'https://perm.db.ertelecom.ru/cgi-bin/ppo/excells';
-
 export async function getCookies(): Promise<{
     ok: boolean;
     data?: { wccUsrName: string; wccSsnName: string };
     err?: string;
 }> {
+    // Build cookie URL dynamically based on current hostname
+    const hostname = window.location.hostname;
+    // Extract the city prefix (e.g., "tmn" from "tmn.db.ertelecom.ru")
+    const cityMatch = hostname.match(/^([^.]+)\.db\.ertelecom\.ru$/);
+    const cityPrefix = cityMatch ? cityMatch[1] : 'perm';
+    const cookieUrl = `https://${cityPrefix}.db.ertelecom.ru/cgi-bin/ppo/excells`;
+
     return new Promise((resolve) => {
         chrome.runtime.sendMessage(
             {
                 action: 'getMultipleCookies',
-                url: ARM_COOKIE_URL,
+                url: cookieUrl,
                 names: ['wccUsrName', 'wccSsnName'],
             },
             (response) => resolve(response as any)
