@@ -76,6 +76,164 @@ export default function Options() {
     const [subcategorySearchQuery, setSubcategorySearchQuery] = useState('');
     const [presetSearchQuery, setPresetSearchQuery] = useState('');
 
+    // Function to duplicate a category
+    const duplicateCategory = async (categoryId: string) => {
+        const category = presetCategories.find(cat => cat.id === categoryId);
+        if (!category) return;
+
+        const newCategory = {
+            id: Date.now().toString(),
+            name: `${category.name} (копия)`,
+        };
+
+        const updatedCategories = [...presetCategories, newCategory];
+        setPresetCategories(updatedCategories);
+
+        const success = await saveQuickAppealsPresetCategories(updatedCategories);
+        if (success) {
+            notify('Категории', `Категория "${category.name}" дублирована!`, 'success');
+        } else {
+            notify('Категории', 'Не удалось дублировать категорию', 'error');
+        }
+    };
+
+    // Function to duplicate a preset
+    const duplicatePreset = async (presetId: string) => {
+        const preset = quickAppealsPresets.find(p => p.id === presetId);
+        if (!preset) return;
+
+        const newPreset = {
+            ...preset,
+            id: Date.now().toString(),
+            name: `${preset.name} (копия)`,
+        };
+
+        const updatedPresets = [...quickAppealsPresets, newPreset];
+        setQuickAppealsPresets(updatedPresets);
+
+        const success = await saveQuickAppealsPresets(updatedPresets);
+        if (success) {
+            notify('Быстрые обращения', `Пресет "${preset.name}" дублирован!`, 'success');
+        } else {
+            notify('Быстрые обращения', 'Не удалось дублировать пресет', 'error');
+        }
+    };
+
+    // Function to copy a single preset to clipboard
+    const copySinglePreset = async (presetId: string) => {
+        const preset = quickAppealsPresets.find(p => p.id === presetId);
+        if (!preset) return;
+
+        const presetData = JSON.stringify(preset, null, 2);
+
+        try {
+            await navigator.clipboard.writeText(presetData);
+            notify('Быстрые обращения', `Пресет "${preset.name}" скопирован в буфер обмена!`, 'success');
+        } catch {
+            notify('Быстрые обращения', 'Не удалось скопировать пресет', 'error');
+        }
+    };
+
+    // Function to export all presets to JSON file
+    const exportPresets = () => {
+        const data = {
+            version: '1.0',
+            exportDate: new Date().toISOString(),
+            categories: presetCategories,
+            presets: quickAppealsPresets,
+        };
+
+        const dataStr = JSON.stringify(data, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `quick-appeals-presets-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        URL.revokeObjectURL(url);
+
+        notify('Быстрые обращения', `Экспортировано ${quickAppealsPresets.length} пресетов!`, 'success');
+    };
+
+    // Function to import presets from JSON file
+    const importPresets = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const importedData = JSON.parse(e.target?.result as string);
+
+                // Handle both single preset and full export format
+                let presetsToAdd: QuickAppealsPreset[] = [];
+                let categoriesToAdd: QuickAppealsPresetCategory[] = [];
+
+                if (importedData.presets && Array.isArray(importedData.presets)) {
+                    // Full export format with categories and presets
+                    presetsToAdd = importedData.presets;
+                    categoriesToAdd = importedData.categories || [];
+                } else if (importedData.id && importedData.name) {
+                    // Single preset format
+                    presetsToAdd = [importedData];
+                }
+
+                // Generate new IDs for imported items to avoid conflicts
+                const processedPresets = presetsToAdd.map(preset => ({
+                    ...preset,
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                    name: preset.name.endsWith(' (импорт)') ? preset.name : `${preset.name} (импорт)`,
+                }));
+
+                const processedCategories = categoriesToAdd.map(category => ({
+                    ...category,
+                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                }));
+
+                // Create category ID mapping for old IDs to new IDs
+                const categoryIdMap = new Map<string, string>();
+                processedCategories.forEach(cat => {
+                    const originalCategory = categoriesToAdd.find(c => c.name === cat.name.replace(' (импорт)', ''));
+                    if (originalCategory) {
+                        categoryIdMap.set(originalCategory.id, cat.id);
+                    }
+                });
+
+                // Update preset category IDs to use new category IDs
+                const updatedPresets = processedPresets.map(preset => {
+                    if (preset.categoryId && categoryIdMap.has(preset.categoryId)) {
+                        return {...preset, categoryId: categoryIdMap.get(preset.categoryId)!};
+                    }
+                    return preset;
+                });
+
+                // Merge with existing data
+                const mergedPresets = [...quickAppealsPresets, ...updatedPresets];
+                const mergedCategories = [...presetCategories, ...processedCategories];
+
+                setQuickAppealsPresets(mergedPresets);
+                setPresetCategories(mergedCategories);
+
+                const presetsSuccess = await saveQuickAppealsPresets(mergedPresets);
+                const categoriesSuccess = await saveQuickAppealsPresetCategories(mergedCategories);
+
+                if (presetsSuccess && categoriesSuccess) {
+                    notify(
+                        'Быстрые обращения',
+                        `Импортировано ${updatedPresets.length} пресетов и ${processedCategories.length} категорий!`,
+                        'success'
+                    );
+                } else {
+                    notify('Быстрые обращения', 'Ошибка при импорте пресетов', 'error');
+                }
+            } catch {
+                notify('Быстрые обращения', 'Ошибка при импорте. Проверьте формат файла.', 'error');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    };
+
     // Products available
     const products = [
         {id: 70, name: 'Интернет'},
@@ -956,17 +1114,20 @@ export default function Options() {
             ],
         },
         {
-            title: 'Копирование',
-            icon: '📋',
-            description: 'Быстрое копирование данных клиента',
+            title: 'Удаление',
+            icon: '📁',
+            description: 'Управление удалений информации',
             features: [
-                {key: 'copyClientCard', label: 'Карточка клиента', description: 'Копировать данные карточки клиента'},
-                {key: 'sendClientCard', label: 'Отправить карточку', description: 'Отправить карточку по email'},
-                {key: 'copyClientAgreement', label: 'Договор', description: 'Копировать номер договора'},
-                {key: 'copyClientAddress', label: 'Адрес', description: 'Копировать адрес клиента'},
-                {key: 'copyClientNumber', label: 'Номер телефона', description: 'Копировать номер телефона'},
-                {key: 'copyMACAddress', label: 'MAC-адрес', description: 'Копировать MAC-адрес'},
-                {key: 'copyIPAddress', label: 'IP-адрес', description: 'Копировать IP-адрес'},
+                {
+                    key: 'removeDiagnosticTabs',
+                    label: 'Вкладки диагностики',
+                    description: 'Удаляет ненужные вкладки диагностики EQM:\nВосстановление сброшенных данных, Диагностика абонентского устройств, Диагностика сети НТК'
+                },
+                {
+                    key: 'removeAppealsColumns',
+                    label: 'Колонки обращений',
+                    description: 'Удаляет ненужные колонки обращений:\nОборудование, Продукт, Платформа, Исполнитель'
+                }
             ],
         },
         {
@@ -985,31 +1146,6 @@ export default function Options() {
                     description: 'Подсвечивать важные обращения'
                 },
                 {key: 'showSubscriptionStatus', label: 'Статус подписки', description: 'Показывать статус подписки'},
-            ],
-        },
-        {
-            title: 'Дополнительно',
-            icon: '⚙️',
-            description: 'Дополнительные функции АРМ',
-            features: [
-                {
-                    key: 'removeDiagnosticTabs',
-                    label: 'Убрать диагностические вкладки',
-                    description: 'Скрыть диагностические вкладки'
-                },
-                {
-                    key: 'removeAppealsColumns',
-                    label: 'Убрать колонки обращений',
-                    description: 'Скрыть лишние колонки в обращениях'
-                },
-                {key: 'compensateButton', label: 'Кнопка компенсации', description: 'Добавить кнопку компенсации'},
-                {key: 'filterSessions', label: 'Фильтр сессий', description: 'Фильтрация сессий клиента'},
-                {
-                    key: 'loadLastDayClientSessions',
-                    label: 'Сессии за последний день',
-                    description: 'Автозагрузка сессий за день'
-                },
-                {key: 'smsButtons', label: 'Кнопки СМС', description: 'Быстрый выбор СМС'},
             ],
         },
         {
@@ -1086,8 +1222,46 @@ export default function Options() {
                         </div>
                     </div>
                     <div className="feature-list">
-                        {/* Create new preset button */}
+                        {/* Action buttons row */}
                         <div className="feature-item">
+                            <div className="feature-info" style={{width: '100%'}}>
+                                <label className="feature-label">Действия с пресетами</label>
+                                <span className="feature-description">
+                                    Управление пресетами и категориями
+                                </span>
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '0.5rem',
+                                    flexWrap: 'wrap',
+                                    marginTop: '0.75rem',
+                                }}>
+                                    <button
+                                        className="btn btn-primary btn-sm"
+                                        onClick={startWizard}
+                                    >
+                                        ➕ Создать пресет
+                                    </button>
+                                    <button
+                                        className="btn btn-secondary btn-sm"
+                                        onClick={exportPresets}
+                                    >
+                                        📥 Экспорт всех
+                                    </button>
+                                    <label className="btn btn-secondary btn-sm" style={{cursor: 'pointer'}}>
+                                        📤 Импорт
+                                        <input
+                                            type="file"
+                                            accept=".json"
+                                            onChange={importPresets}
+                                            hidden
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Create new preset button */}
+                        <div className="feature-item" style={{display: 'none'}}>
                             <div className="feature-info">
                                 <label className="feature-label">Создать новый пресет</label>
                                 <span className="feature-description">
@@ -1204,7 +1378,11 @@ export default function Options() {
                                                                             {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
                                                                         </div>
                                                                     </div>
-                                                                    <div style={{display: 'flex', gap: '0.25rem'}}>
+                                                                    <div style={{
+                                                                        display: 'flex',
+                                                                        gap: '0.25rem',
+                                                                        flexWrap: 'wrap'
+                                                                    }}>
                                                                         <button
                                                                             className="btn btn-secondary btn-sm"
                                                                             style={{
@@ -1216,6 +1394,30 @@ export default function Options() {
                                                                             onClick={() => editPreset(preset.id)}
                                                                         >
                                                                             ✏️
+                                                                        </button>
+                                                                        <button
+                                                                            className="btn btn-secondary btn-sm"
+                                                                            style={{
+                                                                                padding: '0.25rem 0.5rem',
+                                                                                minWidth: 'auto',
+                                                                                fontSize: '0.75rem',
+                                                                            }}
+                                                                            title="Дублировать"
+                                                                            onClick={() => duplicatePreset(preset.id)}
+                                                                        >
+                                                                            📋
+                                                                        </button>
+                                                                        <button
+                                                                            className="btn btn-secondary btn-sm"
+                                                                            style={{
+                                                                                padding: '0.25rem 0.5rem',
+                                                                                minWidth: 'auto',
+                                                                                fontSize: '0.75rem',
+                                                                            }}
+                                                                            title="Копировать в буфер"
+                                                                            onClick={() => copySinglePreset(preset.id)}
+                                                                        >
+                                                                            📤
                                                                         </button>
                                                                         <button
                                                                             className="btn btn-secondary btn-sm"
@@ -1292,7 +1494,11 @@ export default function Options() {
                                                                         {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
                                                                     </div>
                                                                 </div>
-                                                                <div style={{display: 'flex', gap: '0.25rem'}}>
+                                                                <div style={{
+                                                                    display: 'flex',
+                                                                    gap: '0.25rem',
+                                                                    flexWrap: 'wrap'
+                                                                }}>
                                                                     <button
                                                                         className="btn btn-secondary btn-sm"
                                                                         style={{
@@ -1304,6 +1510,30 @@ export default function Options() {
                                                                         onClick={() => editPreset(preset.id)}
                                                                     >
                                                                         ✏️
+                                                                    </button>
+                                                                    <button
+                                                                        className="btn btn-secondary btn-sm"
+                                                                        style={{
+                                                                            padding: '0.25rem 0.5rem',
+                                                                            minWidth: 'auto',
+                                                                            fontSize: '0.75rem',
+                                                                        }}
+                                                                        title="Дублировать"
+                                                                        onClick={() => duplicatePreset(preset.id)}
+                                                                    >
+                                                                        📋
+                                                                    </button>
+                                                                    <button
+                                                                        className="btn btn-secondary btn-sm"
+                                                                        style={{
+                                                                            padding: '0.25rem 0.5rem',
+                                                                            minWidth: 'auto',
+                                                                            fontSize: '0.75rem',
+                                                                        }}
+                                                                        title="Копировать в буфер"
+                                                                        onClick={() => copySinglePreset(preset.id)}
+                                                                    >
+                                                                        📤
                                                                     </button>
                                                                     <button
                                                                         className="btn btn-secondary btn-sm"
@@ -1372,7 +1602,8 @@ export default function Options() {
                                                                 {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
                                                             </div>
                                                         </div>
-                                                        <div style={{display: 'flex', gap: '0.25rem'}}>
+                                                        <div
+                                                            style={{display: 'flex', gap: '0.25rem', flexWrap: 'wrap'}}>
                                                             <button
                                                                 className="btn btn-secondary btn-sm"
                                                                 style={{
@@ -1384,6 +1615,30 @@ export default function Options() {
                                                                 onClick={() => editPreset(preset.id)}
                                                             >
                                                                 ✏️
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-secondary btn-sm"
+                                                                style={{
+                                                                    padding: '0.25rem 0.5rem',
+                                                                    minWidth: 'auto',
+                                                                    fontSize: '0.75rem',
+                                                                }}
+                                                                title="Дублировать"
+                                                                onClick={() => duplicatePreset(preset.id)}
+                                                            >
+                                                                📋
+                                                            </button>
+                                                            <button
+                                                                className="btn btn-secondary btn-sm"
+                                                                style={{
+                                                                    padding: '0.25rem 0.5rem',
+                                                                    minWidth: 'auto',
+                                                                    fontSize: '0.75rem',
+                                                                }}
+                                                                title="Копировать в буфер"
+                                                                onClick={() => copySinglePreset(preset.id)}
+                                                            >
+                                                                📤
                                                             </button>
                                                             <button
                                                                 className="btn btn-secondary btn-sm"
@@ -1528,7 +1783,11 @@ export default function Options() {
                                                                     {presetCount} {presetCount === 1 ? 'пресет' : presetCount >= 2 && presetCount <= 4 ? 'пресета' : 'пресетов'}
                                                                 </div>
                                                             </div>
-                                                            <div style={{display: 'flex', gap: '0.25rem'}}>
+                                                            <div style={{
+                                                                display: 'flex',
+                                                                gap: '0.25rem',
+                                                                flexWrap: 'wrap'
+                                                            }}>
                                                                 <button
                                                                     className="btn btn-secondary btn-sm"
                                                                     onClick={() => startEditCategory(category.id)}
@@ -1536,6 +1795,14 @@ export default function Options() {
                                                                     title="Редактировать"
                                                                 >
                                                                     ✏️
+                                                                </button>
+                                                                <button
+                                                                    className="btn btn-secondary btn-sm"
+                                                                    onClick={() => duplicateCategory(category.id)}
+                                                                    style={{padding: '0.25rem 0.5rem'}}
+                                                                    title="Дублировать"
+                                                                >
+                                                                    📋
                                                                 </button>
                                                                 <button
                                                                     className="btn btn-secondary btn-sm"
