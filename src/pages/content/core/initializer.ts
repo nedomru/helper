@@ -1,5 +1,6 @@
 import type {PageConfig} from './types';
 import {clearSettingsCache, getUserSettings, isFeatureEnabled} from '@src/shared/user-settings';
+import {getAccessToken} from '@src/utils/auth';
 
 class ContentInitializer {
     private static instance: ContentInitializer;
@@ -93,6 +94,14 @@ class ContentInitializer {
         this.isInitializing = true;
 
         try {
+            // Проверяем авторизацию перед инициализацией
+            const token = await getAccessToken();
+            if (!token) {
+                console.log('[Initializer] User not authorized, skipping feature initialization');
+                this.isInitialized = true;
+                return;
+            }
+
             // Определяем тип фрейма для лучшего логирования
             const frameInfo = this.getFrameInfo();
 
