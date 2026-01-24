@@ -27,8 +27,6 @@ export default function Options() {
     const [currentUser, setCurrentUser] = useState<TelegramUser | null>(null);
     const [settings, setSettings] = useState<Settings>({});
     const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [activeSection, setActiveSection] = useState<'arm' | 'genesys' | 'line'>('arm');
     const [searchQuery, setSearchQuery] = useState('');
@@ -1115,16 +1113,13 @@ export default function Options() {
             },
         };
         setSettings(newSettings);
-        setIsSaving(true);
         try {
             const success = await updateUserSettings(newSettings);
-            setSaveStatus(success ? 'success' : 'error');
-            setTimeout(() => setSaveStatus('idle'), 2000);
+            if (!success) {
+                notify('Настройки', 'Ошибка при сохранении настроек', 'error');
+            }
         } catch {
-            setSaveStatus('error');
-            setTimeout(() => setSaveStatus('idle'), 2000);
-        } finally {
-            setIsSaving(false);
+            notify('Настройки', 'Ошибка при сохранении настроек', 'error');
         }
     };
 
@@ -2821,7 +2816,6 @@ export default function Options() {
                                             type="checkbox"
                                             checked={isChecked}
                                             onChange={(e) => updateSetting(category, feature.key, e.target.checked)}
-                                            disabled={isSaving}
                                         />
                                         <span className="slider"/>
                                     </label>
@@ -2979,23 +2973,6 @@ export default function Options() {
                                 <input type="file" accept=".json" onChange={importSettings} hidden/>
                             </label>
                         </div>
-                        <div className="actions-right">
-                            {saveStatus === 'success' && (
-                                <div className="save-indicator success">
-                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                         strokeWidth="2">
-                                        <path d="M20 6L9 17l-5-5"/>
-                                    </svg>
-                                    <span>Сохранено</span>
-                                </div>
-                            )}
-                            {isSaving && (
-                                <div className="save-indicator saving">
-                                    <div className="spinner-small"/>
-                                    <span>Сохранение...</span>
-                                </div>
-                            )}
-                        </div>
                     </div>
 
                     {/* Settings Content */}
@@ -3059,7 +3036,6 @@ export default function Options() {
                                                         type="checkbox"
                                                         checked={settings.line?.featuresEnabled === true}
                                                         onChange={(e) => updateSetting('line', 'featuresEnabled', e.target.checked)}
-                                                        disabled={isSaving}
                                                     />
                                                     <span className="slider"/>
                                                 </label>
@@ -3078,7 +3054,6 @@ export default function Options() {
                                                         type="checkbox"
                                                         checked={settings.line?.notificationsEnabled === true}
                                                         onChange={(e) => updateSetting('line', 'notificationsEnabled', e.target.checked)}
-                                                        disabled={isSaving}
                                                     />
                                                     <span className="slider"/>
                                                 </label>
