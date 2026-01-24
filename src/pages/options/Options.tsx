@@ -53,7 +53,7 @@ export default function Options() {
 
     // Wizard state
     const [wizardOpen, setWizardOpen] = useState(false);
-    const [wizardStep, setWizardStep] = useState<'product' | 'processing' | 'category' | 'subcategory' | 'childreason' | 'name'>('product');
+    const [wizardStep, setWizardStep] = useState<'product' | 'processing' | 'comment' | 'category' | 'subcategory' | 'childreason' | 'name'>('product');
     const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
     const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
     const [selectedProcessing, setSelectedProcessing] = useState<{ value: string; label: string } | null>(null);
@@ -79,6 +79,7 @@ export default function Options() {
     const [isLoadingChildReasons, setIsLoadingChildReasons] = useState(false);
     const [selectedChildReason, setSelectedChildReason] = useState<{ value: string; label: string } | null>(null);
     const [childReasonSearchQuery, setChildReasonSearchQuery] = useState('');
+    const [presetComment, setPresetComment] = useState('');
 
     // Function to duplicate a category
     const duplicateCategory = async (categoryId: string) => {
@@ -683,6 +684,7 @@ export default function Options() {
         setChildReasons([]);
         setSelectedChildReason(null);
         setChildReasonSearchQuery('');
+        setPresetComment('');
         setWizardOpen(true);
     };
 
@@ -707,6 +709,7 @@ export default function Options() {
         } else {
             setSelectedChildReason(null);
         }
+        setPresetComment(preset.comment || '');
 
         // Load categories and subcategories based on preset data
         await loadCategories(preset.product, preset.processing);
@@ -741,7 +744,12 @@ export default function Options() {
         // Load subcategories for this category
         await loadSubcategories(category.value);
         // Move to next step after loading
-        setWizardStep('subcategory');
+        if (subcategories.length === 0) {
+            // No subcategories, skip to name
+            setWizardStep('name');
+        } else {
+            setWizardStep('subcategory');
+        }
     };
 
     // Function to select subcategory
@@ -795,6 +803,7 @@ export default function Options() {
                         childReason: selectedChildReason?.value,
                         childReasonLabel: selectedChildReason?.label,
                         categoryId: categoryId,
+                        comment: presetComment.trim() || undefined,
                     };
                 }
                 return preset;
@@ -824,6 +833,7 @@ export default function Options() {
                 childReason: selectedChildReason?.value,
                 childReasonLabel: selectedChildReason?.label,
                 categoryId: categoryId,
+                comment: presetComment.trim() || undefined,
             };
 
             const updatedPresets = [...quickAppealsPresets, newPreset];
@@ -2107,10 +2117,10 @@ export default function Options() {
                                         gap: '0.25rem',
                                         marginBottom: '1.5rem',
                                     }}>
-                                        {['product', 'processing', 'category', 'subcategory', 'childreason', 'name'].map((step, index) => {
-                                            const stepLabels = ['Продукт', 'Обработка', 'Категория', 'Подкатегория', 'Причина-ребёнок', 'Название'];
+                                        {['product', 'processing', 'comment', 'category', 'subcategory', 'childreason', 'name'].map((step, index) => {
+                                            const stepLabels = ['Продукт', 'Обработка', 'Комментарий', 'Категория', 'Подкатегория', 'Причина-ребёнок', 'Название'];
                                             const isCurrentStep = wizardStep === step;
-                                            const isPastStep = ['product', 'processing', 'category', 'subcategory', 'childreason', 'name'].indexOf(wizardStep) > index;
+                                            const isPastStep = ['product', 'processing', 'comment', 'category', 'subcategory', 'childreason', 'name'].indexOf(wizardStep) > index;
                                             return (
                                                 <div
                                                     key={step}
@@ -2232,11 +2242,11 @@ export default function Options() {
                                                 </button>
                                                 <button
                                                     className="btn btn-primary btn-sm"
-                                                    onClick={() => setWizardStep('name')}
+                                                    onClick={() => setWizardStep('comment')}
                                                     style={{flex: 1}}
                                                     disabled={!selectedProduct}
                                                 >
-                                                    Завершить →
+                                                    Далее →
                                                 </button>
                                             </div>
                                         </>
@@ -2311,7 +2321,7 @@ export default function Options() {
                                             <div style={{display: 'flex', gap: '0.5rem'}}>
                                                 <button
                                                     className="btn btn-secondary btn-sm"
-                                                    onClick={() => setWizardStep('processing')}
+                                                    onClick={() => setWizardStep('comment')}
                                                 >
                                                     ← Назад
                                                 </button>
@@ -2675,7 +2685,14 @@ export default function Options() {
                                             <div style={{display: 'flex', gap: '0.5rem'}}>
                                                 <button
                                                     className="btn btn-secondary btn-sm"
-                                                    onClick={() => setWizardStep('childreason')}
+                                                    onClick={() => {
+                                                        // Go back to childreason if it was selected, otherwise go to category
+                                                        if (selectedChildReason) {
+                                                            setWizardStep('childreason');
+                                                        } else {
+                                                            setWizardStep('category');
+                                                        }
+                                                    }}
                                                 >
                                                     ← Назад
                                                 </button>
@@ -2686,6 +2703,63 @@ export default function Options() {
                                                     disabled={!presetName.trim()}
                                                 >
                                                     Сохранить
+                                                </button>
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {wizardStep === 'comment' && (
+                                        <>
+                                            <SelectedOptionsSummary/>
+                                            <div style={{marginBottom: '1rem'}}>
+                                                <label style={{
+                                                    display: 'block',
+                                                    fontWeight: 500,
+                                                    marginBottom: '0.5rem',
+                                                }}>
+                                                    Шаг 3: Комментарий (необязательно)
+                                                </label>
+                                                <textarea
+                                                    value={presetComment}
+                                                    onChange={(e) => setPresetComment(e.target.value)}
+                                                    placeholder="Введите текст комментария, который будет автоматически вставлен в поле обращения при использовании этого пресета..."
+                                                    style={{
+                                                        width: '100%',
+                                                        minHeight: '100px',
+                                                        padding: '0.5rem',
+                                                        border: '1px solid var(--border-color)',
+                                                        borderRadius: '0.375rem',
+                                                        backgroundColor: 'var(--card-bg)',
+                                                        color: 'var(--text-primary)',
+                                                        fontSize: '0.875rem',
+                                                        fontFamily: 'inherit',
+                                                        resize: 'vertical',
+                                                    }}
+                                                />
+                                                <div style={{
+                                                    fontSize: '0.75rem',
+                                                    color: 'var(--text-secondary)',
+                                                    marginTop: '0.5rem',
+                                                }}>
+                                                    Этот комментарий будет автоматически вставлен в
+                                                    поле &quot;текст&quot; при выполнении пресета. Оставьте пустым, если
+                                                    комментарий не нужен.
+                                                </div>
+                                            </div>
+
+                                            <div style={{display: 'flex', gap: '0.5rem'}}>
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
+                                                    onClick={() => setWizardStep('processing')}
+                                                >
+                                                    ← Назад
+                                                </button>
+                                                <button
+                                                    className="btn btn-primary btn-sm"
+                                                    onClick={() => setWizardStep('category')}
+                                                    style={{flex: 1}}
+                                                >
+                                                    Далее →
                                                 </button>
                                             </div>
                                         </>
