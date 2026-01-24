@@ -1,4 +1,5 @@
 import {buildActionUrl, createIframeWindow, extractActionParams,} from "../../shared";
+import {getCookies} from "@src/pages/options/utils/arm-api";
 
 export async function searchByAppeal(): Promise<void> {
     const container = document.getElementById("lazy_content_2448");
@@ -117,11 +118,24 @@ export async function searchOpenedAppeals(): Promise<void> {
     const container = document.getElementById("anticipation_form");
     if (!container) return;
 
-    const getParams = () => ({
-        ssn: document.querySelector("#ssn")?.getAttribute("value"),
-        userId: document.querySelector("#user_id")?.getAttribute("value"),
-        agrId: document.querySelector("#agreement_id")?.getAttribute("value"),
-    });
+    const getParams = async () => {
+        const agrId = document.querySelector("#agreement_id")?.getAttribute("value");
+
+        if (!agrId) {
+            return {ssn: undefined, userId: undefined, agrId: undefined};
+        }
+
+        const cookieResponse = await getCookies();
+        if (!cookieResponse.ok || !cookieResponse.data?.wccUsrName || !cookieResponse.data?.wccSsnName) {
+            return {ssn: undefined, userId: undefined, agrId};
+        }
+
+        return {
+            ssn: cookieResponse.data.wccSsnName,
+            userId: cookieResponse.data.wccUsrName,
+            agrId,
+        };
+    };
 
     const createLoadingBlock = (message: string, withRefresh = false): HTMLElement => {
         const block = document.createElement("div");
@@ -151,7 +165,7 @@ export async function searchOpenedAppeals(): Promise<void> {
         return block;
     };
 
-    const fetchAppeals = async (params: ReturnType<typeof getParams>) => {
+    const fetchAppeals = async (params: Awaited<ReturnType<typeof getParams>>) => {
         if (!params.ssn || !params.userId || !params.agrId) return null;
 
         const url = `https://${window.location.hostname}/cgi-bin/ppo/excells/wcc_new_web_arm.lazy_exec?proc_id$c=2448&agr_id$c=${params.agrId}&ssn$c=${params.ssn}&user_id$c=${params.userId}`;
@@ -344,7 +358,7 @@ export async function searchOpenedAppeals(): Promise<void> {
         container.insertBefore(loading, container.firstChild);
 
         try {
-            const appeals = await fetchAppeals(getParams());
+            const appeals = await fetchAppeals(await getParams());
             loading.remove();
 
             if (!appeals || appeals.length === 0) {

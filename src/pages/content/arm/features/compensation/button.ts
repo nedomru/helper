@@ -1,6 +1,7 @@
 import {compensate} from "./api";
 import {formatDateWithYear, getCurrentDay, getDatesArray, isValidDate, parseDateString} from "./validation";
 import {notify} from "@src/utils";
+import {getCookies} from "@src/pages/options/utils/arm-api";
 
 /**
  * Creates and inserts a "Compensate" button
@@ -36,14 +37,20 @@ export async function compensateButton(): Promise<void> {
     }
 
     compensateBtn.addEventListener("click", async () => {
-        const ssn: string | undefined = document.querySelector<HTMLInputElement>('input[class="js-ssn-prn"]')?.value;
-        const user_id: string | undefined = document.querySelector<HTMLInputElement>('input[class="js-user-id-prn"]')?.value;
         const agreement_id: string | undefined = document.querySelector<HTMLInputElement>('input[class="js-agr-id-prn"]')?.value;
 
-        if (!ssn || !user_id || !agreement_id) {
-            notify("💸 Компенсация", "Не удалось получить необходимые идентификаторы (SSN, User ID, Agreement ID).", "error");
+        if (!agreement_id) {
+            notify("💸 Компенсация", "Не удалось получить ID договора.", "error");
             return;
         }
+
+        const cookieResponse = await getCookies();
+        if (!cookieResponse.ok || !cookieResponse.data?.wccUsrName || !cookieResponse.data?.wccSsnName) {
+            notify("💸 Компенсация", "Не удалось получить данные авторизации (SSN, User ID).", "error");
+            return;
+        }
+
+        const {wccSsnName: ssn, wccUsrName: user_id} = cookieResponse.data;
 
         const is_one_day: boolean = confirm("Компенсация за один день - ОК\nКомпенсация за несколько дней - Отмена");
         const currentDay = getCurrentDay();

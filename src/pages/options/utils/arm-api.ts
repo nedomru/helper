@@ -3,7 +3,7 @@ import {notify} from '@src/utils/notify';
 
 const ARM_COOKIE_URL = 'https://perm.db.ertelecom.ru/cgi-bin/ppo/excells';
 
-async function getCookies(): Promise<{
+export async function getCookies(): Promise<{
     ok: boolean;
     data?: { wccUsrName: string; wccSsnName: string };
     err?: string;
@@ -15,7 +15,7 @@ async function getCookies(): Promise<{
                 url: ARM_COOKIE_URL,
                 names: ['wccUsrName', 'wccSsnName'],
             },
-            (response) => resolve(response as { ok: boolean; data?: Record<string, string>; err?: string })
+            (response) => resolve(response as any)
         );
     });
 }
