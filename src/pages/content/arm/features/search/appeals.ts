@@ -192,6 +192,7 @@ export async function searchOpenedAppeals(): Promise<void> {
                     e.preventDefault();
                     document.querySelector(".appeal-iframe-container")?.remove();
                     createIframeWindow(buildActionUrl(params), "Изменить обращение");
+                    setupIframeCloseHandler();
                 };
                 cell.appendChild(openBtn);
             }
@@ -209,6 +210,45 @@ export async function searchOpenedAppeals(): Promise<void> {
         }
 
         return cell;
+    };
+
+    const setupIframeCloseHandler = () => {
+        // Listen for messages from the iframe
+        const messageHandler = (event: MessageEvent) => {
+            if (event.data === 'close-iframe') {
+                document.querySelector('.appeal-iframe-container')?.remove();
+                window.removeEventListener('message', messageHandler);
+            }
+        };
+        window.addEventListener('message', messageHandler);
+
+        // Inject script into iframe to detect button click
+        const iframe = document.querySelector('.appeal-iframe-container iframe') as HTMLIFrameElement;
+        if (iframe) {
+            // Use addEventListener to avoid overwriting existing onload handler
+            iframe.addEventListener('load', () => {
+                try {
+                    const script = document.createElement('script');
+                    script.textContent = `
+                        (function() {
+                            const observer = new MutationObserver(() => {
+                                const applyButton = document.querySelector('button[data-bb-handler="confirm"]');
+                                if (applyButton && !applyButton.hasAttribute('data-handler-added')) {
+                                    applyButton.setAttribute('data-handler-added', 'true');
+                                    applyButton.addEventListener('click', () => {
+                                        window.parent.postMessage('close-iframe', '*');
+                                    });
+                                }
+                            });
+                            observer.observe(document.body, { childList: true, subtree: true });
+                        })();
+                    `;
+                    iframe.contentDocument?.head.appendChild(script);
+                } catch (error) {
+                    console.warn('[Хелпер] - [АРМ] - [Открытые обращения] Не удалось внедрить скрипт в iframe:', error);
+                }
+            }, {once: true});
+        }
     };
 
     const createAppealsTable = (rows: NodeListOf<Element>): HTMLElement => {

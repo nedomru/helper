@@ -12,6 +12,44 @@ interface ToolState {
     specialist: string;
 }
 
+const MONTHS = [
+    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
+    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
+];
+
+interface ToolInputProps {
+    label: string;
+    value: string;
+    placeholder: string;
+    onChange: (value: string) => void;
+    buttonLabel: string;
+    onAction?: () => void;
+}
+
+function ToolInput({label, value, placeholder, onChange, buttonLabel, onAction}: ToolInputProps): ReactNode {
+    return (
+        <div className="flex gap-2 items-center">
+            <span
+                className="w-40 px-3 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center">
+                {label}
+            </span>
+            <input
+                type="text"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+            />
+            <button
+                onClick={onAction}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all text-sm font-medium text-gray-700 shadow-sm"
+            >
+                {buttonLabel}
+            </button>
+        </div>
+    );
+}
+
 export default function Popup(): ReactNode {
     const [isAuthenticatedState, setIsAuthenticatedState] = useState<boolean | null>(null);
     const [currentUser, setCurrentUser] = useState<TelegramUser | null>(null);
@@ -23,7 +61,6 @@ export default function Popup(): ReactNode {
         specialist: '',
     });
 
-    // Check authentication on mount
     useEffect(() => {
         const checkAuth = async () => {
             const authenticated = await isAuthenticated();
@@ -41,6 +78,12 @@ export default function Popup(): ReactNode {
     const handleAuthorized = useCallback((user: TelegramUser) => {
         setCurrentUser(user);
         setIsAuthenticatedState(true);
+    }, []);
+
+    const handleLogout = useCallback(async () => {
+        await logout();
+        setIsAuthenticatedState(false);
+        setCurrentUser(null);
     }, []);
 
     const handleOpenSettings = useCallback(() => {
@@ -63,57 +106,57 @@ export default function Popup(): ReactNode {
         {title: 'Поддержать проект', icon: '💰', onClick: () => handleOpenLink('https://pay.cloudtips.ru/p/787b494c')},
     ] as const;
 
-    // Show loading while checking auth
     if (isAuthenticatedState === null) {
         return (
             <div className="w-160 min-h-145 bg-white flex items-center justify-center">
-                <div className="text-gray-600">Загрузка...</div>
+                <div className="flex flex-col items-center gap-3">
+                    <div
+                        className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="text-gray-600 text-sm font-medium">Загрузка...</div>
+                </div>
             </div>
         );
     }
 
-    // Show auth screen if not authenticated
     if (!isAuthenticatedState) {
         return <Auth onAuthorized={handleAuthorized}/>;
     }
 
     return (
         <div className="w-160 min-h-145 bg-white">
-            {/* User info bar */}
             {currentUser && (
-                <div className="bg-cyan-50 px-4 py-2 border-b border-cyan-200 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
+                <div
+                    className="bg-gradient-to-r from-cyan-50 to-blue-50 px-4 py-2.5 border-b border-cyan-200/50 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-3">
                         <div
-                            className="w-8 h-8 bg-cyan-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                            className="w-9 h-9 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
                             {currentUser.first_name![0]}
                         </div>
-                        <span className="text-sm font-medium text-gray-700">
-                            {currentUser.first_name} {currentUser.last_name || ''}
-                        </span>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-gray-800">
+                                {currentUser.first_name} {currentUser.last_name || ''}
+                            </span>
+                        </div>
                     </div>
                     <button
-                        onClick={async () => {
-                            await logout();
-                            setIsAuthenticatedState(false);
-                            setCurrentUser(null);
-                        }}
-                        className="text-xs text-red-600 hover:text-red-700 font-medium"
+                        onClick={handleLogout}
+                        className="text-xs text-red-600 hover:text-red-700 font-medium px-3 py-1 rounded-full hover:bg-red-50 transition-colors"
                     >
                         Выйти
                     </button>
                 </div>
             )}
-            {/* Toolbar */}
-            <div className="flex items-center gap-2 p-4 border-b border-gray-200">
-                <div className="flex gap-1">
+
+            <div className="flex items-center gap-2 p-4 border-b border-gray-200/80 bg-white">
+                <div className="flex gap-1.5">
                     {TABS.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                                 activeTab === tab
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white text-blue-600 border border-blue-600 hover:bg-blue-50'
+                                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md shadow-blue-200'
+                                    : 'bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:border-blue-300'
                             }`}
                         >
                             {tab}
@@ -121,12 +164,12 @@ export default function Popup(): ReactNode {
                     ))}
                 </div>
 
-                <div className="flex gap-1 ml-auto">
+                <div className="flex gap-1.5 ml-auto">
                     {TOOLBAR_BUTTONS.map(({title, icon, onClick}) => (
                         <button
                             key={title}
                             onClick={onClick}
-                            className="px-3 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors flex items-center"
+                            className="px-3 py-2 text-sm border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 hover:border-blue-300 active:scale-95 transition-all duration-200 shadow-sm"
                             title={title}
                         >
                             {icon === 'telegram' ? (
@@ -150,8 +193,7 @@ export default function Popup(): ReactNode {
                 </div>
             </div>
 
-            {/* Tab Content */}
-            <div className="p-4">
+            <div className="p-4 animate-in fade-in duration-200">
                 {activeTab === 'Главная' && (
                     <div className="grid grid-cols-3 gap-6">
                         <div>
@@ -298,95 +340,56 @@ export default function Popup(): ReactNode {
 
                 {activeTab === 'Инструменты' && (
                     <div className="space-y-3">
-                        <div className="flex gap-2">
-                            <span
-                                className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Проверка MAC</span>
-                            <input
-                                type="text"
-                                value={tools.macAddress}
-                                onChange={(e) => setTools(prev => ({...prev, macAddress: e.target.value}))}
-                                placeholder="Введи MAC"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm">
-                                Проверить
-                            </button>
-                        </div>
+                        <ToolInput
+                            label="Проверка MAC"
+                            value={tools.macAddress}
+                            onChange={(v) => setTools(prev => ({...prev, macAddress: v}))}
+                            placeholder="Введи MAC"
+                            buttonLabel="Проверить"
+                        />
 
-                        <div className="flex gap-2">
-                            <span
-                                className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Проверка IP</span>
-                            <input
-                                type="text"
-                                value={tools.ipAddress}
-                                onChange={(e) => setTools(prev => ({...prev, ipAddress: e.target.value}))}
-                                placeholder="Введи IP"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm">
-                                Проверить
-                            </button>
-                        </div>
+                        <ToolInput
+                            label="Проверка IP"
+                            value={tools.ipAddress}
+                            onChange={(v) => setTools(prev => ({...prev, ipAddress: v}))}
+                            placeholder="Введи IP"
+                            buttonLabel="Проверить"
+                        />
 
-                        <div className="flex gap-2">
-                            <span
-                                className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Сокращ. ссылок</span>
-                            <input
-                                type="text"
-                                value={tools.link}
-                                onChange={(e) => setTools(prev => ({...prev, link: e.target.value}))}
-                                placeholder="Введи ссылку"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm">
-                                Сократить
-                            </button>
-                        </div>
+                        <ToolInput
+                            label="Сокращ. ссылок"
+                            value={tools.link}
+                            onChange={(v) => setTools(prev => ({...prev, link: v}))}
+                            placeholder="Введи ссылку"
+                            buttonLabel="Сократить"
+                        />
 
-                        <div className="flex gap-2">
-                            <span
-                                className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Проверка спеца</span>
-                            <input
-                                type="text"
-                                value={tools.specialist}
-                                onChange={(e) => setTools(prev => ({...prev, specialist: e.target.value}))}
-                                placeholder="Введи фамилию и имя"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm">
-                                Проверить
-                            </button>
-                        </div>
+                        <ToolInput
+                            label="Проверка спеца"
+                            value={tools.specialist}
+                            onChange={(v) => setTools(prev => ({...prev, specialist: v}))}
+                            placeholder="Введи фамилию и имя"
+                            buttonLabel="Проверить"
+                        />
 
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 items-center">
                             <span
-                                className="w-32 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Премия</span>
+                                className="w-32 px-3 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center">
+                                Премия
+                            </span>
                             <select
-                                className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white">
                                 <option value="specialist">Спец</option>
                                 <option value="head">РГ</option>
                             </select>
                             <select
-                                className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                                <option value="1">Январь</option>
-                                <option value="2">Февраль</option>
-                                <option value="3">Март</option>
-                                <option value="4">Апрель</option>
-                                <option value="5">Май</option>
-                                <option value="6">Июнь</option>
-                                <option value="7">Июль</option>
-                                <option value="8">Август</option>
-                                <option value="9">Сентябрь</option>
-                                <option value="10">Октябрь</option>
-                                <option value="11">Ноябрь</option>
-                                <option value="12">Декабрь</option>
+                                className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white">
+                                {MONTHS.map((month, i) => (
+                                    <option key={month} value={i + 1}>{month}</option>
+                                ))}
                             </select>
                             <select
-                                className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                                className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white">
                                 <option value="2025">2025</option>
                                 <option value="2024">2024</option>
                                 <option value="2023">2023</option>
@@ -394,16 +397,16 @@ export default function Popup(): ReactNode {
                             <input
                                 type="text"
                                 placeholder="Часы"
-                                className="w-20 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                className="w-20 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
                             />
                             <button
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm">
+                                className="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all text-sm font-medium text-gray-700 shadow-sm">
                                 Проверить
                             </button>
                         </div>
 
-                        <div id="specialist-results" className="mt-4"></div>
-                        <div id="result-container" className="mt-4"></div>
+                        <div id="specialist-results" className="mt-4"/>
+                        <div id="result-container" className="mt-4"/>
                     </div>
                 )}
             </div>
