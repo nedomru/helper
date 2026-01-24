@@ -1336,24 +1336,6 @@ export default function Options() {
             ],
         },
         {
-            title: 'Подсветка и уведомления',
-            icon: '✨',
-            description: 'Визуальные уведомления и подсветка',
-            features: [
-                {
-                    key: 'showWarrantyExpiration',
-                    label: 'Истечение гарантии',
-                    description: 'Показывать истечение гарантии'
-                },
-                {
-                    key: 'showAppealsHighlights',
-                    label: 'Подсветка обращений',
-                    description: 'Подсвечивать важные обращения'
-                },
-                {key: 'showSubscriptionStatus', label: 'Статус подписки', description: 'Показывать статус подписки'},
-            ],
-        },
-        {
             title: 'Быстрые обращения',
             icon: '⚡',
             description: 'Создание быстрых шаблонов для обращений',
@@ -1526,23 +1508,8 @@ export default function Options() {
                                                             fontSize: '0.875rem',
                                                             marginBottom: '0.5rem',
                                                             color: 'var(--primary)',
-                                                            display: 'flex',
-                                                            justifyContent: 'space-between',
-                                                            alignItems: 'center',
                                                         }}>
-                                                            <span>{category.name}</span>
-                                                            <button
-                                                                className="btn btn-secondary btn-sm"
-                                                                style={{
-                                                                    padding: '0.25rem 0.5rem',
-                                                                    minWidth: 'auto',
-                                                                    fontSize: '0.75rem',
-                                                                }}
-                                                                title="Удалить категорию"
-                                                                onClick={() => deleteCategory(category.id)}
-                                                            >
-                                                                🗑️
-                                                            </button>
+                                                            {category.name}
                                                         </div>
                                                         <div style={{
                                                             display: 'grid',
