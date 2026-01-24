@@ -403,8 +403,8 @@ export default function Options() {
     };
 
     // Function to load subcategories based on selected category
-    const loadSubcategories = async (categoryId: string) => {
-        if (selectedProduct === null || !selectedProcessing) return;
+    const loadSubcategories = async (categoryId: string): Promise<Array<{ value: string; label: string }>> => {
+        if (selectedProduct === null || !selectedProcessing) return [];
 
         setIsLoadingSubcategories(true);
         try {
@@ -482,7 +482,7 @@ export default function Options() {
             if (!selectElement) {
                 // No more subcategories, this is the final selection
                 setSubcategories([]);
-                return;
+                return [];
             }
 
             const options = selectElement.querySelectorAll('option');
@@ -500,9 +500,11 @@ export default function Options() {
             console.log('[Хелпер] - [Быстрые обращения] - Загружено подкатегорий:', subs);
 
             setSubcategories(subs);
+            return subs;
         } catch (error) {
             console.error('[Хелпер] - [Быстрые обращения] - Ошибка при загрузке подкатегорий:', error);
             notify('Быстрые обращения', 'Не удалось загрузить подкатегории', 'error');
+            return [];
         } finally {
             setIsLoadingSubcategories(false);
         }
@@ -742,11 +744,11 @@ export default function Options() {
     const selectCategory = async (category: { value: string; label: string }) => {
         setSelectedCategory(category);
         // Load subcategories for this category
-        await loadSubcategories(category.value);
+        const loadedSubcategories = await loadSubcategories(category.value);
         // Move to next step after loading
-        if (subcategories.length === 0) {
-            // No subcategories, skip to name
-            setWizardStep('name');
+        if (loadedSubcategories.length === 0) {
+            // No subcategories, skip to comment
+            setWizardStep('comment');
         } else {
             setWizardStep('subcategory');
         }
@@ -761,7 +763,7 @@ export default function Options() {
             await loadChildReasons(subcategory.value);
             setWizardStep('childreason');
         } else {
-            setWizardStep('name');
+            setWizardStep('comment');
         }
     };
 
@@ -774,7 +776,7 @@ export default function Options() {
     // Function to select child reason
     const selectChildReason = (childReason: { value: string; label: string }) => {
         setSelectedChildReason(childReason);
-        setWizardStep('name');
+        setWizardStep('comment');
     };
 
     // Function to save the preset
@@ -2117,10 +2119,10 @@ export default function Options() {
                                         gap: '0.25rem',
                                         marginBottom: '1.5rem',
                                     }}>
-                                        {['product', 'processing', 'comment', 'category', 'subcategory', 'childreason', 'name'].map((step, index) => {
-                                            const stepLabels = ['Продукт', 'Обработка', 'Комментарий', 'Категория', 'Подкатегория', 'Причина-ребёнок', 'Название'];
+                                        {['product', 'processing', 'category', 'subcategory', 'childreason', 'comment', 'name'].map((step, index) => {
+                                            const stepLabels = ['Продукт', 'Обработка', 'Категория', 'Подкатегория', 'Причина-ребёнок', 'Комментарий', 'Название'];
                                             const isCurrentStep = wizardStep === step;
-                                            const isPastStep = ['product', 'processing', 'comment', 'category', 'subcategory', 'childreason', 'name'].indexOf(wizardStep) > index;
+                                            const isPastStep = ['product', 'processing', 'category', 'subcategory', 'childreason', 'comment', 'name'].indexOf(wizardStep) > index;
                                             return (
                                                 <div
                                                     key={step}
@@ -2321,17 +2323,24 @@ export default function Options() {
                                             <div style={{display: 'flex', gap: '0.5rem'}}>
                                                 <button
                                                     className="btn btn-secondary btn-sm"
-                                                    onClick={() => setWizardStep('comment')}
+                                                    onClick={() => setWizardStep('processing')}
                                                 >
                                                     ← Назад
                                                 </button>
                                                 <button
                                                     className="btn btn-primary btn-sm"
-                                                    onClick={() => setWizardStep('name')}
+                                                    onClick={() => {
+                                                        // If there are subcategories loaded, go to subcategory step, otherwise skip to comment
+                                                        if (subcategories.length > 0) {
+                                                            setWizardStep('subcategory');
+                                                        } else {
+                                                            setWizardStep('comment');
+                                                        }
+                                                    }}
                                                     style={{flex: 1}}
                                                     disabled={!selectedProduct}
                                                 >
-                                                    Завершить →
+                                                    Далее →
                                                 </button>
                                             </div>
                                         </>
@@ -2417,11 +2426,18 @@ export default function Options() {
                                                 </button>
                                                 <button
                                                     className="btn btn-primary btn-sm"
-                                                    onClick={() => setWizardStep('name')}
+                                                    onClick={() => {
+                                                        // If there are child reasons loaded, go to childreason step, otherwise skip to comment
+                                                        if (childReasons.length > 0) {
+                                                            setWizardStep('childreason');
+                                                        } else {
+                                                            setWizardStep('comment');
+                                                        }
+                                                    }}
                                                     style={{flex: 1}}
                                                     disabled={!selectedProduct}
                                                 >
-                                                    Завершить →
+                                                    Далее →
                                                 </button>
                                             </div>
                                         </>
@@ -2507,11 +2523,11 @@ export default function Options() {
                                                 </button>
                                                 <button
                                                     className="btn btn-primary btn-sm"
-                                                    onClick={() => setWizardStep('name')}
+                                                    onClick={() => setWizardStep('comment')}
                                                     style={{flex: 1}}
                                                     disabled={!selectedProduct}
                                                 >
-                                                    Завершить →
+                                                    Далее →
                                                 </button>
                                             </div>
                                         </>
@@ -2606,7 +2622,7 @@ export default function Options() {
                                                     fontWeight: 500,
                                                     marginBottom: '0.5rem',
                                                 }}>
-                                                    Шаг 6: Название пресета
+                                                    Шаг 7: Название пресета
                                                 </label>
                                                 <input
                                                     type="text"
@@ -2685,14 +2701,7 @@ export default function Options() {
                                             <div style={{display: 'flex', gap: '0.5rem'}}>
                                                 <button
                                                     className="btn btn-secondary btn-sm"
-                                                    onClick={() => {
-                                                        // Go back to childreason if it was selected, otherwise go to category
-                                                        if (selectedChildReason) {
-                                                            setWizardStep('childreason');
-                                                        } else {
-                                                            setWizardStep('category');
-                                                        }
-                                                    }}
+                                                    onClick={() => setWizardStep('comment')}
                                                 >
                                                     ← Назад
                                                 </button>
@@ -2717,7 +2726,7 @@ export default function Options() {
                                                     fontWeight: 500,
                                                     marginBottom: '0.5rem',
                                                 }}>
-                                                    Шаг 3: Комментарий (необязательно)
+                                                    Шаг 6: Комментарий (необязательно)
                                                 </label>
                                                 <textarea
                                                     value={presetComment}
@@ -2750,13 +2759,22 @@ export default function Options() {
                                             <div style={{display: 'flex', gap: '0.5rem'}}>
                                                 <button
                                                     className="btn btn-secondary btn-sm"
-                                                    onClick={() => setWizardStep('processing')}
+                                                    onClick={() => {
+                                                        // Go back to the appropriate previous step
+                                                        if (selectedChildReason) {
+                                                            setWizardStep('childreason');
+                                                        } else if (selectedSubcategory) {
+                                                            setWizardStep('subcategory');
+                                                        } else {
+                                                            setWizardStep('category');
+                                                        }
+                                                    }}
                                                 >
                                                     ← Назад
                                                 </button>
                                                 <button
                                                     className="btn btn-primary btn-sm"
-                                                    onClick={() => setWizardStep('category')}
+                                                    onClick={() => setWizardStep('name')}
                                                     style={{flex: 1}}
                                                 >
                                                     Далее →
