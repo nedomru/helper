@@ -238,15 +238,15 @@ async function executePreset(preset: QuickAppealsPreset) {
     console.log("[Helper] Executing preset:", preset.name);
 
     try {
-        // Set product
-        const productChanged = setDropdownValue(
+        // Set product (skip if 69 - means "no product", don't touch the dropdown)
+        const productChanged = preset.product !== 69 && setDropdownValue(
             ".uni_reas_prod",
             String(preset.product),
             "Product",
         );
 
         // Wait for category dropdown to reload if product changed (and not 69)
-        if (productChanged && preset.product !== 69) {
+        if (productChanged) {
             console.log("[Helper] Waiting for category dropdown reload...");
             await new Promise((r) => setTimeout(r, 1000));
         }
