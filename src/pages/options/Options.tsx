@@ -53,7 +53,7 @@ export default function Options() {
 
     // Wizard state
     const [wizardOpen, setWizardOpen] = useState(false);
-    const [wizardStep, setWizardStep] = useState<'product' | 'processing' | 'category' | 'subcategory' | 'name'>('product');
+    const [wizardStep, setWizardStep] = useState<'product' | 'processing' | 'category' | 'subcategory' | 'childreason' | 'name'>('product');
     const [editingPresetId, setEditingPresetId] = useState<string | null>(null);
     const [selectedProduct, setSelectedProduct] = useState<number | null>(null);
     const [selectedProcessing, setSelectedProcessing] = useState<{ value: string; label: string } | null>(null);
@@ -75,6 +75,10 @@ export default function Options() {
     const [categorySearchQuery, setCategorySearchQuery] = useState('');
     const [subcategorySearchQuery, setSubcategorySearchQuery] = useState('');
     const [presetSearchQuery, setPresetSearchQuery] = useState('');
+    const [childReasons, setChildReasons] = useState<Array<{ value: string; label: string }>>([]);
+    const [isLoadingChildReasons, setIsLoadingChildReasons] = useState(false);
+    const [selectedChildReason, setSelectedChildReason] = useState<{ value: string; label: string } | null>(null);
+    const [childReasonSearchQuery, setChildReasonSearchQuery] = useState('');
 
     // Function to duplicate a category
     const duplicateCategory = async (categoryId: string) => {
@@ -503,6 +507,163 @@ export default function Options() {
         }
     };
 
+    // Function to check if child reasons exist for a subcategory
+    const hasChildReasons = async (subcategoryId: string): Promise<boolean> => {
+        if (selectedProduct === null || !selectedProcessing) return false;
+
+        try {
+            const cookieUrl = 'https://perm.db.ertelecom.ru/cgi-bin/ppo/excells';
+            const cookieResponse = await new Promise<{
+                ok: boolean;
+                data?: Record<string, string | null>;
+                err?: string;
+            }>((resolve) => {
+                chrome.runtime.sendMessage(
+                    {
+                        action: 'getMultipleCookies',
+                        url: cookieUrl,
+                        names: ['wccUsrName', 'wccSsnName'],
+                    },
+                    (response) => resolve(response as {
+                        ok: boolean;
+                        data?: Record<string, string | null>;
+                        err?: string
+                    })
+                );
+            });
+
+            if (!cookieResponse.ok || !cookieResponse.data?.wccUsrName || !cookieResponse.data?.wccSsnName) {
+                return false;
+            }
+
+            const {wccUsrName, wccSsnName} = cookieResponse.data;
+            const agrId = selectedProduct === 69 ? 0 : 2453379;
+            const formData = `ssn$c=${encodeURIComponent(wccSsnName)}&usr$i=${encodeURIComponent(wccUsrName)}&step_id$i=${selectedProcessing.value}&prob_class_id$i=${subcategoryId}&agr_id$i=${agrId}`;
+
+            const response = await fetch(
+                'https://perm.db.ertelecom.ru/cgi-bin/ppo/excells/wcc_unified_classifier_reasons.ajax_get_uni_child_reasons',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: formData,
+                }
+            );
+
+            if (!response.ok) return false;
+
+            const buffer = await response.arrayBuffer();
+            const decoder = new TextDecoder('windows-1251');
+            const htmlText = decoder.decode(buffer);
+
+            // Check if response contains a select element (has child reasons) or hidden input (no child reasons)
+            return htmlText.includes('<select') && htmlText.includes('uni_load_child_reason');
+        } catch {
+            return false;
+        }
+    };
+
+    // Function to load child reasons based on selected subcategory
+    const loadChildReasons = async (subcategoryId: string) => {
+        if (selectedProduct === null || !selectedProcessing) return;
+
+        setIsLoadingChildReasons(true);
+        try {
+            const cookieUrl = 'https://perm.db.ertelecom.ru/cgi-bin/ppo/excells';
+            const cookieResponse = await new Promise<{
+                ok: boolean;
+                data?: Record<string, string | null>;
+                err?: string;
+            }>((resolve) => {
+                chrome.runtime.sendMessage(
+                    {
+                        action: 'getMultipleCookies',
+                        url: cookieUrl,
+                        names: ['wccUsrName', 'wccSsnName'],
+                    },
+                    (response) => resolve(response as {
+                        ok: boolean;
+                        data?: Record<string, string | null>;
+                        err?: string
+                    })
+                );
+            });
+
+            if (!cookieResponse.ok || !cookieResponse.data?.wccUsrName || !cookieResponse.data?.wccSsnName) {
+                throw new Error('Not authorized');
+            }
+
+            const {wccUsrName, wccSsnName} = cookieResponse.data;
+
+            console.log('[Хелпер] - [Быстрые обращения] - Загрузка причин-детей:', {
+                product: selectedProduct,
+                processingGroup: selectedProcessing.value,
+                subcategory: subcategoryId,
+                ssn: wccSsnName,
+                usr: wccUsrName,
+            });
+
+            const agrId = selectedProduct === 69 ? 0 : 2453379;
+            const formData = `ssn$c=${encodeURIComponent(wccSsnName)}&usr$i=${encodeURIComponent(wccUsrName)}&step_id$i=${selectedProcessing.value}&prob_class_id$i=${subcategoryId}&agr_id$i=${agrId}`;
+
+            console.log('[Хелпер] - [Быстрые обращения] - Request data:', formData);
+
+            const response = await fetch(
+                'https://perm.db.ertelecom.ru/cgi-bin/ppo/excells/wcc_unified_classifier_reasons.ajax_get_uni_child_reasons',
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: formData,
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error('Failed to load child reasons');
+            }
+
+            const buffer = await response.arrayBuffer();
+            const decoder = new TextDecoder('windows-1251');
+            const htmlText = decoder.decode(buffer);
+
+            console.log('[Хелпер] - [Быстрые обращения] - Response HTML (first 200 chars):', htmlText.substring(0, 200));
+
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(htmlText, 'text/html');
+            const selectElement = doc.querySelector('.uni_load_child_reason');
+
+            if (!selectElement) {
+                setChildReasons([]);
+                return;
+            }
+
+            const options = selectElement.querySelectorAll('option');
+            const childReas: Array<{ value: string; label: string }> = [];
+
+            options.forEach((option) => {
+                const value = option.getAttribute('value');
+                const label = option.textContent?.trim() || '';
+
+                if (value && value !== '-1' && label) {
+                    childReas.push({value, label});
+                }
+            });
+
+            console.log('[Хелпер] - [Быстрые обращения] - Загружено причин-детей:', childReas);
+
+            setChildReasons(childReas);
+        } catch (error) {
+            console.error('[Хелпер] - [Быстрые обращения] - Ошибка при загрузке причин-детей:', error);
+            notify('Быстрые обращения', 'Не удалось загрузить причины-дети', 'error');
+        } finally {
+            setIsLoadingChildReasons(false);
+        }
+    };
+
     // Function to start creating a new preset
     const startWizard = () => {
         setEditingPresetId(null);
@@ -519,6 +680,9 @@ export default function Options() {
         setProcessingSearchQuery('');
         setCategorySearchQuery('');
         setSubcategorySearchQuery('');
+        setChildReasons([]);
+        setSelectedChildReason(null);
+        setChildReasonSearchQuery('');
         setWizardOpen(true);
     };
 
@@ -538,11 +702,19 @@ export default function Options() {
         } else {
             setSelectedSubcategory(null);
         }
+        if (preset.childReason && preset.childReasonLabel) {
+            setSelectedChildReason({value: preset.childReason, label: preset.childReasonLabel});
+        } else {
+            setSelectedChildReason(null);
+        }
 
         // Load categories and subcategories based on preset data
         await loadCategories(preset.product, preset.processing);
         if (preset.subcategory) {
             await loadSubcategories(preset.category);
+        }
+        if (preset.childReason) {
+            await loadChildReasons(preset.subcategory);
         }
 
         setWizardStep('name');
@@ -573,14 +745,33 @@ export default function Options() {
     };
 
     // Function to select subcategory
-    const selectSubcategory = (subcategory: { value: string; label: string }) => {
+    const selectSubcategory = async (subcategory: { value: string; label: string }) => {
         setSelectedSubcategory(subcategory);
-        setWizardStep('name');
+        // Check if child reasons exist for this subcategory
+        const hasChildren = await hasChildReasons(subcategory.value);
+        if (hasChildren) {
+            await loadChildReasons(subcategory.value);
+            setWizardStep('childreason');
+        } else {
+            setWizardStep('name');
+        }
     };
 
     // Function to skip subcategory (if no subcategories available)
-    const skipSubcategory = () => {
+    const skipSubcategory = async () => {
         setSelectedSubcategory(null);
+        setWizardStep('name');
+    };
+
+    // Function to select child reason
+    const selectChildReason = (childReason: { value: string; label: string }) => {
+        setSelectedChildReason(childReason);
+        setWizardStep('name');
+    };
+
+    // Function to skip child reason (if no child reasons available)
+    const skipChildReason = () => {
+        setSelectedChildReason(null);
         setWizardStep('name');
     };
 
@@ -607,6 +798,8 @@ export default function Options() {
                         categoryLabel: selectedCategory.label,
                         subcategory: selectedSubcategory?.value,
                         subcategoryLabel: selectedSubcategory?.label,
+                        childReason: selectedChildReason?.value,
+                        childReasonLabel: selectedChildReason?.label,
                         categoryId: categoryId,
                     };
                 }
@@ -634,6 +827,8 @@ export default function Options() {
                 categoryLabel: selectedCategory.label,
                 subcategory: selectedSubcategory?.value,
                 subcategoryLabel: selectedSubcategory?.label,
+                childReason: selectedChildReason?.value,
+                childReasonLabel: selectedChildReason?.label,
                 categoryId: categoryId,
             };
 
@@ -1053,6 +1248,10 @@ export default function Options() {
             options.push({label: 'Подкатегория', value: selectedSubcategory.label});
         }
 
+        if (selectedChildReason) {
+            options.push({label: 'Причина-ребёнок', value: selectedChildReason.label});
+        }
+
         if (options.length === 0) return null;
 
         return (
@@ -1310,7 +1509,8 @@ export default function Options() {
                                                     preset.categoryId === category.id &&
                                                     (preset.name.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
                                                         preset.processingLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                        preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()))
+                                                        preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                                                        (preset.childReasonLabel && preset.childReasonLabel.toLowerCase().includes(presetSearchQuery.toLowerCase())))
                                                 );
                                                 if (categoryPresets.length === 0) return null;
                                                 return (
@@ -1376,6 +1576,7 @@ export default function Options() {
                                                                         }}>
                                                                             {products.find(p => p.id === preset.product)?.name} → {preset.processingLabel} → {preset.categoryLabel}
                                                                             {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
+                                                                            {preset.childReasonLabel && ` → ${preset.childReasonLabel}`}
                                                                         </div>
                                                                     </div>
                                                                     <div style={{
@@ -1458,7 +1659,8 @@ export default function Options() {
                                                             !preset.categoryId &&
                                                             (preset.name.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
                                                                 preset.processingLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                                preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()))
+                                                                preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                                                                (preset.childReasonLabel && preset.childReasonLabel.toLowerCase().includes(presetSearchQuery.toLowerCase())))
                                                         ).map((preset) => (
                                                             <div
                                                                 key={preset.id}
@@ -1492,6 +1694,7 @@ export default function Options() {
                                                                     }}>
                                                                         {products.find(p => p.id === preset.product)?.name} → {preset.processingLabel} → {preset.categoryLabel}
                                                                         {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
+                                                                        {preset.childReasonLabel && ` → ${preset.childReasonLabel}`}
                                                                     </div>
                                                                 </div>
                                                                 <div style={{
@@ -1566,7 +1769,8 @@ export default function Options() {
                                                 .filter(preset =>
                                                     preset.name.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
                                                     preset.processingLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
-                                                    preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()))
+                                                    preset.categoryLabel.toLowerCase().includes(presetSearchQuery.toLowerCase()) ||
+                                                    (preset.childReasonLabel && preset.childReasonLabel.toLowerCase().includes(presetSearchQuery.toLowerCase())))
                                                 .map((preset) => (
                                                     <div
                                                         key={preset.id}
@@ -1600,6 +1804,7 @@ export default function Options() {
                                                             }}>
                                                                 {products.find(p => p.id === preset.product)?.name} → {preset.processingLabel} → {preset.categoryLabel}
                                                                 {preset.subcategoryLabel && ` → ${preset.subcategoryLabel}`}
+                                                                {preset.childReasonLabel && ` → ${preset.childReasonLabel}`}
                                                             </div>
                                                         </div>
                                                         <div
@@ -1908,10 +2113,10 @@ export default function Options() {
                                         gap: '0.25rem',
                                         marginBottom: '1.5rem',
                                     }}>
-                                        {['product', 'processing', 'category', 'subcategory', 'name'].map((step, index) => {
-                                            const stepLabels = ['Продукт', 'Обработка', 'Категория', 'Подкатегория', 'Название'];
+                                        {['product', 'processing', 'category', 'subcategory', 'childreason', 'name'].map((step, index) => {
+                                            const stepLabels = ['Продукт', 'Обработка', 'Категория', 'Подкатегория', 'Причина-ребёнок', 'Название'];
                                             const isCurrentStep = wizardStep === step;
-                                            const isPastStep = ['product', 'processing', 'category', 'subcategory', 'name'].indexOf(wizardStep) > index;
+                                            const isPastStep = ['product', 'processing', 'category', 'subcategory', 'childreason', 'name'].indexOf(wizardStep) > index;
                                             return (
                                                 <div
                                                     key={step}
@@ -2186,10 +2391,92 @@ export default function Options() {
                                                 >
                                                     ← Назад
                                                 </button>
-                                                {!isLoadingSubcategories && (
+                                            </div>
+                                        </>
+                                    )}
+
+                                    {wizardStep === 'childreason' && (
+                                        <>
+                                            <SelectedOptionsSummary/>
+                                            <div style={{marginBottom: '1rem'}}>
+                                                <label style={{
+                                                    display: 'block',
+                                                    fontWeight: 500,
+                                                    marginBottom: '0.5rem',
+                                                }}>
+                                                    {childReasons.length > 0 ? 'Шаг 5: Выберите причину-ребёнка' : 'Шаг 5: Причины-дети'}
+                                                </label>
+                                                {!isLoadingChildReasons && childReasons.length > 0 && (
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Поиск по причине-ребёнку..."
+                                                        value={childReasonSearchQuery}
+                                                        onChange={(e) => setChildReasonSearchQuery(e.target.value)}
+                                                        style={{
+                                                            width: '100%',
+                                                            padding: '0.5rem',
+                                                            border: '1px solid var(--border-color)',
+                                                            borderRadius: '0.375rem',
+                                                            backgroundColor: 'var(--card-bg)',
+                                                            color: 'var(--text-primary)',
+                                                            fontSize: '0.875rem',
+                                                            marginBottom: '0.75rem',
+                                                        }}
+                                                    />
+                                                )}
+                                                {isLoadingChildReasons ? (
+                                                    <div style={{
+                                                        display: 'flex',
+                                                        justifyContent: 'center',
+                                                        padding: '1rem',
+                                                    }}>
+                                                        <div className="spinner"/>
+                                                    </div>
+                                                ) : childReasons.length > 0 ? (
+                                                    <div style={{
+                                                        display: 'grid',
+                                                        gap: '0.5rem',
+                                                        maxHeight: '300px',
+                                                        overflow: 'auto',
+                                                    }}>
+                                                        {childReasons
+                                                            .filter(cr => cr.label.toLowerCase().includes(childReasonSearchQuery.toLowerCase()))
+                                                            .map((childReason) => (
+                                                                <button
+                                                                    key={childReason.value}
+                                                                    className="btn btn-secondary"
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        justifyContent: 'flex-start',
+                                                                        textAlign: 'left',
+                                                                    }}
+                                                                    onClick={() => selectChildReason(childReason)}
+                                                                >
+                                                                    {childReason.label}
+                                                                </button>
+                                                            ))}
+                                                    </div>
+                                                ) : (
+                                                    <div style={{
+                                                        padding: '1rem',
+                                                        textAlign: 'center',
+                                                        color: 'var(--text-secondary)',
+                                                    }}>
+                                                        Для выбранной подкатегории нет причин-детей
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div style={{display: 'flex', gap: '0.5rem'}}>
+                                                <button
+                                                    className="btn btn-secondary btn-sm"
+                                                    onClick={() => setWizardStep('subcategory')}
+                                                >
+                                                    ← Назад
+                                                </button>
+                                                {!isLoadingChildReasons && (
                                                     <button
                                                         className="btn btn-primary btn-sm"
-                                                        onClick={skipSubcategory}
+                                                        onClick={skipChildReason}
                                                         style={{flex: 1}}
                                                     >
                                                         Пропустить →
@@ -2267,6 +2554,18 @@ export default function Options() {
                                                                 style={{fontWeight: 500}}>{selectedSubcategory.label}</span>
                                                         </div>
                                                     )}
+                                                    {selectedChildReason && (
+                                                        <div style={{
+                                                            display: 'flex',
+                                                            justifyContent: 'space-between',
+                                                            fontSize: '0.875rem'
+                                                        }}>
+                                                            <span
+                                                                style={{color: 'var(--text-secondary)'}}>Причина-ребёнок:</span>
+                                                            <span
+                                                                style={{fontWeight: 500}}>{selectedChildReason.label}</span>
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </div>
 
@@ -2276,7 +2575,7 @@ export default function Options() {
                                                     fontWeight: 500,
                                                     marginBottom: '0.5rem',
                                                 }}>
-                                                    Шаг 5: Название пресета
+                                                    Шаг 6: Название пресета
                                                 </label>
                                                 <input
                                                     type="text"
@@ -2355,7 +2654,7 @@ export default function Options() {
                                             <div style={{display: 'flex', gap: '0.5rem'}}>
                                                 <button
                                                     className="btn btn-secondary btn-sm"
-                                                    onClick={() => setWizardStep('subcategory')}
+                                                    onClick={() => setWizardStep('childreason')}
                                                 >
                                                     ← Назад
                                                 </button>
