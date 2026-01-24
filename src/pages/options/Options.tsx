@@ -183,38 +183,61 @@ export default function Options() {
                     presetsToAdd = [importedData];
                 }
 
-                // Generate new IDs for imported items to avoid conflicts
-                const processedPresets = presetsToAdd.map(preset => ({
-                    ...preset,
-                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-                    name: preset.name.endsWith(' (импорт)') ? preset.name : `${preset.name} (импорт)`,
-                }));
+                // Map imported category IDs to actual category IDs (existing or new)
+                const categoryIdMap = new Map<string, string | null>();
+                const newCategories: QuickAppealsPresetCategory[] = [];
 
-                const processedCategories = categoriesToAdd.map(category => ({
-                    ...category,
-                    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-                }));
-
-                // Create category ID mapping for old IDs to new IDs
-                const categoryIdMap = new Map<string, string>();
-                processedCategories.forEach(cat => {
-                    const originalCategory = categoriesToAdd.find(c => c.name === cat.name.replace(' (импорт)', ''));
-                    if (originalCategory) {
-                        categoryIdMap.set(originalCategory.id, cat.id);
+                categoriesToAdd.forEach(importedCategory => {
+                    // Check if a category with the same name already exists
+                    const existingCategory = presetCategories.find(cat => cat.name === importedCategory.name);
+                    if (existingCategory) {
+                        // Use existing category ID
+                        categoryIdMap.set(importedCategory.id, existingCategory.id);
+                    } else {
+                        // Create new category
+                        const newCategoryId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+                        const newCategory: QuickAppealsPresetCategory = {
+                            ...importedCategory,
+                            id: newCategoryId,
+                        };
+                        newCategories.push(newCategory);
+                        categoryIdMap.set(importedCategory.id, newCategoryId);
                     }
                 });
 
-                // Update preset category IDs to use new category IDs
-                const updatedPresets = processedPresets.map(preset => {
-                    if (preset.categoryId && categoryIdMap.has(preset.categoryId)) {
-                        return {...preset, categoryId: categoryIdMap.get(preset.categoryId)!};
+                // Process presets - only add new ones
+                const newPresets: QuickAppealsPreset[] = [];
+                let skippedPresets = 0;
+
+                presetsToAdd.forEach(importedPreset => {
+                    // Determine the target category ID
+                    const targetCategoryId = importedPreset.categoryId
+                        ? categoryIdMap.get(importedPreset.categoryId) ?? null
+                        : null;
+
+                    // Check if a preset with the same name already exists in the same category
+                    const existingPreset = quickAppealsPresets.find(preset =>
+                        preset.name === importedPreset.name &&
+                        preset.categoryId === targetCategoryId
+                    );
+
+                    if (existingPreset) {
+                        // Skip duplicate preset
+                        skippedPresets++;
+                    } else {
+                        // Add new preset with proper category ID
+                        const newPreset: QuickAppealsPreset = {
+                            ...importedPreset,
+                            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                            categoryId: targetCategoryId,
+                        };
+                        newPresets.push(newPreset);
                     }
-                    return preset;
                 });
 
                 // Merge with existing data
-                const mergedPresets = [...quickAppealsPresets, ...updatedPresets];
-                const mergedCategories = [...presetCategories, ...processedCategories];
+                const mergedPresets = [...quickAppealsPresets, ...newPresets];
+                const mergedCategories = [...presetCategories, ...newCategories];
 
                 setQuickAppealsPresets(mergedPresets);
                 setPresetCategories(mergedCategories);
@@ -223,9 +246,20 @@ export default function Options() {
                 const categoriesSuccess = await saveQuickAppealsPresetCategories(mergedCategories);
 
                 if (presetsSuccess && categoriesSuccess) {
+                    const messageParts = [];
+                    if (newPresets.length > 0) {
+                        messageParts.push(`${newPresets.length} новых пресетов`);
+                    }
+                    if (newCategories.length > 0) {
+                        messageParts.push(`${newCategories.length} новых категорий`);
+                    }
+                    if (skippedPresets > 0) {
+                        messageParts.push(`${skippedPresets} пропущено (дубликаты)`);
+                    }
+
                     notify(
                         'Быстрые обращения',
-                        `Импортировано ${updatedPresets.length} пресетов и ${processedCategories.length} категорий!`,
+                        `Импортировано: ${messageParts.join(', ')}`,
                         'success'
                     );
                 } else {
