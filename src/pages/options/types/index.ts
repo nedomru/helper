@@ -1,5 +1,5 @@
 export interface Settings {
-    arm?: Record<string, boolean>;
+    arm?: Record<string, boolean | string[]>;
     genesys?: Record<string, boolean>;
     line?: Record<string, boolean>;
 }

@@ -53,6 +53,13 @@ export const armFeatureGroups: FeatureGroup[] = [
         ],
     },
     {
+        title: 'Скрытие вкладок',
+        icon: '👁️',
+        description: 'Выберите вкладки, которые нужно скрыть в АРМ',
+        features: [],
+        isCustom: true,
+    },
+    {
         title: 'Быстрые обращения',
         icon: '⚡',
         description: 'Создание быстрых шаблонов для обращений',

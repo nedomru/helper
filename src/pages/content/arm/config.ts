@@ -8,8 +8,9 @@ import {foldTabCRequests} from "@pages/content/arm/features/folding/connection_r
 import {foldTabApplications} from "@pages/content/arm/features/folding/applications";
 import {foldTabAppeals} from "@pages/content/arm/features/folding/appeals";
 import {foldTabSRequests} from "@pages/content/arm/features/folding/service_requests";
-import {removeDiagnosticTabs} from "@pages/content/arm/features/ui-enhancements/eqm";
-import {addAppealIframeButtons, removeAppealsColumns} from "@pages/content/arm/features/ui-enhancements/appeals";
+import {removeDiagnosticTabs} from "./features/ui-enhancements/eqm";
+import {addAppealIframeButtons, removeAppealsColumns} from "./features/ui-enhancements/appeals";
+import {hideSelectedTabs, observeTabsNavigation} from "./features/ui-enhancements/hideTabs";
 import {showWarrantyExpiration} from "@pages/content/arm/features/highlights/warranty";
 import {showAppealsHighlights} from "@pages/content/arm/features/highlights/appeals";
 import {showSubscriptionStatus} from "@pages/content/arm/features/highlights/subscriptions";
@@ -78,6 +79,8 @@ export const armPageConfigs: PageConfig[] = [
             addAppealIframeButtons,
             smsButtons,
             copyClientNumber,
+            hideSelectedTabs,
+            observeTabsNavigation,
         ],
     },
 

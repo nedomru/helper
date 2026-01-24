@@ -15,6 +15,7 @@ import SearchBar from './components/SearchBar';
 import ActionsToolbar from './components/ActionsToolbar';
 import FeatureCard from './components/FeatureCard';
 import QuickAppealsSection from './components/QuickAppealsSection';
+import HiddenTabsSection from './components/HiddenTabsSection';
 import PresetWizard from './components/PresetWizard';
 import {checkForUpdates} from './utils/updates';
 import './Options.css';
@@ -22,6 +23,7 @@ import './Options.css';
 export default function Options() {
     const [activeSection, setActiveSection] = useState<'arm' | 'genesys' | 'line'>('arm');
     const [searchQuery, setSearchQuery] = useState('');
+    const [hiddenTabs, setHiddenTabs] = useState<string[]>([]);
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [isMac, setIsMac] = useState(false);
     const [version, setVersion] = useState<string>('');
@@ -85,6 +87,15 @@ export default function Options() {
             checkForUpdates(version, true).then(setUpdateStatus);
         }
     }, [version]);
+
+    useEffect(() => {
+        if (settings?.arm?.hiddenTabs) {
+            const tabs = settings.arm.hiddenTabs as string[];
+            if (Array.isArray(tabs)) {
+                setHiddenTabs(tabs);
+            }
+        }
+    }, [settings]);
 
     const toggleTheme = () => {
         const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -212,6 +223,25 @@ export default function Options() {
         );
     };
 
+    const renderHiddenTabsCustom = () => {
+        return (
+            <HiddenTabsSection
+                hiddenTabs={hiddenTabs}
+                onHiddenTabsChange={setHiddenTabs}
+            />
+        );
+    };
+
+    const renderCustomContent = (group: { title: string }) => {
+        if (group.title === 'Быстрые обращения') {
+            return renderQuickAppealsCustom();
+        }
+        if (group.title === 'Скрытие вкладок') {
+            return renderHiddenTabsCustom();
+        }
+        return null;
+    };
+
     return (
         <div className="options-page">
             <Header
@@ -255,7 +285,7 @@ export default function Options() {
                                             settings={settings}
                                             searchQuery={searchQuery}
                                             updateSetting={updateSetting}
-                                            renderCustomContent={renderQuickAppealsCustom}
+                                            renderCustomContent={renderCustomContent}
                                         />
                                     ))}
                                 </div>
