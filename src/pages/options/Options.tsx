@@ -16,6 +16,7 @@ import ActionsToolbar from './components/ActionsToolbar';
 import FeatureCard from './components/FeatureCard';
 import QuickAppealsSection from './components/QuickAppealsSection';
 import HiddenTabsSection from './components/HiddenTabsSection';
+import AnticipationFoldingSection from './components/AnticipationFoldingSection';
 import PresetWizard from './components/PresetWizard';
 import {checkForUpdates} from './utils/updates';
 import './Options.css';
@@ -24,6 +25,7 @@ export default function Options() {
     const [activeSection, setActiveSection] = useState<'arm' | 'genesys' | 'line'>('arm');
     const [searchQuery, setSearchQuery] = useState('');
     const [hiddenTabs, setHiddenTabs] = useState<string[]>([]);
+    const [foldingTabs, setFoldingTabs] = useState<string[]>([]);
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [isMac, setIsMac] = useState(false);
     const [version, setVersion] = useState<string>('');
@@ -93,6 +95,12 @@ export default function Options() {
             const tabs = settings.arm.hiddenTabs as string[];
             if (Array.isArray(tabs)) {
                 setHiddenTabs(tabs);
+            }
+        }
+        if (settings?.arm?.foldingTabs) {
+            const tabs = settings.arm.foldingTabs as string[];
+            if (Array.isArray(tabs)) {
+                setFoldingTabs(tabs);
             }
         }
     }, [settings]);
@@ -233,12 +241,35 @@ export default function Options() {
         );
     };
 
+    const renderAnticipationFoldingCustom = () => {
+        return (
+            <AnticipationFoldingSection
+                foldSpas={settings?.arm?.foldSpas ?? false}
+                onFoldSpasChange={(value) => updateSetting('arm', 'foldSpas', value)}
+                foldingTabs={foldingTabs}
+                onFoldingTabsChange={(tabs) => {
+                    setFoldingTabs(tabs);
+                    setSettings({
+                        ...settings,
+                        arm: {
+                            ...(settings?.arm ?? {}),
+                            foldingTabs: tabs,
+                        },
+                    });
+                }}
+            />
+        );
+    };
+
     const renderCustomContent = (group: { title: string }) => {
         if (group.title === 'Быстрые обращения') {
             return renderQuickAppealsCustom();
         }
         if (group.title === 'Скрытие вкладок') {
             return renderHiddenTabsCustom();
+        }
+        if (group.title === 'Сворачивание') {
+            return renderAnticipationFoldingCustom();
         }
         return null;
     };

@@ -17,22 +17,15 @@ export const armFeatureGroups: FeatureGroup[] = [
         title: 'Сворачивание',
         icon: '📁',
         description: 'Управление отображением вкладок и панелей',
-        features: [
-            {key: 'foldSpas', label: 'Предвосхищение', description: 'Сворачивать предвосхищения'},
-            {key: 'foldTabInfo', label: 'Информация', description: 'Сворачивать вкладку "Информация"'},
-            {key: 'foldTabApplications', label: 'Заявки', description: 'Сворачивать вкладку "Приложения"'},
-            {key: 'foldTabAppeals', label: 'Обращения', description: 'Сворачивать вкладку "Обращения"'},
-            {
-                key: 'foldTabSRequests',
-                label: 'Сервисные заявки',
-                description: 'Сворачивать вкладку "Сервисные запросы"',
-            },
-            {
-                key: 'foldTabCRequests',
-                label: 'Подключения',
-                description: 'Сворачивать вкладку "Подключения"',
-            },
-        ],
+        features: [],
+        isCustom: true,
+    },
+    {
+        title: 'Скрытие вкладок',
+        icon: '👁️',
+        description: 'Выберите вкладки, которые нужно скрыть в АРМ',
+        features: [],
+        isCustom: true,
     },
     {
         title: 'Удаление',
@@ -51,13 +44,6 @@ export const armFeatureGroups: FeatureGroup[] = [
                 description: 'Удаляет ненужные колонки обращений:\nОборудование, Продукт, Платформа, Исполнитель',
             },
         ],
-    },
-    {
-        title: 'Скрытие вкладок',
-        icon: '👁️',
-        description: 'Выберите вкладки, которые нужно скрыть в АРМ',
-        features: [],
-        isCustom: true,
     },
     {
         title: 'Быстрые обращения',
