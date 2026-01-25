@@ -80,7 +80,12 @@ export async function loadAppealsCategories(
     try {
         const cookieResponse = await getCookies();
         if (!cookieResponse.ok || !cookieResponse.data?.wccUsrName || !cookieResponse.data?.wccSsnName) {
-            throw new Error('Not authorized');
+            notify(
+                'Быстрые обращения',
+                'Для настройки пресетов необходимо авторизоваться в ARM',
+                'error'
+            );
+            return [];
         }
 
         const {wccUsrName, wccSsnName} = cookieResponse.data;
@@ -111,7 +116,11 @@ export async function loadAppealsCategories(
         return categories;
     } catch (error) {
         console.error('[Хелпер] - [Быстрые обращения] - Ошибка при загрузке категорий:', error);
-        notify('Быстрые обращения', 'Не удалось загрузить категории', 'error');
+        notify(
+            'Быстрые обращения',
+            'Настраивать пресеты можно только с браузера на VDI',
+            'error'
+        );
         return [];
     }
 }
@@ -124,7 +133,12 @@ export async function loadAppealsSubcategories(
     try {
         const cookieResponse = await getCookies();
         if (!cookieResponse.ok || !cookieResponse.data?.wccUsrName || !cookieResponse.data?.wccSsnName) {
-            throw new Error('Not authorized');
+            notify(
+                'Быстрые обращения',
+                'Для настройки пресетов необходимо авторизоваться в ARM',
+                'error'
+            );
+            return [];
         }
 
         const {wccUsrName, wccSsnName} = cookieResponse.data;
@@ -152,7 +166,11 @@ export async function loadAppealsSubcategories(
         return subcategories;
     } catch (error) {
         console.error('[Хелпер] - [Быстрые обращения] - Ошибка при загрузке подкатегорий:', error);
-        notify('Быстрые обращения', 'Не удалось загрузить подкатегории', 'error');
+        notify(
+            'Быстрые обращения',
+            'Настраивать пресеты можно только с браузера на VDI',
+            'error'
+        );
         return [];
     }
 }
@@ -193,7 +211,12 @@ export async function loadChildReasons(
     try {
         const cookieResponse = await getCookies();
         if (!cookieResponse.ok || !cookieResponse.data?.wccUsrName || !cookieResponse.data?.wccSsnName) {
-            throw new Error('Not authorized');
+            notify(
+                'Быстрые обращения',
+                'Для настройки пресетов необходимо авторизоваться в ARM',
+                'error'
+            );
+            return [];
         }
 
         const {wccUsrName, wccSsnName} = cookieResponse.data;
@@ -221,7 +244,11 @@ export async function loadChildReasons(
         return childReasons;
     } catch (error) {
         console.error('[Хелпер] - [Быстрые обращения] - Ошибка при загрузке причин-детей:', error);
-        notify('Быстрые обращения', 'Не удалось загрузить причины-дети', 'error');
+        notify(
+            'Быстрые обращения',
+            'Настраивать пресеты можно только с браузера на VDI',
+            'error'
+        );
         return [];
     }
 }
