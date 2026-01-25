@@ -186,7 +186,7 @@ export function useQuickAppeals() {
         return success;
     };
 
-    const mergeImportedData = (
+    const mergeImportedData = async (
         newPresets: QuickAppealsPreset[],
         newCategories: QuickAppealsPresetCategory[]
     ) => {
@@ -195,6 +195,9 @@ export function useQuickAppeals() {
 
         setQuickAppealsPresets(mergedPresets);
         setPresetCategories(mergedCategories);
+
+        await saveQuickAppealsPresets(mergedPresets);
+        await saveQuickAppealsPresetCategories(mergedCategories);
 
         return {mergedPresets, mergedCategories};
     };

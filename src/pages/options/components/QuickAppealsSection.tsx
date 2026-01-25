@@ -1,7 +1,6 @@
 import {useEffect, useState} from 'react';
 import type {QuickAppealsPreset, QuickAppealsPresetCategory} from '@src/shared/user-settings';
-import {saveQuickAppealsPresetCategories, saveQuickAppealsPresets} from '@src/shared/user-settings';
-import {copySinglePreset, exportPresets, importPresets} from '../utils/export-import';
+import {copySinglePreset, exportPresets, importPresets, importPresetsFromClipboard} from '../utils/export-import';
 import PresetCard from './PresetCard';
 import CategoryCard from './CategoryCard';
 
@@ -16,6 +15,7 @@ interface QuickAppealsSectionProps {
     onDeleteCategory: (categoryId: string) => void;
     onCreateCategory: (name: string) => Promise<QuickAppealsPresetCategory | undefined>;
     onSaveEditCategory: (categoryId: string, name: string) => void;
+    onMergeImportedData: (newPresets: QuickAppealsPreset[], newCategories: QuickAppealsPresetCategory[]) => Promise<void>;
 }
 
 export default function QuickAppealsSection({
@@ -29,6 +29,7 @@ export default function QuickAppealsSection({
                                                 onDeleteCategory,
                                                 onCreateCategory,
                                                 onSaveEditCategory,
+                                                onMergeImportedData,
                                             }: QuickAppealsSectionProps) {
     const [presetSearchQuery, setPresetSearchQuery] = useState('');
     const [newCategoryName, setNewCategoryName] = useState('');
@@ -44,11 +45,15 @@ export default function QuickAppealsSection({
         const {newPresets, newCategories} = await importPresets(event, presetCategories, quickAppealsPresets);
 
         if (newPresets.length > 0 || newCategories.length > 0) {
-            const mergedPresets = [...quickAppealsPresets, ...newPresets];
-            const mergedCategories = [...presetCategories, ...newCategories];
+            await onMergeImportedData(newPresets, newCategories);
+        }
+    };
 
-            await saveQuickAppealsPresets(mergedPresets);
-            await saveQuickAppealsPresetCategories(mergedCategories);
+    const handleImportFromClipboard = async () => {
+        const {newPresets, newCategories} = await importPresetsFromClipboard(presetCategories, quickAppealsPresets);
+
+        if (newPresets.length > 0 || newCategories.length > 0) {
+            await onMergeImportedData(newPresets, newCategories);
         }
     };
 
@@ -216,9 +221,12 @@ export default function QuickAppealsSection({
                                 📥 Экспорт всех
                             </button>
                             <label className="btn btn-secondary btn-sm" style={{cursor: 'pointer'}}>
-                                📤 Импорт
+                                📤 Импорт из файла
                                 <input type="file" accept=".json" onChange={handleImport} hidden/>
                             </label>
+                            <button className="btn btn-secondary btn-sm" onClick={handleImportFromClipboard}>
+                                📋 Импорт из буфера
+                            </button>
                         </div>
                     </div>
                 </div>

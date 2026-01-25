@@ -219,6 +219,7 @@ export default function Options() {
                 onDeleteCategory={quickAppeals.deleteCategory}
                 onCreateCategory={quickAppeals.createNewCategory}
                 onSaveEditCategory={quickAppeals.saveEditCategory}
+                onMergeImportedData={quickAppeals.mergeImportedData}
             />
         );
     };
