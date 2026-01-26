@@ -48,6 +48,18 @@
         "contentStyle.css"
       ],
       "all_frames": true
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/pages/content/speech-phrases/index.ts"
+      ],
+      "all_frames": true,
+      "exclude_matches": [
+        "*://*/*options*"
+      ]
     }
   ],
   "devtools_page": "src/pages/devtools/index.html",

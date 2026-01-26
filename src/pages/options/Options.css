@@ -1416,3 +1416,380 @@ input:focus-visible + .slider {
         flex-wrap: wrap;
     }
 }
+
+/* Speech Phrases Styles */
+.speech-phrases-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.speech-phrase-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.625rem;
+    padding: 1rem;
+    transition: all 0.2s ease;
+}
+
+.speech-phrase-card:hover {
+    border-color: var(--text-secondary);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .speech-phrase-card:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+.speech-phrase-card-editing,
+.speech-phrase-card-new {
+    border-color: var(--primary);
+    box-shadow: 0 4px 16px rgba(8, 145, 178, 0.12);
+}
+
+.speech-phrase-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+
+.speech-phrase-shortcut {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    background-color: var(--primary);
+    color: white;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    border-radius: 0.25rem;
+}
+
+.speech-phrase-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.speech-phrase-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 0.5rem;
+    white-space: pre-wrap;
+}
+
+.speech-phrase-category-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    background-color: var(--muted);
+    color: var(--text-secondary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 0.25rem;
+    margin-bottom: 0.75rem;
+}
+
+.speech-phrase-actions {
+    display: flex;
+    gap: 0.375rem;
+    flex-wrap: wrap;
+}
+
+.speech-phrase-form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.speech-phrase-input,
+.speech-phrase-select {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    transition: all 0.2s ease;
+}
+
+.speech-phrase-input:focus,
+.speech-phrase-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+}
+
+.speech-phrase-textarea {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    font-family: inherit;
+    resize: vertical;
+    transition: all 0.2s ease;
+}
+
+.speech-phrase-textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+}
+
+.btn-danger {
+    background-color: var(--destructive-light);
+    color: var(--destructive);
+    border-color: var(--destructive);
+}
+
+.btn-danger:hover {
+    background-color: var(--destructive);
+    color: white;
+}
+
+/* Speech Categories Styles */
+.speech-categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem;
+}
+
+.speech-category-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.625rem;
+    padding: 0.875rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.speech-category-card:hover {
+    border-color: var(--text-secondary);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .speech-category-card:hover {
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+.speech-category-card-editing {
+    border-color: var(--primary);
+    box-shadow: 0 4px 16px rgba(8, 145, 178, 0.12);
+}
+
+.speech-category-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.speech-category-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.speech-category-count {
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+}
+
+.speech-category-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.speech-category-btn {
+    padding: 0.375rem 0.5rem;
+    font-size: 0.75rem;
+}
+
+.speech-category-edit {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.speech-category-input {
+    flex: 1;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--primary);
+    border-radius: 0.375rem;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    outline: none;
+}
+
+.speech-category-input:focus {
+    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+}
+
+@media (max-width: 480px) {
+    .speech-categories-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Category Tree Styles */
+.category-tree {
+    margin-top: 1rem;
+}
+
+.category-tree-drop-zone {
+    padding: 0.75rem 1rem;
+    border: 2px dashed var(--border-color);
+    border-radius: 0.5rem;
+    background-color: var(--muted);
+    color: var(--text-secondary);
+    text-align: center;
+    font-size: 0.8125rem;
+    transition: all 0.2s ease;
+}
+
+.category-tree-drop-zone.drag-over {
+    border-color: var(--primary);
+    background-color: rgba(8, 145, 178, 0.1);
+    color: var(--primary);
+}
+
+.category-tree-node {
+    margin-bottom: 0.25rem;
+}
+
+.category-tree-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 0.75rem;
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+    cursor: grab;
+}
+
+.category-tree-item:hover {
+    border-color: var(--text-secondary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .category-tree-item:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.category-tree-item.editing {
+    border-color: var(--primary);
+    box-shadow: 0 4px 16px rgba(8, 145, 178, 0.12);
+    cursor: default;
+}
+
+.category-tree-item.dragging {
+    opacity: 0.5;
+    background-color: var(--muted);
+    cursor: grabbing;
+}
+
+.category-tree-item.drag-over {
+    border-color: var(--primary);
+    background-color: rgba(8, 145, 178, 0.1);
+    border-top-width: 2px;
+}
+
+.category-tree-expand {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.25rem;
+    height: 1.25rem;
+    padding: 0;
+    border: none;
+    background-color: transparent;
+    color: var(--text-secondary);
+    font-size: 0.625rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 0.25rem;
+    flex-shrink: 0;
+}
+
+.category-tree-expand:hover {
+    background-color: var(--muted);
+    color: var(--text-primary);
+}
+
+.category-tree-spacer {
+    width: 1.25rem;
+    flex-shrink: 0;
+}
+
+.category-tree-name {
+    flex: 1;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.category-tree-count {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+}
+
+.category-tree-actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+}
+
+.category-tree-edit {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex: 1;
+}
+
+.speech-category-select {
+    padding: 0.375rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.375rem;
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 0.875rem;
+    max-width: 200px;
+}
+
+.speech-category-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(8, 145, 178, 0.15);
+}
+
+.category-tree-children {
+    margin-left: 0.5rem;
+    padding-left: 0.75rem;
+    border-left: 1px solid var(--border-color);
+    margin-top: 0.25rem;
+}
+
+/* Drag and Drop Visual Feedback */
+.category-tree-item[draggable="true"] {
+    cursor: grab;
+}
+
+.category-tree-item[draggable="true"]:active {
+    cursor: grabbing;
+}
+
+/* Empty category indicator */
+.category-tree-item:has(.category-tree-count[data-count="0"]) .category-tree-count {
+    opacity: 0.6;
+    font-style: italic;
+}
+

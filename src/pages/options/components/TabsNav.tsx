@@ -1,6 +1,6 @@
 interface TabsNavProps {
-    activeSection: 'arm' | 'genesys' | 'line';
-    onSectionChange: (section: 'arm' | 'genesys' | 'line') => void;
+    activeSection: 'arm' | 'genesys' | 'line' | 'speech';
+    onSectionChange: (section: 'arm' | 'genesys' | 'line' | 'speech') => void;
 }
 
 export default function TabsNav({activeSection, onSectionChange}: TabsNavProps) {
@@ -26,6 +26,13 @@ export default function TabsNav({activeSection, onSectionChange}: TabsNavProps) 
             >
                 <span className="tab-icon">💚</span>
                 <span>Настройки Линии</span>
+            </button>
+            <button
+                className={`tab-button ${activeSection === 'speech' ? 'active' : ''}`}
+                onClick={() => onSectionChange('speech')}
+            >
+                <span className="tab-icon">🗣️</span>
+                <span>Речевые модули</span>
             </button>
         </nav>
     );

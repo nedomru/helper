@@ -9,6 +9,7 @@ import {importSettings} from './utils/export-import';
 import {useAuth} from './hooks/useAuth';
 import {useQuickAppeals} from './hooks/useQuickAppeals';
 import {useWizard} from './hooks/useWizard';
+import {useSpeechPhrases} from './hooks/useSpeechPhrases';
 import Header from './components/Header';
 import TabsNav from './components/TabsNav';
 import SearchBar from './components/SearchBar';
@@ -17,12 +18,13 @@ import FeatureCard from './components/FeatureCard';
 import QuickAppealsSection from './components/QuickAppealsSection';
 import HiddenTabsSection from './components/HiddenTabsSection';
 import AnticipationFoldingSection from './components/AnticipationFoldingSection';
+import SpeechPhrasesSection from './components/SpeechPhrasesSection';
 import PresetWizard from './components/PresetWizard';
 import {checkForUpdates} from './utils/updates';
 import './Options.css';
 
 export default function Options() {
-    const [activeSection, setActiveSection] = useState<'arm' | 'genesys' | 'line'>('arm');
+    const [activeSection, setActiveSection] = useState<'arm' | 'genesys' | 'line' | 'speech'>('arm');
     const [searchQuery, setSearchQuery] = useState('');
     const [hiddenTabs, setHiddenTabs] = useState<string[]>([]);
     const [foldingTabs, setFoldingTabs] = useState<string[]>([]);
@@ -53,6 +55,7 @@ export default function Options() {
 
     const quickAppeals = useQuickAppeals();
     const wizard = useWizard();
+    const speechPhrases = useSpeechPhrases();
 
     useEffect(() => {
         setIsMac(navigator.platform.toUpperCase().indexOf('MAC') >= 0);
@@ -398,6 +401,68 @@ export default function Options() {
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            )}
+
+                            {activeSection === 'speech' && (
+                                <div className="section">
+                                    <div className="section-header">
+                                        <h2 className="section-title">Речевые модули</h2>
+                                        <p className="section-description">
+                                            Управление текстовыми сокращениями для быстрой вставки
+                                        </p>
+                                    </div>
+                                    <SpeechPhrasesSection
+                                        phrases={speechPhrases.phrases}
+                                        categories={speechPhrases.categories}
+                                        isCreatingPhrase={speechPhrases.isCreatingPhrase}
+                                        isCreatingCategory={speechPhrases.isCreatingCategory}
+                                        editingPhraseId={speechPhrases.editingPhraseId}
+                                        editingCategoryId={speechPhrases.editingCategoryId}
+                                        newPhraseShortcut={speechPhrases.newPhraseShortcut}
+                                        newPhraseName={speechPhrases.newPhraseName}
+                                        newPhraseText={speechPhrases.newPhraseText}
+                                        newPhraseCategoryId={speechPhrases.newPhraseCategoryId}
+                                        newCategoryName={speechPhrases.newCategoryName}
+                                        newCategoryParentId={speechPhrases.newCategoryParentId}
+                                        editPhraseShortcut={speechPhrases.editPhraseShortcut}
+                                        editPhraseName={speechPhrases.editPhraseName}
+                                        editPhraseText={speechPhrases.editPhraseText}
+                                        editPhraseCategoryId={speechPhrases.editPhraseCategoryId}
+                                        editCategoryName={speechPhrases.editCategoryName}
+                                        editingCategoryParentId={speechPhrases.editingCategoryParentId}
+                                        setNewPhraseShortcut={speechPhrases.setNewPhraseShortcut}
+                                        setNewPhraseName={speechPhrases.setNewPhraseName}
+                                        setNewPhraseText={speechPhrases.setNewPhraseText}
+                                        setNewPhraseCategoryId={speechPhrases.setNewPhraseCategoryId}
+                                        setNewCategoryName={speechPhrases.setNewCategoryName}
+                                        setNewCategoryParentId={speechPhrases.setNewCategoryParentId}
+                                        setEditPhraseShortcut={speechPhrases.setEditPhraseShortcut}
+                                        setEditPhraseName={speechPhrases.setEditPhraseName}
+                                        setEditPhraseText={speechPhrases.setEditPhraseText}
+                                        setEditPhraseCategoryId={speechPhrases.setEditPhraseCategoryId}
+                                        setEditCategoryName={speechPhrases.setEditCategoryName}
+                                        setEditingCategoryParentId={speechPhrases.setEditingCategoryParentId}
+                                        startCreatePhrase={speechPhrases.startCreatePhrase}
+                                        cancelCreatePhrase={speechPhrases.cancelCreatePhrase}
+                                        savePhrase={speechPhrases.savePhrase}
+                                        startEditPhrase={speechPhrases.startEditPhrase}
+                                        cancelEditPhrase={speechPhrases.cancelEditPhrase}
+                                        updatePhrase={speechPhrases.updatePhrase}
+                                        deletePhrase={speechPhrases.deletePhrase}
+                                        duplicatePhrase={speechPhrases.duplicatePhrase}
+                                        startCreateCategory={speechPhrases.startCreateCategory}
+                                        cancelCreateCategory={speechPhrases.cancelCreateCategory}
+                                        saveCategory={speechPhrases.saveCategory}
+                                        startEditCategory={speechPhrases.startEditCategory}
+                                        cancelEditCategory={speechPhrases.cancelEditCategory}
+                                        updateCategory={speechPhrases.updateCategory}
+                                        deleteCategory={speechPhrases.deleteCategory}
+                                        duplicateCategory={speechPhrases.duplicateCategory}
+                                        getCategoryTree={speechPhrases.getCategoryTree}
+                                        moveCategory={speechPhrases.moveCategory}
+                                        getCategoryPath={speechPhrases.getCategoryPath}
+                                    />
                                 </div>
                             )}
                         </>
