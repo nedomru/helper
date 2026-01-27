@@ -10,6 +10,9 @@ import {
     validateCategoryMove,
 } from '@src/shared/speech-phrases';
 import {notify} from '@src/utils/notify';
+import {validateAndParseClippings} from '@src/pages/options/utils/clippingsParser';
+import {importGenesysPhrases, isGenesysPhrases} from '@src/pages/options/utils/genesysParser';
+import {importQuickTextPaste, isQuickTextPasteContent} from '@src/pages/options/utils/quickTextPasteParser';
 
 export function useSpeechPhrases() {
     const [phrases, setPhrases] = useState<SpeechPhrase[]>([]);
@@ -81,20 +84,22 @@ export function useSpeechPhrases() {
     };
 
     const savePhrase = async () => {
-        if (!newPhraseShortcut.trim() || !newPhraseName.trim() || !newPhraseText.trim()) {
-            notify('Речевые модули', 'Заполните все поля фразы', 'error');
+        if (!newPhraseName.trim() || !newPhraseText.trim()) {
+            notify('Речевые модули', 'Заполните название и текст фразы', 'error');
             return;
         }
 
-        // Check if shortcut already exists
-        if (phrases.some(p => p.shortcut === newPhraseShortcut.trim())) {
-            notify('Речевые модули', 'Такая сокращение уже существует', 'error');
+        const shortcut = newPhraseShortcut.trim();
+
+        // Check if shortcut already exists (only if shortcut is provided)
+        if (shortcut && phrases.some(p => p.shortcut === shortcut)) {
+            notify('Речевые модули', 'Такое сокращение уже существует', 'error');
             return;
         }
 
         const newPhrase: SpeechPhrase = {
             id: Date.now().toString(),
-            shortcut: newPhraseShortcut.trim(),
+            shortcut: shortcut || null,
             name: newPhraseName.trim(),
             text: newPhraseText.trim(),
             categoryId: newPhraseCategoryId,
@@ -117,7 +122,7 @@ export function useSpeechPhrases() {
         if (!phrase) return;
 
         setEditingPhraseId(phraseId);
-        setEditPhraseShortcut(phrase.shortcut);
+        setEditPhraseShortcut(phrase.shortcut || '');
         setEditPhraseName(phrase.name);
         setEditPhraseText(phrase.text);
         setEditPhraseCategoryId(phrase.categoryId || null);
@@ -132,13 +137,15 @@ export function useSpeechPhrases() {
     };
 
     const updatePhrase = async () => {
-        if (!editingPhraseId || !editPhraseShortcut.trim() || !editPhraseName.trim() || !editPhraseText.trim()) {
-            notify('Речевые модули', 'Заполните все поля фразы', 'error');
+        if (!editingPhraseId || !editPhraseName?.trim() || !editPhraseText?.trim()) {
+            notify('Речевые модули', 'Заполните название и текст фразы', 'error');
             return;
         }
 
-        // Check if shortcut already exists (excluding current phrase)
-        if (phrases.some(p => p.shortcut === editPhraseShortcut.trim() && p.id !== editingPhraseId)) {
+        const shortcut = editPhraseShortcut?.trim() || null;
+
+        // Check if shortcut already exists (excluding current phrase, only if shortcut is provided)
+        if (shortcut && phrases.some(p => p.shortcut === shortcut && p.id !== editingPhraseId)) {
             notify('Речевые модули', 'Такое сокращение уже существует', 'error');
             return;
         }
@@ -147,7 +154,7 @@ export function useSpeechPhrases() {
             if (p.id === editingPhraseId) {
                 return {
                     ...p,
-                    shortcut: editPhraseShortcut.trim(),
+                    shortcut: shortcut,
                     name: editPhraseName.trim(),
                     text: editPhraseText.trim(),
                     categoryId: editPhraseCategoryId,
@@ -192,7 +199,7 @@ export function useSpeechPhrases() {
 
         const newPhrase: SpeechPhrase = {
             id: Date.now().toString(),
-            shortcut: `${phrase.shortcut}-copy`,
+            shortcut: phrase.shortcut ? `${phrase.shortcut}-copy` : null,
             name: `${phrase.name} (копия)`,
             text: phrase.text,
             categoryId: phrase.categoryId,
@@ -430,6 +437,321 @@ export function useSpeechPhrases() {
         }
     };
 
+    const movePhrase = async (phraseId: string, categoryId: string | null) => {
+        const updatedPhrases = phrases.map(p => {
+            if (p.id === phraseId) {
+                return {...p, categoryId};
+            }
+            return p;
+        });
+
+        setPhrases(updatedPhrases);
+
+        const success = await saveSpeechPhrases(updatedPhrases);
+        if (success) {
+            const categoryName = categoryId
+                ? getCategoryPathString(categoryId, updatedPhrases
+                    .filter(p => p.categoryId === categoryId)
+                    .map(p => p.name)
+                    .join(', '))
+                : 'корень';
+            notify('Речевые модули', 'Фраза перемещена', 'success');
+        } else {
+            notify('Речевые модули', 'Не удалось переместить фразу', 'error');
+        }
+    };
+
+    const importClippings = async (file: File): Promise<boolean> => {
+        try {
+            const jsonString = await file.text();
+            const parseResult = validateAndParseClippings(jsonString, categories, phrases);
+
+            if (!parseResult.success) {
+                notify(
+                    'Импорт Clippings',
+                    `Ошибка: ${parseResult.error.message}${parseResult.error.details ? ` (${parseResult.error.details})` : ''}`,
+                    'error'
+                );
+                return false;
+            }
+
+            const {categories: newCategories, phrases: newPhrases, statistics} = parseResult.result;
+
+            if (newCategories.length === 0 && newPhrases.length === 0) {
+                notify('Импорт Clippings', 'Все элементы уже существуют (нет новых данных для импорта)', 'error');
+                return false;
+            }
+
+            // Merge with existing data
+            const mergedCategories = [...categories, ...newCategories];
+            const mergedPhrases = [...phrases, ...newPhrases];
+
+            // Save categories
+            const categoriesSaved = await saveSpeechPhraseCategories(mergedCategories);
+            if (!categoriesSaved) {
+                notify('Импорт Clippings', 'Не удалось сохранить категории', 'error');
+                return false;
+            }
+
+            // Save phrases
+            const phrasesSaved = await saveSpeechPhrases(mergedPhrases);
+            if (!phrasesSaved) {
+                notify('Импорт Clippings', 'Не удалось сохранить фразы', 'error');
+                return false;
+            }
+
+            // Update state
+            setCategories(mergedCategories);
+            setPhrases(mergedPhrases);
+
+            // Calculate skipped items
+            const skippedCategories = statistics.foldersProcessed - statistics.categoriesImported;
+            const skippedPhrases = statistics.clippingsProcessed - statistics.phrasesImported;
+
+            // Show success message
+            const messages: string[] = [];
+            if (statistics.categoriesImported > 0) {
+                messages.push(`${statistics.categoriesImported} категорий`);
+            }
+            if (statistics.phrasesImported > 0) {
+                messages.push(`${statistics.phrasesImported} фраз`);
+            }
+
+            let message = `Импортировано: ${messages.join(', ')}`;
+            if (skippedCategories > 0 || skippedPhrases > 0) {
+                const skipped: string[] = [];
+                if (skippedCategories > 0) {
+                    skipped.push(`${skippedCategories} категорий`);
+                }
+                if (skippedPhrases > 0) {
+                    skipped.push(`${skippedPhrases} фраз`);
+                }
+                message += ` (пропущено: ${skipped.join(', ')})`;
+            }
+
+            notify(
+                'Импорт Clippings',
+                message,
+                'success'
+            );
+
+            return true;
+        } catch (error) {
+            notify(
+                'Импорт Clippings',
+                `Ошибка чтения файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+                'error'
+            );
+            return false;
+        }
+    };
+
+    const importGenesys = async (file: File): Promise<boolean> => {
+        try {
+            const {categories: newCategories, phrases: newPhrases} = await importGenesysPhrases(
+                file,
+                categories,
+                phrases
+            );
+
+            if (newCategories.length === 0 && newPhrases.length === 0) {
+                return false;
+            }
+
+            // Merge with existing data
+            const mergedCategories = [...categories, ...newCategories];
+            const mergedPhrases = [...phrases, ...newPhrases];
+
+            // Save categories
+            const categoriesSaved = await saveSpeechPhraseCategories(mergedCategories);
+            if (!categoriesSaved) {
+                notify('Импорт Genesys', 'Не удалось сохранить категории', 'error');
+                return false;
+            }
+
+            // Save phrases
+            const phrasesSaved = await saveSpeechPhrases(mergedPhrases);
+            if (!phrasesSaved) {
+                notify('Импорт Genesys', 'Не удалось сохранить фразы', 'error');
+                return false;
+            }
+
+            // Update state
+            setCategories(mergedCategories);
+            setPhrases(mergedPhrases);
+
+            // Show success message
+            const messages: string[] = [];
+            if (newCategories.length > 0) {
+                messages.push(`${newCategories.length} категорий`);
+            }
+            if (newPhrases.length > 0) {
+                messages.push(`${newPhrases.length} фраз`);
+            }
+
+            notify(
+                'Импорт Genesys',
+                `Импортировано: ${messages.join(', ')}`,
+                'success'
+            );
+
+            return true;
+        } catch (error) {
+            notify(
+                'Импорт Genesys',
+                `Ошибка чтения файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+                'error'
+            );
+            return false;
+        }
+    };
+
+    const importQuickTextPasteFile = async (file: File): Promise<boolean> => {
+        try {
+            const {categories: newCategories, phrases: newPhrases} = await importQuickTextPaste(
+                file,
+                categories,
+                phrases
+            );
+
+            if (newCategories.length === 0 && newPhrases.length === 0) {
+                return false;
+            }
+
+            // Merge with existing data
+            const mergedCategories = [...categories, ...newCategories];
+            const mergedPhrases = [...phrases, ...newPhrases];
+
+            // Save categories
+            const categoriesSaved = await saveSpeechPhraseCategories(mergedCategories);
+            if (!categoriesSaved) {
+                notify('Импорт QuickTextPaste', 'Не удалось сохранить категории', 'error');
+                return false;
+            }
+
+            // Save phrases
+            const phrasesSaved = await saveSpeechPhrases(mergedPhrases);
+            if (!phrasesSaved) {
+                notify('Импорт QuickTextPaste', 'Не удалось сохранить фразы', 'error');
+                return false;
+            }
+
+            // Update state
+            setCategories(mergedCategories);
+            setPhrases(mergedPhrases);
+
+            // Show success message
+            const messages: string[] = [];
+            if (newCategories.length > 0) {
+                messages.push(`${newCategories.length} категорий`);
+            }
+            if (newPhrases.length > 0) {
+                messages.push(`${newPhrases.length} фраз`);
+            }
+
+            notify(
+                'Импорт QuickTextPaste',
+                `Импортировано: ${messages.join(', ')}`,
+                'success'
+            );
+
+            return true;
+        } catch (error) {
+            notify(
+                'Импорт QuickTextPaste',
+                `Ошибка чтения файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`,
+                'error'
+            );
+            return false;
+        }
+    };
+
+    const importPhrases = async (file: File): Promise<boolean> => {
+        try {
+            let text = await file.text();
+
+            // Handle UTF-16LE encoding (common for QuickTextPaste on Windows)
+            if (!text.includes('[list_text]')) {
+                try {
+                    const buffer = await file.arrayBuffer();
+                    const decoder = new TextDecoder('utf-16le');
+                    const decodedText = decoder.decode(buffer);
+
+                    // Remove BOM if present
+                    text = decodedText.charCodeAt(0) === 0xFEFF ? decodedText.slice(1) : decodedText;
+                } catch {
+                    // If UTF-16LE fails, continue with original text
+                }
+            }
+
+            // Check for QuickTextPaste INI format
+            if (isQuickTextPasteContent(text)) {
+                return importQuickTextPasteFile(file);
+            }
+
+            // Try to parse as JSON
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                notify('Импорт фраз', 'Неизвестный формат файла. Поддерживаются Clippings, Genesys и QuickTextPaste форматы.', 'error');
+                return false;
+            }
+
+            // Detect format: Clippings or Genesys
+            if (isGenesysPhrases(data)) {
+                return importGenesys(file);
+            } else if (data.version && data.userClippingsRoot) {
+                return importClippings(file);
+            } else {
+                notify('Импорт фраз', 'Неизвестный формат файла. Поддерживаются Clippings, Genesys и QuickTextPaste форматы.', 'error');
+                return false;
+            }
+        } catch (error) {
+            notify('Импорт фраз', `Ошибка чтения файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`, 'error');
+            return false;
+        }
+    };
+
+    const clearAll = async (): Promise<boolean> => {
+        if (phrases.length === 0 && categories.length === 0) {
+            notify('Речевые модули', 'Нет данных для очистки', 'error');
+            return false;
+        }
+
+        const categoryCount = categories.length;
+        const phraseCount = phrases.length;
+
+        if (!confirm(
+            `Вы уверены, что хотите удалить ВСЕ данные?\n\nЭто действие удалит:\n- ${categoryCount} категорий\n- ${phraseCount} фраз\n\nЭто действие нельзя отменить.`
+        )) {
+            return false;
+        }
+
+        // Double confirmation for safety
+        if (!confirm(
+            `ПОДТВЕРДИТЕ УДАЛЕНИЕ ВСЕХ ДАННЫХ\n\nЭто окончательное удаление всех категорий и фраз.\n\nВведите "ОК" для подтверждения.`
+        )) {
+            return false;
+        }
+
+        // Clear all data
+        const categoriesCleared = await saveSpeechPhraseCategories([]);
+        const phrasesCleared = await saveSpeechPhrases([]);
+
+        if (!categoriesCleared || !phrasesCleared) {
+            notify('Речевые модули', 'Не удалось очистить данные', 'error');
+            return false;
+        }
+
+        // Update state
+        setCategories([]);
+        setPhrases([]);
+
+        notify('Речевые модули', 'Все данные удалены', 'success');
+        return true;
+    };
+
     return {
         phrases,
         categories,
@@ -476,10 +798,16 @@ export function useSpeechPhrases() {
         // Tree management
         getCategoryTree,
         moveCategory,
+        movePhrase,
         getCategoryPath: (id: string) => getCategoryPathString(id, categories),
         newCategoryParentId,
         setNewCategoryParentId,
         editingCategoryParentId,
         setEditingCategoryParentId,
+        // Import
+        importClippings,
+        importPhrases,
+        // Clear all
+        clearAll,
     };
 }

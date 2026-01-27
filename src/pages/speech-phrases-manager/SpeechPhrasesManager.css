@@ -1,0 +1,457 @@
+/* Speech Phrases Manager - Clippings-style layout */
+
+.speech-manager-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 1rem;
+}
+
+.speech-manager-loading .spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--border-color, #e0e6ed);
+    border-top-color: #0a84ff;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.speech-manager-loading p {
+    font-size: 14px;
+    color: var(--text-secondary, #6b7280);
+    margin: 0;
+}
+
+.speech-manager-window {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-primary, #f5f7fa);
+    color: var(--text-primary, #1a1a1a);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    overflow: hidden;
+}
+
+/* Toolbar */
+.speech-manager-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    background: linear-gradient(to bottom, #fcfcfc 0%, #dedede 100%);
+    border-bottom: 1px solid #c0c0c0;
+    min-height: 38px;
+}
+
+.speech-manager-toolbar-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #0c0c0d;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s ease;
+}
+
+.speech-manager-toolbar-btn:hover {
+    background-color: rgba(12, 12, 13, 0.15);
+}
+
+.speech-manager-toolbar-btn:active {
+    background-color: rgba(12, 12, 13, 0.25);
+}
+
+.speech-manager-danger-btn:hover {
+    background-color: #fee;
+    color: #c00;
+}
+
+.speech-manager-icon {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.speech-manager-spacer {
+    flex: 1;
+}
+
+/* Search */
+.speech-manager-search {
+    display: flex;
+    align-items: center;
+}
+
+.speech-manager-search-input {
+    padding: 4px 8px;
+    border: 1px solid #b1b1b1;
+    border-radius: 3px;
+    font-size: 13px;
+    width: 200px;
+    background: white;
+}
+
+.speech-manager-search-input:focus {
+    outline: none;
+    border-color: #0a84ff;
+    box-shadow: 0 0 0 1px #0a84ff;
+}
+
+/* Content Area */
+.speech-manager-content {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+}
+
+/* Tree View */
+.speech-manager-tree {
+    width: 300px;
+    min-width: 200px;
+    max-width: 500px;
+    overflow-y: auto;
+    background-color: #fbfbfb;
+    border-right: 1px solid #b1b1b1;
+}
+
+.speech-manager-tree::-webkit-scrollbar {
+    width: 12px;
+}
+
+.speech-manager-tree::-webkit-scrollbar-track {
+    background: #f0f0f0;
+}
+
+.speech-manager-tree::-webkit-scrollbar-thumb {
+    background: #c0c0c0;
+    border-radius: 6px;
+    border: 3px solid #f0f0f0;
+}
+
+.speech-manager-tree::-webkit-scrollbar-thumb:hover {
+    background: #a0a0a0;
+}
+
+.speech-manager-empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-secondary, #6b7280);
+    font-size: 14px;
+}
+
+.speech-manager-tree-node {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+    font-size: 13px;
+}
+
+.speech-manager-tree-node:hover {
+    background-color: rgba(0, 0, 0, 0.06);
+}
+
+.speech-manager-tree-node.selected {
+    background-color: #0a84ff;
+    color: white;
+}
+
+.speech-manager-node-icon {
+    flex-shrink: 0;
+    font-size: 12px;
+}
+
+.speech-manager-node-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Splitter */
+.speech-manager-splitter {
+    width: 1px;
+    background-color: #b1b1b1;
+    flex-shrink: 0;
+}
+
+/* Editor Panel */
+.speech-manager-editor {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1rem;
+    background-color: white;
+}
+
+.speech-manager-editor::-webkit-scrollbar {
+    width: 12px;
+}
+
+.speech-manager-editor::-webkit-scrollbar-track {
+    background: #f0f0f0;
+}
+
+.speech-manager-editor::-webkit-scrollbar-thumb {
+    background: #c0c0c0;
+    border-radius: 6px;
+    border: 3px solid #f0f0f0;
+}
+
+.speech-manager-editor::-webkit-scrollbar-thumb:hover {
+    background: #a0a0a0;
+}
+
+.speech-manager-intro {
+    max-width: 600px;
+}
+
+.speech-manager-intro h3 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    color: var(--text-primary, #1a1a1a);
+}
+
+.speech-manager-intro p {
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary, #6b7280);
+    margin: 0 0 1.5rem 0;
+}
+
+.speech-manager-usage h4 {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 0 0 0.75rem 0;
+    color: var(--text-primary, #1a1a1a);
+}
+
+.speech-manager-usage ul {
+    margin: 0;
+    padding-left: 1.25rem;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--text-secondary, #6b7280);
+}
+
+.speech-manager-usage li {
+    margin-bottom: 0.5rem;
+}
+
+.speech-manager-usage code {
+    background-color: #f3f4f6;
+    padding: 0.125rem 0.375rem;
+    border-radius: 3px;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, monospace;
+    font-size: 0.875em;
+    color: #0a84ff;
+}
+
+/* Edit Panel */
+.speech-manager-edit-panel {
+    max-width: 600px;
+}
+
+.speech-manager-edit-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 1rem 0;
+    color: var(--text-primary, #1a1a1a);
+}
+
+.speech-manager-field {
+    margin-bottom: 1rem;
+}
+
+.speech-manager-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary, #6b7280);
+    margin-bottom: 0.375rem;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+}
+
+.speech-manager-field input,
+.speech-manager-field textarea,
+.speech-manager-field select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #b1b1b1;
+    border-radius: 4px;
+    font-size: 14px;
+    background: white;
+    font-family: inherit;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.speech-manager-field input:focus,
+.speech-manager-field textarea:focus,
+.speech-manager-field select:focus {
+    outline: none;
+    border-color: #0a84ff;
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.1);
+}
+
+.speech-manager-field textarea {
+    resize: vertical;
+    min-height: 100px;
+    line-height: 1.5;
+}
+
+.speech-manager-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+}
+
+.speech-manager-btn {
+    padding: 0.5rem 1rem;
+    border: 1px solid #b1b1b1;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    background: white;
+    color: var(--text-primary, #1a1a1a);
+    transition: all 0.15s ease;
+}
+
+.speech-manager-btn:hover {
+    background-color: #f3f4f6;
+    border-color: #a0a0a0;
+}
+
+.speech-manager-btn.primary {
+    background-color: #0a84ff;
+    border-color: #0a84ff;
+    color: white;
+}
+
+.speech-manager-btn.primary:hover {
+    background-color: #006fe0;
+    border-color: #006fe0;
+}
+
+/* Dark theme */
+[data-theme='dark'] .speech-manager-window {
+    --bg-primary: #1a1a1a;
+    --text-primary: #e5e7eb;
+    --text-secondary: #9ca3af;
+}
+
+[data-theme='dark'] .speech-manager-toolbar {
+    background: linear-gradient(to bottom, #2a2a2a 0%, #1f1f1f 100%);
+    border-bottom-color: #404040;
+}
+
+[data-theme='dark'] .speech-manager-toolbar-btn {
+    color: #e5e7eb;
+}
+
+[data-theme='dark'] .speech-manager-toolbar-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme='dark'] .speech-manager-toolbar-btn:active {
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+[data-theme='dark'] .speech-manager-danger-btn:hover {
+    background-color: rgba(255, 0, 0, 0.2);
+    color: #ff6b6b;
+}
+
+[data-theme='dark'] .speech-manager-search-input {
+    background: #2a2a2a;
+    border-color: #404040;
+    color: #e5e7eb;
+}
+
+[data-theme='dark'] .speech-manager-search-input:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 1px #60a5fa;
+}
+
+[data-theme='dark'] .speech-manager-tree {
+    background-color: #1f1f1f;
+    border-right-color: #404040;
+}
+
+[data-theme='dark'] .speech-manager-tree-node:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme='dark'] .speech-manager-tree-node.selected {
+    background-color: #1d4ed8;
+    color: white;
+}
+
+[data-theme='dark'] .speech-manager-splitter {
+    background-color: #404040;
+}
+
+[data-theme='dark'] .speech-manager-editor {
+    background-color: #1a1a1a;
+}
+
+[data-theme='dark'] .speech-manager-intro h3,
+[data-theme='dark'] .speech-manager-usage h4 {
+    color: #e5e7eb;
+}
+
+[data-theme='dark'] .speech-manager-field input,
+[data-theme='dark'] .speech-manager-field textarea,
+[data-theme='dark'] .speech-manager-field select {
+    background: #2a2a2a;
+    border-color: #404040;
+    color: #e5e7eb;
+}
+
+[data-theme='dark'] .speech-manager-field input:focus,
+[data-theme='dark'] .speech-manager-field textarea:focus,
+[data-theme='dark'] .speech-manager-field select:focus {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.1);
+}
+
+[data-theme='dark'] .speech-manager-btn {
+    background: #2a2a2a;
+    border-color: #404040;
+    color: #e5e7eb;
+}
+
+[data-theme='dark'] .speech-manager-btn:hover {
+    background-color: #3a3a3a;
+    border-color: #505050;
+}
+
+[data-theme='dark'] .speech-manager-btn.primary {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+    color: white;
+}
+
+[data-theme='dark'] .speech-manager-btn.primary:hover {
+    background-color: #1e40af;
+    border-color: #1e40af;
+}
+
+[data-theme='dark'] .speech-manager-usage code {
+    background-color: #374151;
+}

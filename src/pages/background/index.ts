@@ -8,6 +8,7 @@ import {
     handleSpeechPhraseClick,
     rebuildSpeechPhrasesMenu,
 } from "./handlers/speechPhrasesMenu";
+import {createExtensionIconMenu, handleExtensionIconClick,} from "./handlers/extensionIconMenu";
 
 // Handle all messages from content scripts
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
@@ -47,17 +48,22 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
 // Initialize speech phrases context menu on extension install or startup
 chrome.runtime.onInstalled.addListener(async () => {
     await createSpeechPhrasesMenu();
+    await createExtensionIconMenu();
 });
 
 // Initialize context menu on startup (in case it wasn't created)
 chrome.runtime.onStartup.addListener(async () => {
     await createSpeechPhrasesMenu();
+    await createExtensionIconMenu();
 });
 
 // Handle context menu clicks
 chrome.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId && typeof info.menuItemId === 'string' && info.menuItemId.startsWith('speech-phrase-')) {
         handleSpeechPhraseClick(info, tab).catch(console.error);
+    }
+    if (info.menuItemId === 'edit-speech-phrases') {
+        handleExtensionIconClick().catch(console.error);
     }
 });
 

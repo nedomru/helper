@@ -7,7 +7,7 @@ const CATEGORIES_SETTINGS_KEY = 'speechPhraseCategories';
 
 export interface SpeechPhrase {
     id: string;
-    shortcut: string;
+    shortcut: string | null;
     name: string;
     text: string;
     categoryId?: string | null;
@@ -56,7 +56,9 @@ export async function getPhrasesMap(): Promise<Map<string, string>> {
     const phrases = await getSpeechPhrases();
     const map = new Map<string, string>();
     for (const phrase of phrases) {
-        map.set(phrase.shortcut, phrase.text);
+        if (phrase.shortcut) {
+            map.set(phrase.shortcut, phrase.text);
+        }
     }
     return map;
 }
