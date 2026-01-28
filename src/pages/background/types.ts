@@ -10,6 +10,19 @@ export interface LookupMACMessage {
     mac: string;
 }
 
+export interface FetchDiagnosticReportsMessage {
+    action: "fetchDiagnosticReports";
+    payload: {
+        urls: string[];
+    };
+}
+
+export interface DiagnosticFile {
+    name: string;
+    url: string;
+    source: string;
+}
+
 export interface MACLookupResult {
     company: string;
 }

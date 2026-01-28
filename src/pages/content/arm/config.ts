@@ -1,6 +1,11 @@
 import type {PageConfig} from "../core/types";
 
-import {allowCopy, removeGenerationTimes, showAgreementOnRequestChange} from "./features/ui-enhancements";
+import {
+    allowCopy,
+    diagnosticReportsButton,
+    removeGenerationTimes,
+    showAgreementOnRequestChange
+} from "./features/ui-enhancements";
 import {macLookupButton} from "@pages/content/arm/features/network-info/macLookup";
 import {foldSpas} from "@pages/content/arm/features/folding/spas";
 import {foldTabInfo} from "@pages/content/arm/features/folding/info";
@@ -67,6 +72,7 @@ export const armPageConfigs: PageConfig[] = [
             copyClientAgreementButton,
             copyClientAddressButton,
             compensateButton,
+            diagnosticReportsButton,
             showWarrantyExpiration,
             showAppealsHighlights,
             showSubscriptionStatus,

@@ -3,6 +3,7 @@ console.log("background script loaded");
 import {handleSendClientCard} from "./handlers/sendClientCard";
 import {handleMACLookup} from "./handlers/macLookup";
 import {handleGetCookie, handleGetMultipleCookies} from "./handlers/getCookie";
+import {handleFetchDiagnosticReports} from "./handlers/fetchDiagnosticReports";
 import {
     createSpeechPhrasesMenu,
     handleSpeechPhraseClick,
@@ -40,6 +41,14 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     if (request.action === "getMultipleCookies") {
         handleGetMultipleCookies(request)
             .then(result => sendResponse({ok: true, data: result}))
+            .catch(err => sendResponse({ok: false, err: String(err)}));
+        return true;
+    }
+
+    // Fetch diagnostic reports action
+    if (request.action === "fetchDiagnosticReports") {
+        handleFetchDiagnosticReports(request)
+            .then(result => sendResponse(result))
             .catch(err => sendResponse({ok: false, err: String(err)}));
         return true;
     }

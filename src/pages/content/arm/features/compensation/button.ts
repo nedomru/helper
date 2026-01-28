@@ -24,8 +24,8 @@ export async function compensateButton(): Promise<void> {
     const compensateBtn = document.createElement("button");
     compensateBtn.className = `btn ${isIntercom ? "btn-danger" : "btn-success"} helper-compensate-btn float-right btn-xs`;
     compensateBtn.type = "button";
-    compensateBtn.textContent = "Компенсировать";
-    compensateBtn.style.marginRight = "5px";
+    compensateBtn.textContent = "Компенсация";
+    compensateBtn.style.marginLeft = "5px";
 
     container.insertBefore(compensateBtn, top3Btn);
 
