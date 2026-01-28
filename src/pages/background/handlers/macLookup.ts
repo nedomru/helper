@@ -9,11 +9,8 @@ export async function handleMACLookup(message: LookupMACMessage): Promise<Respon
             return {ok: true, data: macLookupCache.get(message.mac)!};
         }
 
-        // Use CORS proxy to bypass extension origin restrictions
         const apiUrl = `https://api.macvendors.com/${message.mac}`;
-        const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(apiUrl)}`;
-
-        const response = await fetch(proxyUrl);
+        const response = await fetch(apiUrl);
 
         if (!response.ok) {
             throw new Error(String(response.status));
