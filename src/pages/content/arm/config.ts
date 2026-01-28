@@ -33,6 +33,7 @@ import {copyMACAddress} from "@pages/content/arm/features/network-info/macCopy";
 import {copyIPAddress} from "@pages/content/arm/features/network-info/ipCopy";
 import {filterSessions} from "@pages/content/arm/features/sessions-history/filters";
 import {macLookupButton as sessionsMacLookupButton} from "@pages/content/arm/features/sessions-history/macLookup";
+import {copyMACAddress as sessionsCopyMACAddress} from "@pages/content/arm/features/sessions-history/macCopy";
 import {loadLastDayClientSessions} from "@pages/content/arm/features/ui-enhancements/sessionsLastDay";
 import {smsButtons} from "@pages/content/arm/features/sms/fast_choose";
 import {copyClientNumber} from "@pages/content/arm/features/client-number/copyButton";
@@ -102,6 +103,7 @@ export const armPageConfigs: PageConfig[] = [
         features: [],
         alwaysRun: [
             filterSessions,
+            sessionsCopyMACAddress,
             sessionsMacLookupButton,
             loadLastDayClientSessions
         ],

@@ -9,40 +9,6 @@ async function lookupMAC(mac: string) {
 }
 
 /**
- * Adds click-to-copy functionality to MAC address elements
- */
-function addCopyFunctionality(macElement: HTMLElement): void {
-    const macText = macElement.textContent?.trim();
-    if (!macText) return;
-
-    macElement.style.cursor = "pointer";
-
-    macElement.onclick = (event: PointerEvent): void => {
-        event.preventDefault();
-        event.stopPropagation();
-        event.stopImmediatePropagation();
-
-        navigator.clipboard.writeText(macText).then((): void => {
-            macElement.style.transition = "color 0.2s ease, background-color 0.2s ease";
-            macElement.style.color = "#16a34a";
-            macElement.style.backgroundColor = "#dcfce7";
-
-            setTimeout(() => {
-                macElement.style.color = "";
-                macElement.style.backgroundColor = "";
-            }, 600);
-            notify("📋 Копирование", `MAC-адрес скопирован: ${macText}`, "success");
-        }).catch((err): void => {
-            console.error(
-                "[АРМ - Копирование] Не удалось скопировать MAC-адрес из сессии",
-                err
-            );
-            notify("📋 Копирование", "Не удалось скопировать MAC-адрес", "error");
-        });
-    };
-}
-
-/**
  * Adds a "Check" button next to a single MAC address element
  */
 function addLookupButton(macElement: HTMLElement): void {
