@@ -7,15 +7,12 @@ type Tab = 'Главная' | 'Инструменты';
 
 interface ToolState {
     macAddress: string;
-    ipAddress: string;
-    link: string;
-    specialist: string;
 }
 
-const MONTHS = [
-    'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-    'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
-];
+interface MacLookupResult {
+    company: string;
+    error?: string;
+}
 
 interface ToolInputProps {
     label: string;
@@ -56,10 +53,8 @@ export default function Popup(): ReactNode {
     const [activeTab, setActiveTab] = useState<Tab>('Главная');
     const [tools, setTools] = useState<ToolState>({
         macAddress: '',
-        ipAddress: '',
-        link: '',
-        specialist: '',
     });
+    const [macResult, setMacResult] = useState<MacLookupResult | null>(null);
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -93,6 +88,30 @@ export default function Popup(): ReactNode {
     const handleOpenLink = useCallback((url: string) => {
         window.open(url, '_blank', 'noopener,noreferrer');
     }, []);
+
+    const handleMacLookup = useCallback(async () => {
+        if (!tools.macAddress.trim()) {
+            setMacResult({company: '', error: 'Пожалуйста, введите MAC-адрес'});
+            return;
+        }
+
+        setMacResult(null); // Clear previous result
+
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'LOOKUP_MAC',
+                mac: tools.macAddress.trim()
+            });
+
+            if (response.ok) {
+                setMacResult({company: response.data.company});
+            } else {
+                setMacResult({company: '', error: response.err || 'Ошибка при поиске'});
+            }
+        } catch (error) {
+            setMacResult({company: '', error: String(error)});
+        }
+    }, [tools.macAddress]);
 
     const TABS: Tab[] = ['Главная', 'Инструменты'];
 
@@ -346,67 +365,31 @@ export default function Popup(): ReactNode {
                             onChange={(v) => setTools(prev => ({...prev, macAddress: v}))}
                             placeholder="Введи MAC"
                             buttonLabel="Проверить"
+                            onAction={handleMacLookup}
                         />
 
-                        <ToolInput
-                            label="Проверка IP"
-                            value={tools.ipAddress}
-                            onChange={(v) => setTools(prev => ({...prev, ipAddress: v}))}
-                            placeholder="Введи IP"
-                            buttonLabel="Проверить"
-                        />
-
-                        <ToolInput
-                            label="Сокращ. ссылок"
-                            value={tools.link}
-                            onChange={(v) => setTools(prev => ({...prev, link: v}))}
-                            placeholder="Введи ссылку"
-                            buttonLabel="Сократить"
-                        />
-
-                        <ToolInput
-                            label="Проверка спеца"
-                            value={tools.specialist}
-                            onChange={(v) => setTools(prev => ({...prev, specialist: v}))}
-                            placeholder="Введи фамилию и имя"
-                            buttonLabel="Проверить"
-                        />
-
-                        <div className="flex gap-2 items-center">
-                            <span
-                                className="w-32 px-3 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center">
-                                Премия
-                            </span>
-                            <select
-                                className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white">
-                                <option value="specialist">Спец</option>
-                                <option value="head">РГ</option>
-                            </select>
-                            <select
-                                className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white">
-                                {MONTHS.map((month, i) => (
-                                    <option key={month} value={i + 1}>{month}</option>
-                                ))}
-                            </select>
-                            <select
-                                className="px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm bg-white">
-                                <option value="2025">2025</option>
-                                <option value="2024">2024</option>
-                                <option value="2023">2023</option>
-                            </select>
-                            <input
-                                type="text"
-                                placeholder="Часы"
-                                className="w-20 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
-                            />
-                            <button
-                                className="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all text-sm font-medium text-gray-700 shadow-sm">
-                                Проверить
-                            </button>
-                        </div>
-
-                        <div id="specialist-results" className="mt-4"/>
-                        <div id="result-container" className="mt-4"/>
+                        {macResult && (
+                            <div className={`px-4 py-3 rounded-lg border ${
+                                macResult.error
+                                    ? 'bg-red-50 border-red-200 text-red-800'
+                                    : 'bg-green-50 border-green-200 text-green-800'
+                            }`}>
+                                {macResult.error ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm">❌</span>
+                                        <span className="text-sm font-medium">{macResult.error}</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm">✓</span>
+                                        <div className="text-sm">
+                                            <span className="font-medium">Производитель:</span>{' '}
+                                            <span>{macResult.company}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
