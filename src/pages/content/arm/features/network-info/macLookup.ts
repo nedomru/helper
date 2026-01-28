@@ -27,7 +27,7 @@ export async function macLookupButton(): Promise<void> {
 
         const lookupButton = document.createElement("button");
         lookupButton.textContent = "🔍";
-        lookupButton.classList.add("btn", "btn-primary", "btn-xs", "helper-mac-lookup-btn");
+        lookupButton.classList.add("btn", "btn-outline-primary", "btn-xs", "helper-mac-lookup-btn");
         lookupButton.type = "button";
 
         lookupButton.addEventListener("click", async (event: Event) => {

@@ -1,11 +1,14 @@
 import {notify} from "@src/utils";
 
 /**
- * Adds click-to-copy functionality to MAC address elements
+ * Adds click-to-copy functionality to MAC address span element
  */
 function addCopyFunctionality(macElement: HTMLElement): void {
     const macText = macElement.textContent?.trim();
     if (!macText) return;
+
+    // Check if already has copy functionality
+    if (macElement.style.cursor === "pointer") return;
 
     macElement.style.cursor = "pointer";
 
@@ -36,10 +39,21 @@ function addCopyFunctionality(macElement: HTMLElement): void {
 
 /**
  * Adds MAC copy functionality to all MAC addresses on the page
+ * Targets the 5th column (index 4) of each table row
  */
 function addCopyToAllMACs(): void {
-    const macElements = document.querySelectorAll<HTMLElement>(".js-get-vendor-by-mac");
-    macElements.forEach(addCopyFunctionality);
+    // Find all table rows and target the 5th column (index 4)
+    const tableRows = document.querySelectorAll("tr");
+    tableRows.forEach((row) => {
+        const cells = row.querySelectorAll("td");
+        if (cells.length >= 5) {
+            const macCell = cells[4] as HTMLElement;
+            const macElement = macCell.querySelector<HTMLElement>(".js-get-vendor-by-mac");
+            if (macElement) {
+                addCopyFunctionality(macElement);
+            }
+        }
+    });
 }
 
 /**

@@ -61,17 +61,37 @@ function addLookupButton(macElement: HTMLElement): void {
         }
     });
 
+    // Ensure both elements are inline-block and stay on the same line
     macElement.style.display = "inline-block";
     macElement.style.verticalAlign = "middle";
-    macElement.parentElement?.appendChild(lookupButton);
+    lookupButton.style.marginLeft = "4px";
+
+    // Insert button right after the MAC element to keep them on same line
+    macElement.insertAdjacentElement("afterend", lookupButton);
 }
 
 /**
  * Adds MAC lookup buttons to all MAC addresses on the page
+ * Targets the 5th column (index 4) of each table row
  */
 function addLookupButtons(): void {
-    const macElements = document.querySelectorAll<HTMLElement>(".js-get-vendor-by-mac");
-    macElements.forEach(addLookupButton);
+    // Find all table rows and target the 5th column (index 4)
+    const tableRows = document.querySelectorAll("tr");
+    tableRows.forEach((row) => {
+        const cells = row.querySelectorAll("td");
+        if (cells.length >= 5) {
+            const macCell = cells[4] as HTMLElement;
+
+            // Make the MAC column wider to prevent button wrapping
+            macCell.style.minWidth = "100px";
+            macCell.style.whiteSpace = "nowrap";
+
+            const macElement = macCell.querySelector<HTMLElement>(".js-get-vendor-by-mac");
+            if (macElement) {
+                addLookupButton(macElement);
+            }
+        }
+    });
 }
 
 /**
