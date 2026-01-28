@@ -7,8 +7,12 @@ export async function smsButtons(): Promise<void> {
     const smsSelector = document.querySelector<HTMLSelectElement>(".type_sms_a");
     if (!smsSelector) return;
 
+    // Check if buttons already exist
+    const existingButtons = smsSelector.parentElement?.querySelector(".helper-sms-buttons");
+    if (existingButtons) return;
+
     const buttonContainer = document.createElement("div");
-    buttonContainer.className = "button-container";
+    buttonContainer.className = "helper-sms-buttons button-container";
     buttonContainer.style.cssText = "display: flex; flex-wrap: wrap; margin-top: 6px; gap: 6px;";
 
     const buttonConfig = [
