@@ -8,7 +8,7 @@ import {foldTabCRequests} from "@pages/content/arm/features/folding/connection_r
 import {foldTabApplications} from "@pages/content/arm/features/folding/applications";
 import {foldTabAppeals} from "@pages/content/arm/features/folding/appeals";
 import {foldTabSRequests} from "@pages/content/arm/features/folding/service_requests";
-import {removeDiagnosticTabs} from "./features/ui-enhancements/eqm";
+import {hideDiagnosticTabs} from "./features/ui-enhancements/eqm";
 import {addAppealIframeButtons, removeAppealsColumns} from "./features/ui-enhancements/appeals";
 import {hideSelectedTabs, observeTabsNavigation} from "./features/ui-enhancements/hideTabs";
 import {showWarrantyExpiration} from "@pages/content/arm/features/highlights/warranty";
@@ -55,7 +55,7 @@ export const armPageConfigs: PageConfig[] = [
             {key: 'foldTabAppeals', handler: foldTabAppeals},
             {key: 'foldTabSRequests', handler: foldTabSRequests},
             {key: 'foldTabCRequests', handler: foldTabCRequests},
-            {key: 'removeDiagnosticTabs', handler: removeDiagnosticTabs},
+            {key: 'removeDiagnosticTabs', handler: hideDiagnosticTabs},
             {key: 'removeAppealsColumns', handler: removeAppealsColumns},
         ],
         alwaysRun: [
