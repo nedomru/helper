@@ -7,6 +7,7 @@ import {autoCollapseChatHeader} from "@pages/content/genesys/features/chat/heade
 import {showLineStatus} from "@pages/content/genesys/features/ui-enhancements/line_status";
 import {showDutyMessages} from "@pages/content/genesys/features/ui-enhancements/duty_messages";
 import {hideButtons} from "@pages/content/genesys/features/ui-enhancements/hideButtons";
+import {showClock} from "@pages/content/genesys/features/ui-enhancements/clock";
 
 export const URL_PATTERNS = {
     GENESYS_BASE: "genesys-app1",
@@ -16,6 +17,7 @@ export const genesysPageConfigs: PageConfig[] = [
     {
         pattern: URL_PATTERNS.GENESYS_BASE,
         features: [
+            {key: 'showClock', handler: showClock},
             {key: 'showLineStatus', handler: showLineStatus},
             {key: 'showDutyMessages', handler: showDutyMessages},
             {key: 'hideButtons', handler: hideButtons},
