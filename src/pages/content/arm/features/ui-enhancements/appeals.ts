@@ -1,158 +1,186 @@
 import {buildActionUrl, createIframeWindow, extractActionParams,} from "../../shared";
 
+interface CellInfo {
+    element: HTMLTableCellElement;
+    originalDisplay: string;
+}
+
+const hiddenColumns = new Map<string, CellInfo[]>();
+let isColumnsVisible = false;
+
+const COLUMNS_TO_HIDE = ["Оборудование", "Продукт", "Платформа", "Исполнитель"];
+
+function hideColumns(): void {
+    hiddenColumns.forEach((cells) => {
+        cells.forEach((cell) => {
+            cell.element.style.display = "none";
+        });
+    });
+}
+
+function showColumns(): void {
+    hiddenColumns.forEach((cells) => {
+        cells.forEach((cell) => {
+            cell.element.style.display = cell.originalDisplay;
+        });
+    });
+}
+
+function processColumns(container: HTMLElement): void {
+    if (container.getAttribute("data-processed-columns") === "true") return;
+    if (container.style.display === "none" || container.offsetParent === null) return;
+
+    const tables = container.querySelectorAll<HTMLTableElement>("table");
+    if (tables.length === 0) return;
+
+    hiddenColumns.clear();
+    let totalHidden = 0;
+
+    tables.forEach((table) => {
+        const rows = table.querySelectorAll<HTMLTableRowElement>("tr");
+        if (!rows.length) return;
+
+        const headerRow = rows[0];
+        const headers = Array.from(headerRow.querySelectorAll<HTMLTableHeaderCellElement>("th"));
+
+        const indexesToHide: number[] = [];
+        headers.forEach((header, index) => {
+            const headerText = header.textContent?.trim();
+            if (headerText && COLUMNS_TO_HIDE.includes(headerText)) {
+                indexesToHide.push(index);
+            }
+        });
+
+        if (indexesToHide.length === 0) return;
+
+        indexesToHide.forEach((colIndex) => {
+            const cells: CellInfo[] = [];
+            const headerText = headers[colIndex].textContent?.trim() || `col-${colIndex}`;
+
+            rows.forEach((row) => {
+                const cell = row.cells[colIndex];
+                if (cell) {
+                    cells.push({
+                        element: cell,
+                        originalDisplay: cell.style.display || "",
+                    });
+                    cell.style.display = "none";
+                }
+            });
+
+            if (cells.length > 0) {
+                hiddenColumns.set(headerText, cells);
+                totalHidden += cells.length;
+            }
+        });
+
+        // Update colspan for full-width headers
+        const fullWidthHeaders = table.querySelectorAll<HTMLTableCellElement>(
+            'td[colspan="14"]',
+        );
+        fullWidthHeaders.forEach((header) => {
+            const currentColspan = parseInt(header.getAttribute("colspan") || "14", 10);
+            header.setAttribute("colspan", (currentColspan - indexesToHide.length).toString());
+        });
+    });
+
+    if (totalHidden > 0) {
+        container.setAttribute("data-processed-columns", "true");
+        createToggleBtn(container);
+        console.info(`[Хелпер] Скрыто ячеек в ${hiddenColumns.size} колонках`);
+    }
+}
+
+function createToggleBtn(container: HTMLElement): void {
+    const existingBtnGroup = container.querySelector(".btn-group.helper-buttons");
+
+    if (existingBtnGroup) {
+        // Add to existing button group
+        const toggleBtn = document.createElement("button");
+        toggleBtn.id = "helper-toggle-columns";
+        toggleBtn.className = "btn btn-secondary helper";
+        toggleBtn.type = "button";
+        toggleBtn.textContent = "Колонки";
+        toggleBtn.setAttribute("data-state", "hidden");
+
+        toggleBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            isColumnsVisible = !isColumnsVisible;
+
+            if (isColumnsVisible) {
+                showColumns();
+                toggleBtn.classList.remove("btn-secondary");
+                toggleBtn.classList.add("btn-success");
+            } else {
+                hideColumns();
+                toggleBtn.classList.remove("btn-success");
+                toggleBtn.classList.add("btn-secondary");
+            }
+            toggleBtn.setAttribute("data-state", isColumnsVisible ? "visible" : "hidden");
+        });
+
+        existingBtnGroup.appendChild(toggleBtn);
+    } else {
+        // Find search wrapper or create new
+        const searchWrapper = container.querySelector('[style*="display: flex"][style*="align-items: center"]');
+
+        const btnGroup = document.createElement("div");
+        btnGroup.className = "btn-group helper-buttons";
+        btnGroup.setAttribute("role", "group");
+
+        const toggleBtn = document.createElement("button");
+        toggleBtn.id = "helper-toggle-columns";
+        toggleBtn.className = "btn btn-secondary helper";
+        toggleBtn.type = "button";
+        toggleBtn.textContent = "Колонки";
+        toggleBtn.setAttribute("data-state", "hidden");
+
+        toggleBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+
+            isColumnsVisible = !isColumnsVisible;
+
+            if (isColumnsVisible) {
+                showColumns();
+                toggleBtn.classList.remove("btn-secondary");
+                toggleBtn.classList.add("btn-success");
+            } else {
+                hideColumns();
+                toggleBtn.classList.remove("btn-success");
+                toggleBtn.classList.add("btn-secondary");
+            }
+            toggleBtn.setAttribute("data-state", isColumnsVisible ? "visible" : "hidden");
+        });
+
+        btnGroup.appendChild(toggleBtn);
+
+        if (searchWrapper) {
+            searchWrapper.appendChild(btnGroup);
+        } else {
+            const wrapper = document.createElement("div");
+            wrapper.style.cssText = "margin:10px 0;";
+            wrapper.appendChild(btnGroup);
+            container.insertBefore(wrapper, container.firstChild);
+        }
+    }
+}
+
 export async function removeAppealsColumns(): Promise<void> {
     const container = document.getElementById("lazy_content_2448");
     if (!container) return;
 
-    // Check if the tab is currently active (visible)
-    function isTabActive(): boolean {
-        return (
-            container!.style.display !== "none" &&
-            !container!.classList.contains("hidden") &&
-            container!.offsetParent !== null
-        );
-    }
-
-    // Process the column removal only if tab is active
-    function processColumnRemoval(): void {
-        if (!isTabActive()) return;
-
-        // Check if already processed
-        if (container!.getAttribute("processed-columns-by-helper")) return;
-
-        try {
-            const tables =
-                container!.querySelectorAll<HTMLTableElement>("table");
-
-            // If no tables exist yet, don't mark as processed
-            if (tables.length === 0) return;
-
-            let columnsRemoved = false;
-
-            tables.forEach((table) => {
-                // Get all rows
-                const rows = table.querySelectorAll<HTMLTableRowElement>("tr");
-                if (!rows.length) return;
-
-                // Get the header row (first row)
-                const headerRow = rows[0];
-                const headers = Array.from(
-                    headerRow.querySelectorAll<HTMLTableHeaderCellElement>("th"),
-                );
-
-                // Find indexes of columns to remove by matching header text
-                const columnsToRemove = [
-                    "Оборудование",
-                    "Продукт",
-                    "Платформа",
-                    "Исполнитель",
-                ];
-                const indexesToRemove: number[] = [];
-
-                headers.forEach((header, index) => {
-                    const headerText = header.textContent?.trim();
-                    if (headerText && columnsToRemove.includes(headerText)) {
-                        indexesToRemove.push(index);
-                    }
-                });
-
-                // If no columns to remove, skip this table
-                if (indexesToRemove.length === 0) return;
-
-                columnsRemoved = true;
-
-                // Sort indexes in descending order to avoid shifting issues
-                indexesToRemove.sort((a, b) => b - a);
-
-                // Remove the columns from each row
-                rows.forEach((row) => {
-                    const cells = Array.from(row.cells);
-                    indexesToRemove.forEach((index) => {
-                        if (cells[index]) {
-                            cells[index].remove();
-                        }
-                    });
-                });
-
-                // Update colspan for any header rows that span the full table width
-                const fullWidthHeaders = table.querySelectorAll<HTMLTableCellElement>(
-                    'td[colspan="14"]',
-                );
-                fullWidthHeaders.forEach((header) => {
-                    header.setAttribute(
-                        "colspan",
-                        (14 - indexesToRemove.length).toString(),
-                    );
-                });
-            });
-
-            // Only mark as processed if we actually removed columns
-            if (columnsRemoved) {
-                container!.setAttribute("processed-columns-by-helper", "true");
-                console.info(
-                    "[Хелпер] - [АРМ] - [Обращения] Удалены лишние колонки",
-                );
-            }
-        } catch (error) {
-            console.error(`[Хелпер] - [АРМ] - [Обращения] Ошибка:`, error);
-        }
-    }
-
-    // Initial check if tab is already active
-    if (isTabActive()) {
-        processColumnRemoval();
-    }
-
-    // Observer for tab activation and content changes
-    const observer = new MutationObserver((mutations) => {
-        let shouldProcess = false;
-
-        for (const mutation of mutations) {
-            // Check if the tab itself became visible
-            if (mutation.target === container) {
-                if (
-                    mutation.type === "attributes" &&
-                    (mutation.attributeName === "class" ||
-                        mutation.attributeName === "style")
-                ) {
-                    shouldProcess = true;
-                    break;
-                }
-            }
-
-            // Check if tab content changed while tab is active
-            if (isTabActive() && mutation.type === "childList") {
-                shouldProcess = true;
-                break;
-            }
-        }
-
-        if (shouldProcess) {
-            processColumnRemoval();
-        }
-    });
-
-    // Observe the tab for visibility changes and content changes
+    const observer = new MutationObserver(() => processColumns(container));
     observer.observe(container, {
         attributes: true,
-        attributeFilter: ["class", "style"],
+        attributeFilter: ["style", "class"],
         childList: true,
         subtree: true,
     });
 
-    // Also observe document body for tab switching
-    const bodyObserver = new MutationObserver(() => {
-        if (isTabActive()) {
-            processColumnRemoval();
-        }
-    });
-
-    bodyObserver.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ["class", "style"],
-    });
+    processColumns(container);
 }
 
 /**

@@ -117,22 +117,23 @@ export async function foldTabAppeals(): Promise<void> {
             });
 
             if (totalHidden > 0) {
-                const btnContainer = document.createElement("div");
-                btnContainer.style.cssText =
-                    "display: flex; align-items: center; margin: 10px 0;";
+                const searchWrapper = container!.querySelector('[style*="display: flex"][style*="align-items: center"]');
+                const existingBtnGroup = container!.querySelector(".btn-group.helper-buttons");
+
+                if (existingBtnGroup) {
+                    existingBtnGroup.remove();
+                }
+
+                const btnGroup = document.createElement("div");
+                btnGroup.className = "btn-group helper-buttons";
+                btnGroup.setAttribute("role", "group");
 
                 const toggleBtn = document.createElement("button");
                 toggleBtn.id = "helper-toggle-appeals";
-                toggleBtn.className = "btn btn-xs btn-primary helper";
-                toggleBtn.style.cssText =
-                    "cursor: pointer; margin-right: 10px;";
-                toggleBtn.textContent = `▶️ Шаги скрыты`;
+                toggleBtn.className = "btn btn-secondary helper";
+                toggleBtn.type = "button";
+                toggleBtn.textContent = "Шаги";
                 toggleBtn.setAttribute("data-state", "hidden");
-                toggleBtn.setAttribute("type", "button");
-
-                const status = document.createElement("span");
-                status.textContent = "Промежуточные шаги скрыты";
-                status.style.color = "#dc3545";
 
                 toggleBtn.addEventListener("click", (e) => {
                     e.preventDefault();
@@ -172,20 +173,26 @@ export async function foldTabAppeals(): Promise<void> {
                                     : "none"),
                         );
 
-                    toggleBtn.textContent = isHidden
-                        ? "🔽 Шаги отображены"
-                        : `▶️ Шаги скрыты`;
+                    if (isHidden) {
+                        toggleBtn.classList.remove("btn-secondary");
+                        toggleBtn.classList.add("btn-success");
+                    } else {
+                        toggleBtn.classList.remove("btn-success");
+                        toggleBtn.classList.add("btn-secondary");
+                    }
                     toggleBtn.setAttribute("data-state", newState);
-
-                    status.textContent = isHidden
-                        ? "Отображены все шаги"
-                        : "Промежуточные шаги скрыты";
-                    status.style.color = isHidden ? "#198754" : "#dc3545";
                 });
 
-                btnContainer.appendChild(toggleBtn);
-                btnContainer.appendChild(status);
-                container!.insertBefore(btnContainer, container!.firstChild);
+                btnGroup.appendChild(toggleBtn);
+
+                if (searchWrapper) {
+                    searchWrapper.appendChild(btnGroup);
+                } else {
+                    const wrapper = document.createElement("div");
+                    wrapper.style.cssText = "margin: 10px 0;";
+                    wrapper.appendChild(btnGroup);
+                    container!.insertBefore(wrapper, container!.firstChild);
+                }
             }
 
             table.setAttribute("processed-by-helper", "true");
