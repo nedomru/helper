@@ -18,7 +18,14 @@ function handleMessage(data: { lastMessage?: { author?: string; message: string 
     if (!lastMsg?.message || lastMsg.message === lastMessage) return;
 
     const author = lastMsg.author || 'Unknown';
-    const stripped = lastMsg.message.replace(/<br\s*\/?>/gi, '\n').replace(/<\/p>/gi, '\n').replace(/<p>/gi, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+    const stripped = lastMsg.message
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<p>/gi, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/<[^>]+>/g, '') // Remove all remaining HTML tags
+        .replace(/\s+/g, ' ')
+        .trim();
 
     notify({title: `👮‍♂️ ${author}`, message: stripped, type: 'info', duration: 10000, position: 'bottom-right'});
     lastMessage = lastMsg.message;
