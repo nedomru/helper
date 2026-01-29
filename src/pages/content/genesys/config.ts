@@ -8,6 +8,7 @@ import {showLineStatus} from "@pages/content/genesys/features/ui-enhancements/li
 import {showDutyMessages} from "@pages/content/genesys/features/ui-enhancements/duty_messages";
 import {hideButtons} from "@pages/content/genesys/features/ui-enhancements/hideButtons";
 import {showClock} from "@pages/content/genesys/features/ui-enhancements/clock";
+import {initAutoClose} from "@pages/content/genesys/features/chat/auto-close";
 
 export const URL_PATTERNS = {
     GENESYS_BASE: "genesys-app1",
@@ -27,6 +28,8 @@ export const genesysPageConfigs: PageConfig[] = [
             {key: 'autoCollapseChatHeader', handler: autoCollapseChatHeader},
             {key: 'allowPaste', handler: allowPaste},
         ],
-        alwaysRun: []
+        alwaysRun: [
+            initAutoClose
+        ]
     }
 ];
