@@ -1,80 +1,62 @@
 /**
  * Shared WebSocket manager for Genesys line status and duty messages.
- * Ensures only one WebSocket connection is used for both features.
  */
 
 import {notify} from '@src/utils/notify';
-import {getOKCSessionId} from './session';
+import {extractSessionId, getOKCSessionId} from './session';
+
+const WS_URL = 'wss://okc.ertelecom.ru/ts-line-genesys-okcdb-ws/?EIO=4&transport=websocket';
+const NAMESPACE = 'ts-line-genesys-okcdb-ws';
+const MAX_RECONNECT_ATTEMPTS = 5;
 
 export interface SocketMessage {
     waitingChats?: Record<string, number>;
     chatCapacity?: Record<string, { available: number; max: number }>;
     daySl?: string | number;
     serviceScheme?: number;
-    lastMessage?: {
-        author?: string;
-        message: string;
-    };
+    lastMessage?: { author?: string; message: string };
 }
 
+type ConnectionStatus = 'connected' | 'disconnected' | 'connecting' | 'reconnecting';
 type MessageHandler = (data: SocketMessage) => void;
-type ConnectionStatusHandler = (status: 'connected' | 'disconnected' | 'connecting' | 'reconnecting') => void;
+type StatusHandler = (status: ConnectionStatus) => void;
 
 class WebSocketManager {
     private static instance: WebSocketManager | null = null;
     private socket: WebSocket | null = null;
-    private isConnected = false;
+    private state = {
+        connected: false,
+        reconnecting: false,
+        handshakeComplete: false,
+        idSent: false,
+        identified: false
+    };
     private reconnectAttempts = 0;
-    private readonly maxReconnectAttempts = 5;
-    private reconnecting = false;
-    private manualReconnect = false;
-    private messageHandlers: Set<MessageHandler> = new Set();
-    private connectionStatusHandlers: Set<ConnectionStatusHandler> = new Set();
     private phpSessionId = '';
-    private successNotificationShown = false;
-    private handshakeComplete = false;
-    private identified = false;
+    private successNotified = false;
+    private manualReconnect = false;
     private connectionPromise: Promise<void> | null = null;
+    private readonly messageHandlers = new Set<MessageHandler>();
+    private readonly statusHandlers = new Set<StatusHandler>();
 
     private constructor() {
     }
 
     static getInstance(): WebSocketManager {
-        if (!WebSocketManager.instance) {
-            WebSocketManager.instance = new WebSocketManager();
-        }
-        return WebSocketManager.instance;
+        return WebSocketManager.instance ??= new WebSocketManager();
     }
 
     async connect(): Promise<void> {
-        // If already connected, return immediately
-        if (this.isConnected) return;
+        if (this.state.connected) return;
+        if (this.connectionPromise) return this.connectionPromise;
 
-        // If a connection is already in progress, wait for it
-        if (this.connectionPromise) {
-            return this.connectionPromise;
-        }
-
-        // Create a new connection promise
         this.connectionPromise = (async () => {
-            try {
-                const sessionId = await getOKCSessionId();
-                if (!sessionId) {
-                    throw new Error('OKC Session ID not found');
-                }
+            const sessionId = await getOKCSessionId();
+            if (!sessionId) throw new Error('OKC Session ID not found');
 
-                this.phpSessionId = sessionId;
-                this.handshakeComplete = false;
-                this.identified = false;
-                this.socketConnect();
-            } finally {
-                // Clear the connection promise when done (whether success or failure)
-                // We keep it until connection is actually established (isConnected = true)
-                // which happens in the message handler
-                if (!this.isConnected) {
-                    this.connectionPromise = null;
-                }
-            }
+            this.phpSessionId = sessionId;
+            this.resetConnectionState();
+            this.socketConnect();
         })();
 
         return this.connectionPromise;
@@ -85,68 +67,61 @@ class WebSocketManager {
         return () => this.messageHandlers.delete(handler);
     }
 
-    subscribeToConnectionStatus(handler: ConnectionStatusHandler): () => void {
-        this.connectionStatusHandlers.add(handler);
-        // Immediately call with current status
-        handler(this.getConnectionStatus());
-        return () => this.connectionStatusHandlers.delete(handler);
+    subscribeToStatus(handler: StatusHandler): () => void {
+        this.statusHandlers.add(handler);
+        handler(this.getStatus());
+        return () => this.statusHandlers.delete(handler);
     }
 
-    getConnectionStatus(): 'connected' | 'disconnected' | 'connecting' | 'reconnecting' {
-        if (this.reconnecting) return 'reconnecting';
-        if (this.isConnected && this.identified) return 'connected';
+    getStatus(): ConnectionStatus {
+        if (this.state.reconnecting) return 'reconnecting';
+        if (this.state.connected && this.state.identified) return 'connected';
         if (this.socket) return 'connecting';
         return 'disconnected';
     }
 
     disconnect(): void {
-        if (this.socket) {
-            this.socket.close();
-            this.socket = null;
-        }
-        this.isConnected = false;
-        this.connectionPromise = null; // Clear connection promise on disconnect
+        this.socket?.close();
+        this.socket = null;
+        this.state.connected = false;
+        this.connectionPromise = null;
         this.messageHandlers.clear();
-        this.handshakeComplete = false;
-        this.identified = false;
+        this.resetConnectionState();
     }
 
     reconnect(): void {
         this.manualReconnect = true;
         this.socket?.close();
         this.reconnectAttempts = 0;
-        this.isConnected = false;
-        this.handshakeComplete = false;
-        this.identified = false;
-        this.notifyConnectionStatus('reconnecting');
-        if (this.phpSessionId) {
-            this.socketConnect();
-        }
+        this.resetConnectionState();
+        this.notifyStatus('reconnecting');
+        if (this.phpSessionId) this.socketConnect();
+    }
+
+    private resetConnectionState(): void {
+        this.state.handshakeComplete = false;
+        this.state.idSent = false;
+        this.state.identified = false;
     }
 
     private socketConnect(): void {
-        const url = 'wss://okc.ertelecom.ru/ts-line-genesys-okcdb-ws/?EIO=4&transport=websocket';
-        this.socket = new WebSocket(url);
+        this.socket = new WebSocket(WS_URL);
+        this.notifyStatus('connecting');
 
-        this.notifyConnectionStatus('connecting');
-        this.socket.onopen = () => {
-            console.info('[Генезис] WebSocket opened, waiting for handshake...');
-            this.notifyConnectionStatus('connecting');
-        };
-        this.socket.onmessage = (event) => this.handleMessage(event.data);
-        this.socket.onclose = (event) => this.handleClose(event);
+        this.socket.onopen = () => console.info('[Генезис] WebSocket opened');
+        this.socket.onmessage = (e) => this.handleMessage(e.data);
+        this.socket.onclose = (e) => this.handleClose(e);
         this.socket.onerror = () => notify('Ошибка линии', 'Ошибка соединения с линией', 'error');
     }
 
     private handleClose(event: CloseEvent): void {
-        this.isConnected = false;
-        this.handshakeComplete = false;
-        this.identified = false;
+        this.state.connected = false;
+        this.resetConnectionState();
         console.warn(`[Генезис] WebSocket closed. Code: ${event.code}`);
-        this.notifyConnectionStatus('disconnected');
+        this.notifyStatus('disconnected');
 
-        if (!event.wasClean && this.reconnectAttempts < this.maxReconnectAttempts && !this.manualReconnect) {
-            this.attemptReconnect();
+        if (!event.wasClean && this.reconnectAttempts < MAX_RECONNECT_ATTEMPTS && !this.manualReconnect) {
+            this.scheduleReconnect();
         } else if (!this.manualReconnect) {
             notify('Соединение потеряно', 'Не удалось восстановить соединение', 'error');
         }
@@ -155,61 +130,102 @@ class WebSocketManager {
     }
 
     private handleMessage(data: string): void {
-        if (data === '2') return this.socket?.send('3');
-        if (data.startsWith('0{')) {
-            this.socket?.send('40/ts-line-genesys-okcdb-ws,');
-            this.handshakeComplete = true;
-            return;
-        }
+        if (data === '2') return this.socket?.send('3'); // Ping/pong
+        if (data.startsWith('0{')) return this.sendNamespaceConnect(); // Handshake
 
-        if (this.handshakeComplete && !this.identified) {
-            this.socket?.send(`42/ts-line-genesys-okcdb-ws,["id","${this.phpSessionId}"]`);
-            this.identified = true;
-            this.isConnected = true;
-            this.reconnectAttempts = 0;
-            this.connectionPromise = null; // Clear the connection promise since we're now connected
-            this.notifyConnectionStatus('connected');
-
-            if (!this.successNotificationShown) {
-                notify('Успешное подключение', 'Соединение с линией установлено', 'success');
-                this.successNotificationShown = true;
-            }
-            return;
-        }
-
-        if (data.startsWith('42/ts-line-genesys-okcdb-ws,["notAuthorized"]')) {
-            notify('Ошибка авторизации', 'Обновите страницу', 'error');
-            this.disconnect();
-            return;
-        }
-
-        if (data.startsWith('42/ts-line-genesys-okcdb-ws,["connected"]')) {
-            console.info('[Генезис] Authorized and connected');
-            return;
-        }
+        const msg = data.match(new RegExp(`42/${NAMESPACE},(.+)`))?.[1];
+        if (!msg) return;
 
         try {
-            const match = data.match(/,\s*(.+)/);
-            if (!match) return;
+            const payload = JSON.parse(msg);
+            const [event, eventData] = payload as [string, unknown];
 
-            const messageData = JSON.parse(match[1])[1] as SocketMessage;
-            this.messageHandlers.forEach((handler) => handler(messageData));
+            switch (event) {
+                case 'connected':
+                    this.handleConnected();
+                    break;
+                case 'notAuthorized':
+                    this.handleNotAuthorized();
+                    break;
+                case 'authData':
+                    this.handleAuthData();
+                    break;
+                default:
+                    this.handleDataMessage(eventData);
+            }
         } catch {
-            // Ignore parse errors for non-JSON messages
+            // Ignore parse errors
         }
     }
 
-    private async attemptReconnect(): Promise<void> {
-        if (this.reconnecting) return;
+    private sendNamespaceConnect(): void {
+        this.socket?.send(`40/${NAMESPACE},`);
+        this.state.handshakeComplete = true;
+    }
 
-        this.reconnecting = true;
+    private sendIdentification(): void {
+        console.info('[Генезис] Namespace connected, sending identification...');
+        this.socket?.send(`42/${NAMESPACE},["id","${this.phpSessionId}"]`);
+        this.state.idSent = true;
+    }
+
+    private handleConnected(): void {
+        if (this.state.handshakeComplete && !this.state.idSent) {
+            this.sendIdentification();
+        }
+    }
+
+    private handleNotAuthorized(): void {
+        console.error('[Генезис] Authorization failed, attempting to refresh session...');
+        this.socket?.close();
+        this.state.connected = false;
+        this.resetConnectionState();
+
+        (async () => {
+            const freshSessionId = await extractSessionId();
+            if (freshSessionId && freshSessionId !== this.phpSessionId) {
+                console.info('[Генезис] Got fresh session ID, reconnecting...');
+                this.phpSessionId = freshSessionId;
+                this.socketConnect();
+            } else {
+                console.error('[Генезис] Could not get fresh session');
+                notify('Ошибка авторизации', 'Обновите страницу', 'error');
+            }
+        })();
+    }
+
+    private handleAuthData(): void {
+        if (!this.state.identified) {
+            console.info('[Генезис] Authorized and connected');
+            this.state.identified = true;
+            this.state.connected = true;
+            this.reconnectAttempts = 0;
+            this.connectionPromise = null;
+            this.notifyStatus('connected');
+
+            if (!this.successNotified) {
+                notify('Успешное подключение', 'Соединение с линией установлено', 'success');
+                this.successNotified = true;
+            }
+        }
+    }
+
+    private handleDataMessage(data: unknown): void {
+        const messageData = data as SocketMessage;
+        this.messageHandlers.forEach((h) => h(messageData));
+    }
+
+    private async scheduleReconnect(): Promise<void> {
+        if (this.state.reconnecting) return;
+
+        this.state.reconnecting = true;
         this.reconnectAttempts++;
-        this.notifyConnectionStatus('reconnecting');
+        this.notifyStatus('reconnecting');
 
         const delay = 1000 * Math.pow(2, this.reconnectAttempts);
         console.info(`[Генезис] Reconnecting in ${delay / 1000}s...`);
 
-        await new Promise((resolve) => setTimeout(resolve, delay));
+        await new Promise((r) => setTimeout(r, delay));
 
         const sessionId = await getOKCSessionId();
         if (sessionId) {
@@ -218,11 +234,11 @@ class WebSocketManager {
             this.socketConnect();
         }
 
-        this.reconnecting = false;
+        this.state.reconnecting = false;
     }
 
-    private notifyConnectionStatus(status: 'connected' | 'disconnected' | 'connecting' | 'reconnecting'): void {
-        this.connectionStatusHandlers.forEach((handler) => handler(status));
+    private notifyStatus(status: ConnectionStatus): void {
+        this.statusHandlers.forEach((h) => h(status));
     }
 }
 
