@@ -17,6 +17,28 @@ export interface FetchDiagnosticReportsMessage {
     };
 }
 
+export interface FetchAppealsMessage {
+    action: "fetchAppeals";
+    payload: {
+        cityId: string;
+    };
+}
+
+export interface AppealDetail {
+    id: string;
+    agreementNumber: string;
+    reqStop: string;
+    problemClass: string;
+    groupOrder: string;
+    appealsCount: string;
+    groupName: string;
+    address: string;
+    campusNumber: string;
+    closed: string;
+    info: string;
+    isError: number;
+}
+
 export interface DiagnosticFile {
     name: string;
     url: string;

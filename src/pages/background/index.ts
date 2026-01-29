@@ -4,6 +4,7 @@ import {handleSendClientCard} from "./handlers/sendClientCard";
 import {handleMACLookup} from "./handlers/macLookup";
 import {handleGetCookie, handleGetMultipleCookies} from "./handlers/getCookie";
 import {handleFetchDiagnosticReports} from "./handlers/fetchDiagnosticReports";
+import {handleFetchAppeals} from "./handlers/fetchAppeals";
 import {
     createSpeechPhrasesMenu,
     handleSpeechPhraseClick,
@@ -48,6 +49,14 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     // Fetch diagnostic reports action
     if (request.action === "fetchDiagnosticReports") {
         handleFetchDiagnosticReports(request)
+            .then(result => sendResponse(result))
+            .catch(err => sendResponse({ok: false, err: String(err)}));
+        return true;
+    }
+
+    // Fetch appeals action
+    if (request.action === "fetchAppeals") {
+        handleFetchAppeals(request)
             .then(result => sendResponse(result))
             .catch(err => sendResponse({ok: false, err: String(err)}));
         return true;
