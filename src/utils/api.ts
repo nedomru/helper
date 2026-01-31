@@ -31,9 +31,8 @@ interface RoutersData {
 export type {MNAProvider, MNAData, Router, RoutersData};
 
 interface SendMessageRequest {
-    message: string;
+    encryptedMessage: string;  // RSA-encrypted, base64-encoded
     parseMode?: 'Markdown' | 'MarkdownV2' | 'HTML';
-    encoded?: boolean;
 }
 
 interface SendMessageResponse {
@@ -161,13 +160,58 @@ export async function updateUserSettingsAPI(settings: Record<string, unknown>): 
     }
 }
 
-/**
- * Encodes a string to base64 (handles UTF-8 characters properly)
- */
-function toBase64(value: string): string {
-    const bytes = new TextEncoder().encode(value);
-    const binString = Array.from(bytes, (byte) => String.fromCodePoint(byte)).join('');
-    return btoa(binString);
+let cachedPublicKey: string | null = null;
+let cachedCryptoKey: CryptoKey | null = null;
+
+async function getPublicKey(): Promise<string> {
+    if (cachedPublicKey) return cachedPublicKey;
+
+    const response = await fetch(`${API_BASE_URL}/api/public-key.json`);
+    const data = await response.json() as { publicKey: string };
+
+    if (!data.publicKey) throw new Error('Failed to fetch public key');
+
+    cachedPublicKey = data.publicKey.replace(/\\n/g, '\n');
+    return cachedPublicKey;
+}
+
+async function importPublicKey(pem: string): Promise<CryptoKey> {
+    if (cachedCryptoKey) return cachedCryptoKey;
+
+    const pemContents = pem
+        .replace('-----BEGIN PUBLIC KEY-----', '')
+        .replace('-----END PUBLIC KEY-----', '')
+        .replace(/\s/g, '');
+
+    const binaryDerString = atob(pemContents);
+    const binaryDer = new Uint8Array(binaryDerString.length);
+    for (let i = 0; i < binaryDerString.length; i++) {
+        binaryDer[i] = binaryDerString.charCodeAt(i);
+    }
+
+    cachedCryptoKey = await window.crypto.subtle.importKey(
+        'spki',
+        binaryDer,
+        {name: 'RSA-OAEP', hash: 'SHA-256'},
+        false,
+        ['encrypt']
+    );
+
+    return cachedCryptoKey;
+}
+
+async function encryptWithRSA(message: string): Promise<string> {
+    const pem = await getPublicKey();
+    const key = await importPublicKey(pem);
+
+    const encrypted = await window.crypto.subtle.encrypt(
+        {name: 'RSA-OAEP'},
+        key,
+        new TextEncoder().encode(message)
+    );
+
+    const encryptedArray = Array.from(new Uint8Array(encrypted));
+    return btoa(String.fromCharCode.apply(null, encryptedArray));
 }
 
 /**
@@ -176,21 +220,21 @@ function toBase64(value: string): string {
  * @returns Promise with the response data
  */
 export async function sendTelegramMessage(
-    params: SendMessageRequest
+    params: { message: string; parseMode?: 'Markdown' | 'MarkdownV2' | 'HTML' }
 ): Promise<SendMessageResponse> {
     try {
         const accessToken = await getAccessToken();
-
         if (!accessToken) {
             return {success: false, error: 'Not authenticated'};
         }
 
-        // Prepare request body
+        // Encrypt the message with RSA
+        const encryptedMessage = await encryptWithRSA(params.message);
+
         const body: Record<string, string> = {
-            message: params.encoded !== false ? toBase64(params.message) : params.message,
+            encryptedMessage,
         };
 
-        // Add parseMode if provided
         if (params.parseMode) {
             body.parseMode = params.parseMode;
         }
