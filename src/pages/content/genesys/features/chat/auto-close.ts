@@ -86,7 +86,7 @@ function setStatus(
     container.style.backgroundColor = bgColor;
     setTimeout(() => {
         statusLabel.textContent = '';
-        container.style.backgroundColor = '#f8f9fa';
+        container.style.backgroundColor = '#FFFFFF';
     }, duration);
 }
 
@@ -149,15 +149,15 @@ function createQuickSelectButton(text: string, title: string): HTMLButtonElement
     button.textContent = text;
     button.title = title;
     button.style.cssText = `
-        padding: 2px 6px;
+        padding: 1px 5px;
         font-size: 11px;
-        border: 1px solid #ccc;
+        border: 1px solid #d1d5db;
         border-radius: 3px;
         background: #fff;
         cursor: pointer;
         white-space: nowrap;
         transition: all 0.2s;
-        height: 24px;
+        height: 17px;
         box-sizing: border-box;
         display: inline-flex;
         align-items: center;
@@ -172,21 +172,21 @@ function createQuickSelectButton(text: string, title: string): HTMLButtonElement
 function setupButtonHoverEffects(button: HTMLButtonElement, checkbox: HTMLInputElement): void {
     button.addEventListener('mouseenter', () => {
         if (!checkbox.disabled && !button.disabled) {
-            button.style.backgroundColor = '#e3f2fd';
-            button.style.borderColor = '#2196f3';
+            button.style.backgroundColor = '#f3f4f6';
+            button.style.borderColor = '#9ca3af';
         }
     });
 
     button.addEventListener('mouseleave', () => {
         if (!checkbox.disabled && !button.disabled) {
             button.style.backgroundColor = '#fff';
-            button.style.borderColor = '#ccc';
+            button.style.borderColor = '#d1d5db';
         }
     });
 
     button.addEventListener('mousedown', () => {
         if (!checkbox.disabled && !button.disabled) {
-            button.style.backgroundColor = '#bbdefb';
+            button.style.backgroundColor = '#e5e7eb';
             button.style.transform = 'scale(0.98)';
         }
     });
@@ -409,15 +409,16 @@ function createAutoCloseCheckbox(
     container.style.cssText = `
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		padding: 6px 10px;
+		gap: 6px;
+		padding: 3px 8px;
+		margin: 4px;
 		background: #FFFFFF;
-		border: 1px solid #cacaca;
-		border-radius: 10px !important;
-		font-size: 13px;
+		border: 1px solid #d1d5db;
+		border-radius: 10px;
+		font-size: 12px;
 		user-select: none;
-		color: #333;
-		min-height: 36px;
+		color: #374151;
+		height: 23px;
 	`;
 
     const checkbox = document.createElement('input');
@@ -425,20 +426,21 @@ function createAutoCloseCheckbox(
     checkbox.id = `${AUTO_CLOSE_CHECKBOX_ID}-${chatId}`;
     checkbox.style.cssText = `
 		cursor: pointer;
-		width: 16px;
-		height: 16px;
+		width: 14px;
+		height: 14px;
 		flex-shrink: 0;
 		margin: 0;
 	`;
 
     const label = document.createElement('label');
     label.htmlFor = `${AUTO_CLOSE_CHECKBOX_ID}-${chatId}`;
-    label.textContent = 'Покинуть чат через';
+    label.textContent = 'Закрыть через';
     label.style.cssText = `
 		cursor: pointer;
 		user-select: none;
 		white-space: nowrap;
 		margin: 0;
+		font-size: 12px;
 		line-height: 1;
 	`;
 
@@ -446,9 +448,8 @@ function createAutoCloseCheckbox(
     const timerWrapper = document.createElement('div');
     timerWrapper.style.cssText = `
         display: flex;
-        align-items: center;
-        gap: 4px;
-        height: 24px;
+        gap: 3px;
+        height: 17px;
     `;
 
     // Quick select buttons for predefined times
@@ -467,26 +468,25 @@ function createAutoCloseCheckbox(
     timerInput.max = '60';
     timerInput.value = '5';
     timerInput.style.cssText = `
-		width: 50px;
-		padding: 2px 4px;
-		border: 1px solid #ccc;
+		width: 40px;
+		padding: 0 3px;
+		border: 1px solid #d1d5db;
 		border-radius: 3px;
-		font-size: 13px;
+		font-size: 12px;
 		text-align: center;
-		width: auto;
-		height: 24px;
+		height: 17px;
 		box-sizing: border-box;
+		display: flex;
+		align-items: center;
 	`;
 
     const timeUnitSelect = document.createElement('select');
     timeUnitSelect.style.cssText = `
-		padding: 2px 4px;
-		border: 1px solid #ccc;
-		border-radius: 3px;
-		font-size: 13px;
+		padding: 0px 3px 0 3px;
+		font-size: 12px;
 		cursor: pointer;
+		height: 17px;
 		width: auto;
-		height: 24px;
 		box-sizing: border-box;
 	`;
 
@@ -507,8 +507,8 @@ function createAutoCloseCheckbox(
     statusLabel.className = 'helper-auto-close-status';
     statusLabel.dataset.chatId = chatId; // Store chat ID for finding element
     statusLabel.style.cssText = `
-		font-size: 12px;
-		color: #666;
+		font-size: 11px;
+		color: #6b7280;
 		margin-left: auto;
 		line-height: 1;
 	`;
@@ -600,7 +600,7 @@ function createAutoCloseCheckbox(
                 checkbox.checked = false;
                 setTimeout(() => {
                     statusLabel.textContent = '';
-                    container.style.backgroundColor = '#f8f9fa';
+                    container.style.backgroundColor = '#FFFFFF';
                 }, 3000);
                 return;
             }
@@ -652,7 +652,7 @@ function createAutoCloseCheckbox(
                     quickSelect4Min.disabled = false;
                     setTimeout(() => {
                         statusLabel.textContent = '';
-                        container.style.backgroundColor = '#f8f9fa';
+                        container.style.backgroundColor = '#FFFFFF';
                     }, 3000);
                     return;
                 }
@@ -678,7 +678,7 @@ function createAutoCloseCheckbox(
                     container.style.backgroundColor = '#f8d7da';
                     setTimeout(() => {
                         statusLabel.textContent = '';
-                        container.style.backgroundColor = '#f8f9fa';
+                        container.style.backgroundColor = '#FFFFFF';
                     }, 5000); // Longer display for error messages
                     return;
                 }
@@ -712,7 +712,7 @@ function createAutoCloseCheckbox(
                     container.style.backgroundColor = '#f8d7da';
                     setTimeout(() => {
                         statusLabel.textContent = '';
-                        container.style.backgroundColor = '#f8f9fa';
+                        container.style.backgroundColor = '#FFFFFF';
                     }, 3000);
                 }
             }, delayMs);
@@ -723,7 +723,7 @@ function createAutoCloseCheckbox(
             // Cancel the scheduled leave
             cancelScheduledLeave();
             statusLabel.textContent = 'Отменено';
-            container.style.backgroundColor = '#f8f9fa';
+            container.style.backgroundColor = '#FFFFFF';
             timerInput.disabled = false;
             timeUnitSelect.disabled = false;
             quickSelect3Min.disabled = false;
