@@ -228,9 +228,10 @@ export default function Options() {
                 onRemovePreset={quickAppeals.removePreset}
                 onDuplicateCategory={quickAppeals.duplicateCategory}
                 onDeleteCategory={quickAppeals.deleteCategory}
-                onCreateCategory={quickAppeals.createNewCategory}
                 onSaveEditCategory={quickAppeals.saveEditCategory}
                 onMergeImportedData={quickAppeals.mergeImportedData}
+                onMoveCategoryUp={quickAppeals.moveCategoryUp}
+                onMoveCategoryDown={quickAppeals.moveCategoryDown}
             />
         );
     };

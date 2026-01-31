@@ -77,10 +77,13 @@ function groupPresetsByCategory(
 ): PresetGroup[] {
     const groups = new Map<string | null, PresetGroup>();
 
+    // Sort categories by order
+    const sortedCategories = [...categories].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
     for (const preset of presets) {
         const categoryId = preset.categoryId || "uncategorized";
         const categoryName = preset.categoryId
-            ? categories.find((c) => c.id === preset.categoryId)?.name || preset.categoryId
+            ? sortedCategories.find((c) => c.id === preset.categoryId)?.name || preset.categoryId
             : "Без категории";
 
         if (!groups.has(categoryId)) {
@@ -94,7 +97,20 @@ function groupPresetsByCategory(
         groups.get(categoryId)!.presets.push(preset);
     }
 
-    return Array.from(groups.values());
+    // Return groups in the order of sorted categories
+    const result: PresetGroup[] = [];
+    for (const category of sortedCategories) {
+        const key = category.id;
+        if (groups.has(key)) {
+            result.push(groups.get(key)!);
+        }
+    }
+    // Add uncategorized at the end if it exists
+    if (groups.has("uncategorized")) {
+        result.push(groups.get("uncategorized")!);
+    }
+
+    return result;
 }
 
 function renderFastAppealsUI(container: Element, groupedPresets: PresetGroup[]) {

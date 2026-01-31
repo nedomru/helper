@@ -2,7 +2,6 @@ import {useEffect, useState} from 'react';
 import type {QuickAppealsPreset, QuickAppealsPresetCategory} from '@src/shared/user-settings';
 import {copySinglePreset, exportPresets, importPresets, importPresetsFromClipboard} from '../utils/export-import';
 import PresetCard from './PresetCard';
-import CategoryCard from './CategoryCard';
 
 interface QuickAppealsSectionProps {
     quickAppealsPresets: QuickAppealsPreset[];
@@ -13,9 +12,10 @@ interface QuickAppealsSectionProps {
     onRemovePreset: (presetId: string) => void;
     onDuplicateCategory: (categoryId: string) => void;
     onDeleteCategory: (categoryId: string) => void;
-    onCreateCategory: (name: string) => Promise<QuickAppealsPresetCategory | undefined>;
     onSaveEditCategory: (categoryId: string, name: string) => void;
     onMergeImportedData: (newPresets: QuickAppealsPreset[], newCategories: QuickAppealsPresetCategory[]) => Promise<void>;
+    onMoveCategoryUp: (categoryId: string) => void;
+    onMoveCategoryDown: (categoryId: string) => void;
 }
 
 export default function QuickAppealsSection({
@@ -27,15 +27,23 @@ export default function QuickAppealsSection({
                                                 onRemovePreset,
                                                 onDuplicateCategory,
                                                 onDeleteCategory,
-                                                onCreateCategory,
                                                 onSaveEditCategory,
                                                 onMergeImportedData,
+                                                onMoveCategoryUp,
+                                                onMoveCategoryDown,
                                             }: QuickAppealsSectionProps) {
     const [presetSearchQuery, setPresetSearchQuery] = useState('');
-    const [newCategoryName, setNewCategoryName] = useState('');
     const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
     const [editingCategoryName, setEditingCategoryName] = useState('');
-    const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(presetCategories.map(c => c.id)));
+    const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+    const [showCategoryActions, setShowCategoryActions] = useState<string | null>(null);
+
+    // Initialize expanded categories on first load
+    useEffect(() => {
+        if (expandedCategories.size === 0 && presetCategories.length > 0) {
+            setExpandedCategories(new Set(presetCategories.map(c => c.id)));
+        }
+    }, []);
 
     const handleExport = () => {
         exportPresets(presetCategories, quickAppealsPresets);
@@ -63,19 +71,13 @@ export default function QuickAppealsSection({
         await copySinglePreset(preset);
     };
 
-    const handleCreateCategory = async () => {
-        const newCategory = await onCreateCategory(newCategoryName);
-        if (newCategory) {
-            setNewCategoryName('');
-        }
-    };
-
     const handleStartEditCategory = (categoryId: string) => {
         setEditingCategoryId(categoryId);
         const category = presetCategories.find((cat) => cat.id === categoryId);
         if (category) {
             setEditingCategoryName(category.name);
         }
+        setShowCategoryActions(null);
     };
 
     const handleSaveEditCategory = () => {
@@ -90,16 +92,6 @@ export default function QuickAppealsSection({
         setEditingCategoryId(null);
         setEditingCategoryName('');
     };
-
-    useEffect(() => {
-        setExpandedCategories((prev) => {
-            const newSet = new Set(prev);
-            presetCategories.forEach((category) => {
-                newSet.add(category.id);
-            });
-            return newSet;
-        });
-    }, [presetCategories]);
 
     const toggleCategoryExpanded = (categoryId: string) => {
         setExpandedCategories((prev) => {
@@ -148,51 +140,166 @@ export default function QuickAppealsSection({
         );
     };
 
-    const renderCategoryCards = () => {
-        if (presetCategories.length === 0) {
+    const renderCategoryHeader = (category: QuickAppealsPresetCategory, index: number, presetCount: number) => {
+        const isEditing = editingCategoryId === category.id;
+        const isExpanded = expandedCategories.has(category.id);
+        const canMoveUp = index > 0;
+        const canMoveDown = index < presetCategories.length - 1;
+        const showActions = showCategoryActions === category.id;
+
+        if (isEditing) {
             return (
-                <div
-                    style={{
-                        padding: '1rem',
-                        textAlign: 'center',
-                        color: 'var(--text-secondary)',
-                        fontSize: '0.875rem',
-                        backgroundColor: 'var(--muted)',
-                        borderRadius: '0.5rem',
-                        marginTop: '0.75rem',
-                    }}
-                >
-                    Пока нет категорий. Создайте первую категорию выше!
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem'}}>
+                    <input
+                        type="text"
+                        value={editingCategoryName}
+                        onChange={(e) => setEditingCategoryName(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleSaveEditCategory();
+                            if (e.key === 'Escape') handleCancelEditCategory();
+                        }}
+                        autoFocus
+                        style={{
+                            flex: 1,
+                            padding: '0.375rem 0.5rem',
+                            border: '1px solid var(--border-color)',
+                            borderRadius: '0.25rem',
+                            backgroundColor: 'var(--card-bg)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.875rem',
+                        }}
+                    />
+                    <button
+                        className="btn btn-primary btn-sm"
+                        onClick={handleSaveEditCategory}
+                        title="Сохранить"
+                    >
+                        ✓
+                    </button>
+                    <button
+                        className="btn btn-secondary btn-sm"
+                        onClick={handleCancelEditCategory}
+                        title="Отмена"
+                    >
+                        ✕
+                    </button>
                 </div>
             );
         }
 
         return (
-            <div className="category-cards-grid">
-                {presetCategories.map((category) => {
-                    const categoryPresets = quickAppealsPresets.filter((p) => p.categoryId === category.id);
-                    const isEditing = editingCategoryId === category.id;
-
-                    return (
-                        <CategoryCard
-                            key={category.id}
-                            category={category}
-                            presets={categoryPresets}
-                            isEditing={isEditing}
-                            editName={editingCategoryName}
-                            onEditChange={setEditingCategoryName}
-                            onEditStart={() => handleStartEditCategory(category.id)}
-                            onEdit={handleSaveEditCategory}
-                            onCancelEdit={handleCancelEditCategory}
-                            onDuplicate={() => onDuplicateCategory(category.id)}
-                            onDelete={() => {
-                                if (confirm(`Удалить категорию "${category.name}"? Все пресеты в этой категории станут без категории.`)) {
-                                    onDeleteCategory(category.id);
-                                }
-                            }}
-                        />
-                    );
-                })}
+            <div
+                style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    marginBottom: '0.5rem',
+                    padding: '0.5rem',
+                    backgroundColor: 'var(--muted)',
+                    borderRadius: '0.375rem',
+                }}
+            >
+                <div
+                    className="preset-category-header"
+                    onClick={() => toggleCategoryExpanded(category.id)}
+                    style={{
+                        cursor: 'pointer',
+                        userSelect: 'none',
+                        flex: 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '0.25rem',
+                        transition: 'background-color 0.15s',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--border-color)'}
+                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                >
+                    <span style={{fontWeight: 500, fontSize: '0.9rem'}}>{category.name}</span>
+                    <span style={{fontSize: '0.75rem', color: 'var(--text-secondary)'}}>
+                        ({presetCount} {presetCountText(presetCount)})
+                    </span>
+                </div>
+                <div style={{display: 'flex', gap: '0.25rem'}}>
+                    {!showActions ? (
+                        <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => setShowCategoryActions(category.id)}
+                            style={{padding: '0.25rem 0.5rem', fontSize: '0.75rem'}}
+                            title="Показать действия"
+                        >
+                            ⋯
+                        </button>
+                    ) : (
+                        <>
+                            <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => onMoveCategoryUp(category.id)}
+                                disabled={!canMoveUp}
+                                style={{
+                                    opacity: canMoveUp ? 1 : 0.3,
+                                    cursor: canMoveUp ? 'pointer' : 'not-allowed',
+                                    padding: '0.25rem 0.5rem',
+                                    fontSize: '0.75rem'
+                                }}
+                                title="Переместить вверх"
+                            >
+                                ↑
+                            </button>
+                            <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => onMoveCategoryDown(category.id)}
+                                disabled={!canMoveDown}
+                                style={{
+                                    opacity: canMoveDown ? 1 : 0.3,
+                                    cursor: canMoveDown ? 'pointer' : 'not-allowed',
+                                    padding: '0.25rem 0.5rem',
+                                    fontSize: '0.75rem'
+                                }}
+                                title="Переместить вниз"
+                            >
+                                ↓
+                            </button>
+                            <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => handleStartEditCategory(category.id)}
+                                style={{padding: '0.25rem 0.5rem', fontSize: '0.75rem'}}
+                                title="Редактировать"
+                            >
+                                ✏️
+                            </button>
+                            <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => onDuplicateCategory(category.id)}
+                                style={{padding: '0.25rem 0.5rem', fontSize: '0.75rem'}}
+                                title="Дублировать"
+                            >
+                                📋
+                            </button>
+                            <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => {
+                                    if (confirm(`Удалить категорию "${category.name}"? Все пресеты в этой категории станут без категории.`)) {
+                                        onDeleteCategory(category.id);
+                                    }
+                                }}
+                                style={{padding: '0.25rem 0.5rem', fontSize: '0.75rem'}}
+                                title="Удалить"
+                            >
+                                🗑️
+                            </button>
+                            <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => setShowCategoryActions(null)}
+                                style={{padding: '0.25rem 0.5rem', fontSize: '0.75rem'}}
+                                title="Скрыть"
+                            >
+                                ✕
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
         );
     };
@@ -255,24 +362,16 @@ export default function QuickAppealsSection({
                             />
                             {presetCategories.length > 0 ? (
                                 <div>
-                                    {presetCategories.map((category) => {
+                                    {presetCategories.map((category, index) => {
                                         const categoryPresets = filterPresets(
                                             quickAppealsPresets.filter((preset) => preset.categoryId === category.id)
                                         );
-                                        if (categoryPresets.length === 0) return null;
-
                                         const isExpanded = expandedCategories.has(category.id);
 
                                         return (
                                             <div key={category.id} style={{marginBottom: '1rem'}}>
-                                                <div
-                                                    className="preset-category-header"
-                                                    onClick={() => toggleCategoryExpanded(category.id)}
-                                                    style={{cursor: 'pointer', userSelect: 'none'}}
-                                                >
-                                                    {category.name}
-                                                </div>
-                                                {isExpanded && renderPresetCards(categoryPresets)}
+                                                {renderCategoryHeader(category, index, categoryPresets.length)}
+                                                {isExpanded && categoryPresets.length > 0 && renderPresetCards(categoryPresets)}
                                             </div>
                                         );
                                     })}
@@ -291,57 +390,6 @@ export default function QuickAppealsSection({
                         </div>
                     </div>
                 )}
-
-                <div className="feature-item">
-                    <div className="feature-info" style={{width: '100%'}}>
-                        <label className="feature-label">Управление категориями ({presetCategories.length})</label>
-                        <span className="feature-description">
-                            Создавайте, редактируйте и удаляйте категории для организации пресетов
-                        </span>
-
-                        <div style={{display: 'flex', gap: '0.5rem', marginTop: '0.75rem', marginBottom: '1rem'}}>
-                            <input
-                                type="text"
-                                value={newCategoryName}
-                                onChange={(e) => setNewCategoryName(e.target.value)}
-                                placeholder="Новая категория..."
-                                style={{
-                                    flex: 1,
-                                    padding: '0.5rem 0.75rem',
-                                    border: '1px solid var(--border-color)',
-                                    borderRadius: '0.375rem',
-                                    backgroundColor: 'var(--card-bg)',
-                                    color: 'var(--text-primary)',
-                                    fontSize: '0.875rem',
-                                }}
-                            />
-                            <button className="btn btn-primary btn-sm" onClick={handleCreateCategory}
-                                    disabled={!newCategoryName.trim()}>
-                                ➕ Создать
-                            </button>
-                        </div>
-
-                        {renderCategoryCards()}
-
-                        {quickAppealsPresets.filter((p) => !p.categoryId).length > 0 && (
-                            <div
-                                style={{
-                                    marginTop: '1rem',
-                                    padding: '0.625rem 0.875rem',
-                                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                                    border: '1px solid rgba(255, 193, 7, 0.3)',
-                                    borderRadius: '0.5rem',
-                                    fontSize: '0.875rem',
-                                    color: 'var(--text-primary)',
-                                }}
-                            >
-                                <span style={{fontWeight: 500}}>Без категории:</span>{' '}
-                                {quickAppealsPresets.filter((p) => !p.categoryId).length}{' '}
-                                {presetCountText(quickAppealsPresets.filter((p) => !p.categoryId).length)}
-                            </div>
-                        )}
-                    </div>
-                </div>
             </div>
         </div>
     );

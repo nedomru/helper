@@ -29,11 +29,18 @@ export function useQuickAppeals() {
         const loadCategories = async () => {
             const categories = await getQuickAppealsPresetCategories();
             if (categories.length > 0) {
-                setPresetCategories(categories);
+                // Ensure all categories have an order field
+                const normalizedCategories = categories.map((cat, index) => ({
+                    ...cat,
+                    order: cat.order ?? index,
+                }));
+                // Sort by order
+                normalizedCategories.sort((a, b) => a.order - b.order);
+                setPresetCategories(normalizedCategories);
             } else {
                 const defaultCategories = [
-                    {id: 'internet-70', name: 'Интернет'},
-                    {id: 'tv-101', name: 'Цифровое TV'},
+                    {id: 'internet-70', name: 'Интернет', order: 0},
+                    {id: 'tv-101', name: 'Цифровое TV', order: 1},
                 ];
                 setPresetCategories(defaultCategories);
                 await saveQuickAppealsPresetCategories(defaultCategories);
@@ -57,6 +64,7 @@ export function useQuickAppeals() {
         const newCategory = {
             id: Date.now().toString(),
             name: `${category.name} (копия)`,
+            order: presetCategories.length,
         };
 
         const updatedCategories = [...presetCategories, newCategory];
@@ -112,6 +120,7 @@ export function useQuickAppeals() {
         const newCategory = {
             id: Date.now().toString(),
             name: name.trim(),
+            order: presetCategories.length,
         };
 
         const updatedCategories = [...presetCategories, newCategory];
@@ -191,7 +200,12 @@ export function useQuickAppeals() {
         newCategories: QuickAppealsPresetCategory[]
     ) => {
         const mergedPresets = [...quickAppealsPresets, ...newPresets];
-        const mergedCategories = [...presetCategories, ...newCategories];
+        // Ensure all categories have order field
+        const normalizedNewCategories = newCategories.map((cat, index) => ({
+            ...cat,
+            order: cat.order ?? presetCategories.length + index,
+        }));
+        const mergedCategories = [...presetCategories, ...normalizedNewCategories];
 
         setQuickAppealsPresets(mergedPresets);
         setPresetCategories(mergedCategories);
@@ -200,6 +214,38 @@ export function useQuickAppeals() {
         await saveQuickAppealsPresetCategories(mergedCategories);
 
         return {mergedPresets, mergedCategories};
+    };
+
+    const moveCategoryUp = async (categoryId: string) => {
+        const index = presetCategories.findIndex((cat) => cat.id === categoryId);
+        if (index <= 0) return; // Already at the top
+
+        const updatedCategories = [...presetCategories];
+        // Swap with previous category
+        [updatedCategories[index - 1], updatedCategories[index]] = [updatedCategories[index], updatedCategories[index - 1]];
+        // Update order values
+        updatedCategories.forEach((cat, idx) => {
+            cat.order = idx;
+        });
+
+        setPresetCategories(updatedCategories);
+        await saveQuickAppealsPresetCategories(updatedCategories);
+    };
+
+    const moveCategoryDown = async (categoryId: string) => {
+        const index = presetCategories.findIndex((cat) => cat.id === categoryId);
+        if (index === -1 || index >= presetCategories.length - 1) return; // Already at the bottom
+
+        const updatedCategories = [...presetCategories];
+        // Swap with next category
+        [updatedCategories[index], updatedCategories[index + 1]] = [updatedCategories[index + 1], updatedCategories[index]];
+        // Update order values
+        updatedCategories.forEach((cat, idx) => {
+            cat.order = idx;
+        });
+
+        setPresetCategories(updatedCategories);
+        await saveQuickAppealsPresetCategories(updatedCategories);
     };
 
     return {
@@ -219,5 +265,7 @@ export function useQuickAppeals() {
         saveEditCategory,
         savePreset,
         mergeImportedData,
+        moveCategoryUp,
+        moveCategoryDown,
     };
 }

@@ -1156,7 +1156,6 @@ input:focus-visible + .slider {
     font-size: 0.8125rem;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 0.75rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;

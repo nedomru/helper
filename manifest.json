@@ -4,7 +4,7 @@
   "version": "3.0",
   "description": "Твой швейцарский нож для работы \uD83D\uDE0E",
   "content_security_policy": {
-    "extension_pages": "script-src 'self' 'wasm-unsafe-hashes'; object-src 'self'; connect-src 'self' http://octptest.corp.ertelecom.loc https://okc.ertelecom.ru https://helper.chrsnv.ru https://api.macvendors.com "
+    "extension_pages": "script-src 'self' 'wasm-unsafe-hashes'; object-src 'self'; connect-src 'self' https://perm.db.ertelecom.ru http://octptest.corp.ertelecom.loc https://okc.ertelecom.ru https://helper.chrsnv.ru https://api.macvendors.com "
   },
   "options_ui": {
     "page": "src/pages/options/index.html",

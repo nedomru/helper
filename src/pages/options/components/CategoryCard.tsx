@@ -11,6 +11,10 @@ interface CategoryCardProps {
     onCancelEdit: () => void;
     onDuplicate: () => void;
     onDelete: () => void;
+    onMoveUp?: () => void;
+    onMoveDown?: () => void;
+    canMoveUp: boolean;
+    canMoveDown: boolean;
 }
 
 export default function CategoryCard({
@@ -24,6 +28,10 @@ export default function CategoryCard({
                                          onCancelEdit,
                                          onDuplicate,
                                          onDelete,
+                                         onMoveUp,
+                                         onMoveDown,
+                                         canMoveUp,
+                                         canMoveDown,
                                      }: CategoryCardProps) {
     const handleKeyDown = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter') {
@@ -69,6 +77,30 @@ export default function CategoryCard({
                 </div>
                 {!isEditing && (
                     <div className="category-card-actions">
+                        <button
+                            className="category-action-btn"
+                            onClick={onMoveUp}
+                            title="Переместить вверх"
+                            disabled={!canMoveUp}
+                            style={{opacity: canMoveUp ? 1 : 0.3, cursor: canMoveUp ? 'pointer' : 'not-allowed'}}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 strokeWidth="2">
+                                <path d="M18 15l-6-6-6 6"/>
+                            </svg>
+                        </button>
+                        <button
+                            className="category-action-btn"
+                            onClick={onMoveDown}
+                            title="Переместить вниз"
+                            disabled={!canMoveDown}
+                            style={{opacity: canMoveDown ? 1 : 0.3, cursor: canMoveDown ? 'pointer' : 'not-allowed'}}
+                        >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                 strokeWidth="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </button>
                         <button
                             className="category-action-btn category-action-btn-edit"
                             onClick={() => {

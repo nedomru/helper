@@ -248,6 +248,7 @@ export interface QuickAppealsPreset {
 export interface QuickAppealsPresetCategory {
     id: string;
     name: string;
+    order: number;
 }
 
 /**
