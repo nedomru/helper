@@ -11,11 +11,65 @@ export async function allowChatSizeEdit(): Promise<void> {
     const style = document.createElement("style");
     style.id = STYLES_ID;
     style.textContent = `
-        .wwe-textarea-wrapper { position: relative; min-height: 100px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 10px; box-sizing: border-box; }
-        .wwe-textarea { width: 100%; min-height: 100px; border: none; outline: none; resize: none; padding: 8px 8px 20px; box-sizing: border-box; font-family: inherit; font-size: inherit; line-height: 1.5; overflow-y: hidden; }
-        .resize-handle { position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; cursor: se-resize; opacity: 0.6; transition: opacity 0.2s; z-index: 10; }
-        .resize-handle::after { content: ''; position: absolute; right: 0; bottom: 0; width: 0; height: 0; border-style: solid; border-width: 0 0 12px 12px; border-color: transparent transparent #666 transparent; }
-        .resize-handle:hover { opacity: 1; }
+        .wwe-textarea-wrapper {
+            position: relative;
+            min-height: 100px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .wwe-textarea-wrapper::after {
+            content: '⟴';
+            position: absolute;
+            bottom: 3px;
+            right: 8px;
+            font-size: 14px;
+            color: #999;
+            opacity: 0.4;
+            pointer-events: none;
+            transition: opacity 0.2s, color 0.2s;
+            z-index: 5;
+        }
+        .wwe-textarea-wrapper:hover::after {
+            opacity: 0.8;
+            color: #666;
+        }
+        .wwe-textarea {
+            width: 100%;
+            min-height: 100px;
+            border: none;
+            outline: none;
+            resize: none;
+            padding: 8px 8px 20px;
+            box-sizing: border-box;
+            font-family: inherit;
+            font-size: inherit;
+            line-height: 1.5;
+            overflow-y: hidden;
+        }
+        .resize-handle {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 16px;
+            height: 16px;
+            cursor: se-resize;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 10;
+            background: transparent;
+            border-bottom-right-radius: 4px;
+        }
+        .resize-handle:hover,
+        .wwe-textarea-wrapper:hover .resize-handle {
+            opacity: 0.3;
+            background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.1) 50%);
+        }
+        .resize-handle:active {
+            opacity: 0.5;
+            background: linear-gradient(135deg, transparent 50%, rgba(0, 0, 0, 0.2) 50%);
+        }
     `;
     document.head.appendChild(style);
 
@@ -39,6 +93,49 @@ export async function allowChatSizeEdit(): Promise<void> {
         const finalHeight = Math.min(newHeight, getMaxHeight());
         activeWrapper.style.height = `${finalHeight}px`;
         activeWrapper.dataset.userResized = "true";
+
+        // Adjust absolutely positioned elements within message box
+        const messageBox = activeWrapper.closest(".wwe-message-box") as HTMLElement;
+        if (messageBox) {
+            const pushUrlWrapper = messageBox.querySelector(".wwe-push-url-wrapper") as HTMLElement;
+            const sendFileWrapper = messageBox.querySelector(".wwe-send-file-wrapper") as HTMLElement;
+            const selectSmile = messageBox.parentElement?.querySelector(".selectSmile") as HTMLElement;
+            const containerSmile = messageBox.parentElement?.querySelector(".containerSmile") as HTMLElement;
+
+            // Position elements right after the textarea (not including presets)
+            let currentTop = finalHeight + 5;
+
+            if (pushUrlWrapper) {
+                const computedStyle = window.getComputedStyle(pushUrlWrapper);
+                if (computedStyle.display !== 'none') {
+                    pushUrlWrapper.style.top = `${currentTop}px`;
+                    currentTop += pushUrlWrapper.offsetHeight + 5;
+                }
+            }
+
+            if (sendFileWrapper) {
+                const computedStyle = window.getComputedStyle(sendFileWrapper);
+                if (computedStyle.display !== 'none') {
+                    sendFileWrapper.style.top = `${currentTop}px`;
+                    currentTop += sendFileWrapper.offsetHeight + 5;
+                }
+            }
+
+            messageBox.style.height = `${currentTop + 30}px`;
+
+            // Adjust emoji button and picker position
+            const baseTop = 96; // Original top position
+            const heightDiff = finalHeight - 100; // Difference from default height
+            const newTop = baseTop + heightDiff;
+
+            if (selectSmile) {
+                selectSmile.style.top = `${newTop}px`;
+            }
+            if (containerSmile) {
+                // Position the emoji container below the button
+                containerSmile.style.top = `${newTop + 30}px`;
+            }
+        }
     };
 
     const handleMouseUp = (): void => {
@@ -74,6 +171,46 @@ export async function allowChatSizeEdit(): Promise<void> {
         const desiredHeight = Math.max(100, textarea.scrollHeight + 20);
         wrapper.style.height = `${Math.min(desiredHeight, getMaxHeight())}px`;
         textarea.style.height = "100%";
+
+        const messageBox = wrapper.closest(".wwe-message-box") as HTMLElement;
+        if (messageBox) {
+            const pushUrlWrapper = messageBox.querySelector(".wwe-push-url-wrapper") as HTMLElement;
+            const sendFileWrapper = messageBox.querySelector(".wwe-send-file-wrapper") as HTMLElement;
+            const selectSmile = messageBox.parentElement?.querySelector(".selectSmile") as HTMLElement;
+            const containerSmile = messageBox.parentElement?.querySelector(".containerSmile") as HTMLElement;
+
+            let currentTop = desiredHeight + 5;
+
+            if (pushUrlWrapper) {
+                const computedStyle = window.getComputedStyle(pushUrlWrapper);
+                if (computedStyle.display !== 'none') {
+                    pushUrlWrapper.style.top = `${currentTop}px`;
+                    currentTop += pushUrlWrapper.offsetHeight + 5;
+                }
+            }
+
+            if (sendFileWrapper) {
+                const computedStyle = window.getComputedStyle(sendFileWrapper);
+                if (computedStyle.display !== 'none') {
+                    sendFileWrapper.style.top = `${currentTop}px`;
+                    currentTop += sendFileWrapper.offsetHeight + 5;
+                }
+            }
+
+            messageBox.style.height = `${currentTop + 30}px`;
+
+            // Reset emoji button and picker position
+            const baseTop = 96;
+            const heightDiff = desiredHeight - 100;
+            const newTop = baseTop + heightDiff;
+
+            if (selectSmile) {
+                selectSmile.style.top = `${newTop}px`;
+            }
+            if (containerSmile) {
+                containerSmile.style.top = `${newTop + 30}px`;
+            }
+        }
     };
 
     const handleInput = (e: Event): void => {
@@ -87,6 +224,46 @@ export async function allowChatSizeEdit(): Promise<void> {
         const desiredHeight = Math.max(100, textarea.scrollHeight + 20);
         wrapper.style.height = `${Math.min(desiredHeight, getMaxHeight())}px`;
         textarea.style.height = "100%";
+
+        const messageBox = wrapper.closest(".wwe-message-box") as HTMLElement;
+        if (messageBox) {
+            const pushUrlWrapper = messageBox.querySelector(".wwe-push-url-wrapper") as HTMLElement;
+            const sendFileWrapper = messageBox.querySelector(".wwe-send-file-wrapper") as HTMLElement;
+            const selectSmile = messageBox.parentElement?.querySelector(".selectSmile") as HTMLElement;
+            const containerSmile = messageBox.parentElement?.querySelector(".containerSmile") as HTMLElement;
+
+            let currentTop = desiredHeight + 5;
+
+            if (pushUrlWrapper) {
+                const computedStyle = window.getComputedStyle(pushUrlWrapper);
+                if (computedStyle.display !== 'none') {
+                    pushUrlWrapper.style.top = `${currentTop}px`;
+                    currentTop += pushUrlWrapper.offsetHeight + 5;
+                }
+            }
+
+            if (sendFileWrapper) {
+                const computedStyle = window.getComputedStyle(sendFileWrapper);
+                if (computedStyle.display !== 'none') {
+                    sendFileWrapper.style.top = `${currentTop}px`;
+                    currentTop += sendFileWrapper.offsetHeight + 5;
+                }
+            }
+
+            messageBox.style.height = `${currentTop + 30}px`;
+
+            // Adjust emoji button and picker position during auto-resize
+            const baseTop = 96;
+            const heightDiff = desiredHeight - 100;
+            const newTop = baseTop + heightDiff;
+
+            if (selectSmile) {
+                selectSmile.style.top = `${newTop}px`;
+            }
+            if (containerSmile) {
+                containerSmile.style.top = `${newTop + 30}px`;
+            }
+        }
     };
 
     const setupWrapper = (wrapper: HTMLElement): void => {
@@ -104,6 +281,46 @@ export async function allowChatSizeEdit(): Promise<void> {
         const desiredHeight = Math.max(100, textarea.scrollHeight + 20);
         wrapper.style.height = `${Math.min(desiredHeight, getMaxHeight())}px`;
         textarea.style.height = "100%";
+
+        const messageBox = wrapper.closest(".wwe-message-box") as HTMLElement;
+        if (messageBox) {
+            const pushUrlWrapper = messageBox.querySelector(".wwe-push-url-wrapper") as HTMLElement;
+            const sendFileWrapper = messageBox.querySelector(".wwe-send-file-wrapper") as HTMLElement;
+            const selectSmile = messageBox.parentElement?.querySelector(".selectSmile") as HTMLElement;
+            const containerSmile = messageBox.parentElement?.querySelector(".containerSmile") as HTMLElement;
+
+            let currentTop = desiredHeight + 5;
+
+            if (pushUrlWrapper) {
+                const computedStyle = window.getComputedStyle(pushUrlWrapper);
+                if (computedStyle.display !== 'none') {
+                    pushUrlWrapper.style.top = `${currentTop}px`;
+                    currentTop += pushUrlWrapper.offsetHeight + 5;
+                }
+            }
+
+            if (sendFileWrapper) {
+                const computedStyle = window.getComputedStyle(sendFileWrapper);
+                if (computedStyle.display !== 'none') {
+                    sendFileWrapper.style.top = `${currentTop}px`;
+                    currentTop += sendFileWrapper.offsetHeight + 5;
+                }
+            }
+
+            messageBox.style.height = `${currentTop + 30}px`;
+
+            // Set initial emoji button and picker position
+            const baseTop = 96;
+            const heightDiff = desiredHeight - 100;
+            const newTop = baseTop + heightDiff;
+
+            if (selectSmile) {
+                selectSmile.style.top = `${newTop}px`;
+            }
+            if (containerSmile) {
+                containerSmile.style.top = `${newTop + 30}px`;
+            }
+        }
     };
 
     document.addEventListener("mousedown", handleMouseDown, true);
