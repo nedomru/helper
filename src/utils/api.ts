@@ -30,6 +30,20 @@ interface RoutersData {
 
 export type {MNAProvider, MNAData, Router, RoutersData};
 
+interface SendMessageRequest {
+    message: string;
+    parseMode?: 'Markdown' | 'MarkdownV2' | 'HTML';
+    encoded?: boolean;
+}
+
+interface SendMessageResponse {
+    success: boolean;
+    error?: string;
+    data?: unknown;
+}
+
+export type {SendMessageRequest, SendMessageResponse};
+
 export async function fetchFromAPI<T>(url: string): Promise<T> {
     try {
         const response = await fetch(url, {
@@ -158,10 +172,12 @@ function toBase64(value: string): string {
 
 /**
  * Send a message to the authenticated user's Telegram
- * @param message - The message text to send
+ * @param params - The message parameters
  * @returns Promise with the response data
  */
-export async function sendTelegramMessage(message: string): Promise<{ success: boolean; error?: string }> {
+export async function sendTelegramMessage(
+    params: SendMessageRequest
+): Promise<SendMessageResponse> {
     try {
         const accessToken = await getAccessToken();
 
@@ -169,15 +185,23 @@ export async function sendTelegramMessage(message: string): Promise<{ success: b
             return {success: false, error: 'Not authenticated'};
         }
 
-        const encoded = toBase64(message);
+        // Prepare request body
+        const body: Record<string, string> = {
+            message: params.encoded !== false ? toBase64(params.message) : params.message,
+        };
 
-        const response = await fetch(`${API_BASE_URL}/api/telegram/send-message.json`, {
+        // Add parseMode if provided
+        if (params.parseMode) {
+            body.parseMode = params.parseMode;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/send.json`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${accessToken}`
             },
-            body: JSON.stringify({message: encoded})
+            body: JSON.stringify(body)
         });
 
         if (!response.ok) {
