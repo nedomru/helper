@@ -101,18 +101,7 @@ function renderFastAppealsUI(container: Element, groupedPresets: PresetGroup[]) 
     const wrapper = document.createElement("div");
     wrapper.className = "helper-quick-appeals-container";
 
-    const totalPresets = groupedPresets.reduce((sum, g) => sum + g.presets.length, 0);
-
     wrapper.innerHTML = `
-        <div class="helper-fa-header">
-            <div class="helper-fa-header-left">
-                <span class="helper-fa-icon">⚡</span>
-                <span class="helper-fa-title">Быстрые обращения</span>
-            </div>
-            <div class="helper-fa-header-right">
-                <span class="helper-fa-count">${totalPresets} пресетов</span>
-            </div>
-        </div>
         <div class="helper-fa-toggles"></div>
         <div class="helper-fa-all-presets"></div>
     `;
@@ -149,6 +138,9 @@ function renderFastAppealsUI(container: Element, groupedPresets: PresetGroup[]) 
             if (!isOpen) {
                 (presetSection as HTMLElement).style.display = "flex";
                 toggleBtn.classList.add("helper-fa-toggle-active");
+                togglesContainer.classList.add("helper-fa-has-expanded");
+            } else {
+                togglesContainer.classList.remove("helper-fa-has-expanded");
             }
         });
 
@@ -186,7 +178,21 @@ function createPresetButton(preset: QuickAppealsPreset): HTMLButtonElement {
         </svg>
     `;
 
-    button.addEventListener("click", () => executePreset(preset));
+    button.addEventListener("mousedown", () => {
+        button.classList.add("helper-fa-preset-clicked");
+    });
+
+    button.addEventListener("mouseup", () => {
+        button.classList.remove("helper-fa-preset-clicked");
+    });
+
+    button.addEventListener("mouseleave", () => {
+        button.classList.remove("helper-fa-preset-clicked");
+    });
+
+    button.addEventListener("click", async () => {
+        await executePreset(preset);
+    });
     return button;
 }
 
@@ -318,106 +324,79 @@ function injectStyles() {
     style.id = "helper-quick-appeals-styles";
     style.textContent = `
         .helper-quick-appeals-container {
-            background: linear-gradient(135deg, #000000 0%, #e8d8c0 100%);
+            background: #f5f5f5;
+            border: 1px solid #666666;
             border-radius: 4px;
-            padding: 16px;
+            padding: 8px;
             margin-bottom: 12px;
-            box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-        }
-
-        .helper-fa-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            padding-bottom: 12px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .helper-fa-header-left {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .helper-fa-icon {
-            font-size: 1em;
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-        }
-
-        .helper-fa-title {
-            font-size: 1em;
-            font-weight: 700;
-            color: #ffffff;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-
-        .helper-fa-header-right {
-            font-size: 1em;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 500;
+            font-family: Arial, sans-serif;
+            font-size: 8pt;
         }
 
         .helper-fa-toggles {
             display: flex;
             flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 12px;
+            gap: 4px;
+            margin-bottom: 0;
+        }
+
+        .helper-fa-toggles.helper-fa-has-expanded {
+            margin-bottom: 8px;
         }
 
         .helper-fa-toggle {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 12px;
-            padding: 6px 14px;
-            color: #ffffff;
+            background: #ffffff;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
+            padding: 4px 10px;
+            color: #000000;
             cursor: pointer;
-            font-size: 1em;
-            font-weight: 600;
-            transition: all 0.2s ease;
+            font-size: 8pt;
+            font-weight: normal;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
 
         .helper-fa-toggle:hover {
-            background: rgba(255, 255, 255, 0.25);
-            transform: translateY(-1px);
+            border: 1px solid #339900;
         }
 
         .helper-fa-toggle-active {
-            background: rgba(255, 255, 255, 0.9);
-            color: #667eea;
-            border-color: rgba(255, 255, 255, 0.9);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            background: #CCFFCC;
+            color: #000000;
+            border: 1px solid #339900;
+            font-weight: bold;
         }
 
         .helper-fa-toggle-count {
-            background: rgba(255, 255, 255, 0.3);
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 1em;
-            font-weight: 700;
+            background: #eeeeee;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 7pt;
+            font-weight: bold;
+            color: #000000;
         }
 
         .helper-fa-toggle-active .helper-fa-toggle-count {
-            background: rgba(102, 126, 234, 0.2);
-            color: #667eea;
+            background: #339900;
+            color: #ffffff;
         }
 
         .helper-fa-all-presets {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 4px;
         }
 
         .helper-fa-preset-section {
             display: none;
             flex-direction: column;
-            gap: 6px;
-            animation: slideDown 0.2s ease;
+            gap: 4px;
+            background: #ffffff;
+            border: 1px solid #aaaaaa;
+            border-radius: 4px;
+            padding: 4px;
         }
 
         .helper-fa-preset-btn {
@@ -425,23 +404,25 @@ function injectStyles() {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 10px 12px;
-            background: rgba(255, 255, 255, 0.95);
-            border: none;
-            border-radius: 6px;
+            padding: 6px 8px;
+            background: #ffffff;
+            border: 1px solid #cccccc;
+            border-radius: 4px;
             cursor: pointer;
-            transition: all 0.2s ease;
             text-align: left;
+            font-family: Arial, sans-serif;
+            font-size: 8pt;
         }
 
         .helper-fa-preset-btn:hover {
-            background: #ffffff;
-            transform: translateX(4px);
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            border: 1px solid #339900;
         }
 
-        .helper-fa-preset-btn:active {
-            transform: translateX(4px) scale(0.98);
+        .helper-fa-preset-btn:active,
+        .helper-fa-preset-btn.helper-fa-preset-clicked {
+            background: #CCFFCC;
+            border: 1px solid #339900;
+            font-weight: bold;
         }
 
         .helper-fa-preset-content {
@@ -452,44 +433,32 @@ function injectStyles() {
         }
 
         .helper-fa-preset-name {
-            font-size: 1em;
-            font-weight: 600;
-            color: #2d3748;
+            font-size: 8pt;
+            font-weight: bold;
+            color: #000000;
         }
 
         .helper-fa-preset-path {
-            font-size: 1em;
-            color: #718096;
+            font-size: 7pt;
+            color: #666666;
         }
 
         .helper-fa-preset-arrow {
-            color: #a0aec0;
-            transition: transform 0.2s ease;
+            color: #888888;
+            flex-shrink: 0;
         }
 
         .helper-fa-preset-btn:hover .helper-fa-preset-arrow {
-            color: #667eea;
-            transform: translateX(2px);
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
+            color: #F6921E;
         }
 
         @media (max-width: 600px) {
             .helper-quick-appeals-container {
-                padding: 12px;
+                padding: 6px;
             }
 
             .helper-fa-preset-btn {
-                padding: 8px 10px;
+                padding: 5px 6px;
             }
         }
     `;
