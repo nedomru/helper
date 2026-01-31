@@ -41,6 +41,7 @@ import {copyClientNumber} from "@pages/content/arm/features/client-number/copyBu
 import quickAppeals from "@pages/content/arm/features/fast-appeals/buttons";
 import {showClientAge} from "@pages/content/arm/features/ui-enhancements/client-age";
 import {findAppealsButton} from "@pages/content/arm/features/client-guts/find-appeals";
+import {setupAppealsCheck} from "@pages/content/arm/features/left-frame/check-appeals";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -117,6 +118,7 @@ export const armPageConfigs: PageConfig[] = [
         pattern: URL_PATTERNS.LEFT_FRAME,
         features: [],
         alwaysRun: [
+            setupAppealsCheck,
             quickAppeals
         ],
     },

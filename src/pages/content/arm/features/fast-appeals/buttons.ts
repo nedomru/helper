@@ -11,6 +11,7 @@ const PRODUCT_MAP: Record<number, string> = {
     71: "Кабельное TV",
     1451: "Домофония",
     72: "Телефония",
+    1762: "Видеоконтроль",
     69: "Без продукта",
 };
 
@@ -20,10 +21,15 @@ interface PresetGroup {
     presets: QuickAppealsPreset[];
 }
 
+let quickAppealsInitialized = false;
+
 /**
  * Quick Appeals Buttons Feature
  */
 export default async function quickAppeals() {
+    if (quickAppealsInitialized) return;
+    quickAppealsInitialized = true;
+
     if (document.querySelector(".helper-quick-appeals-container")) return;
 
     const container = document.querySelector(".create_request_block");
@@ -150,7 +156,13 @@ function renderFastAppealsUI(container: Element, groupedPresets: PresetGroup[]) 
         presetsContainer.appendChild(presetSection);
     }
 
-    container.insertBefore(wrapper, container.firstChild);
+    // Insert after helper-appeals-info if it exists, otherwise at the beginning
+    const appealsInfo = container.querySelector("#helper-appeals-info");
+    if (appealsInfo) {
+        appealsInfo.insertAdjacentElement("afterend", wrapper);
+    } else {
+        container.insertBefore(wrapper, container.firstChild);
+    }
 }
 
 function createPresetButton(preset: QuickAppealsPreset): HTMLButtonElement {
@@ -307,7 +319,7 @@ function injectStyles() {
     style.textContent = `
         .helper-quick-appeals-container {
             background: linear-gradient(135deg, #000000 0%, #e8d8c0 100%);
-            border-radius: 12px;
+            border-radius: 4px;
             padding: 16px;
             margin-bottom: 12px;
             box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
@@ -358,7 +370,7 @@ function injectStyles() {
             background: rgba(255, 255, 255, 0.15);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 20px;
+            border-radius: 12px;
             padding: 6px 14px;
             color: #ffffff;
             cursor: pointer;
