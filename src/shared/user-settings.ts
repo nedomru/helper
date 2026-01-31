@@ -1,14 +1,12 @@
 /**
  * User settings utilities for content scripts
- * Handles fetching user settings from the /me endpoint
+ * Handles caching, utilities, and feature checking
  */
 
-import type {MeResponse} from '@src/shared/types/auth';
+import {fetchUserSettings, updateUserSettingsAPI} from '@src/utils/api';
 
-const API_BASE_URL = 'https://helper.chrsnv.ru';
 const SETTINGS_CACHE_KEY = 'user_settings_cache';
 const SETTINGS_CACHE_TTL = 60 * 1000; // 1 minute
-const AUTH_STATE_KEY = 'auth_state';
 
 interface CachedSettings {
     data: Record<string, unknown>;
@@ -16,63 +14,23 @@ interface CachedSettings {
 }
 
 /**
- * Gets the access token from chrome.storage.local
- */
-async function getAccessToken(): Promise<string | null> {
-    return new Promise((resolve) => {
-        chrome.storage.local.get([AUTH_STATE_KEY], (result) => {
-            const state = result[AUTH_STATE_KEY] as { accessToken?: string } | undefined;
-            resolve(state?.accessToken ?? null);
-        });
-    });
-}
-
-/**
- * Fetches user settings from the /me endpoint
+ * Fetches user settings with caching
+ * @returns The user settings or null if not authenticated/error
  */
 export async function getUserSettings(): Promise<Record<string, unknown> | null> {
-    try {
-        const token = await getAccessToken();
-        if (!token) {
-            console.debug('[UserSettings] No access token found');
-            return null;
-        }
-
-        // Check cache first
-        const cached = await getCachedSettings();
-        if (cached) {
-            console.debug('[UserSettings] Using cached settings');
-            return cached;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-            headers: {Authorization: `Bearer ${token}`},
-        });
-
-        if (!response.ok) {
-            if (response.status === 401) {
-                console.debug('[UserSettings] Token expired or invalid');
-                await clearAuthState();
-            }
-            return null;
-        }
-
-        const result: MeResponse = await response.json();
-
-        if (!result.success || !result.data?.user.access) {
-            console.debug('[UserSettings] User does not have access');
-            return null;
-        }
-
-        const settings = result.data.user.settings ?? {};
-        console.log('[UserSettings] Loaded user settings:', settings);
-
-        await cacheSettings(settings);
-        return settings;
-    } catch (error) {
-        console.error('[UserSettings] Error fetching settings:', error);
-        return null;
+    // Check cache first
+    const cached = await getCachedSettings();
+    if (cached) {
+        console.debug('[UserSettings] Using cached settings');
+        return cached;
     }
+
+    // Fetch from API
+    const settings = await fetchUserSettings();
+    if (settings) {
+        await cacheSettings(settings);
+    }
+    return settings;
 }
 
 /**
@@ -123,50 +81,17 @@ export async function clearSettingsCache(): Promise<void> {
 }
 
 /**
- * Clears the auth state
- */
-async function clearAuthState(): Promise<void> {
-    return new Promise((resolve) => {
-        chrome.storage.local.remove([AUTH_STATE_KEY], resolve);
-    });
-}
-
-/**
  * Updates user settings on the backend
  * @param settings - The settings object to update
  * @returns true if successful, false otherwise
  */
 export async function updateUserSettings(settings: Record<string, unknown>): Promise<boolean> {
-    try {
-        const token = await getAccessToken();
-        if (!token) {
-            console.error('[UserSettings] No access token found');
-            return false;
-        }
-
-        const response = await fetch(`${API_BASE_URL}/api/auth/settings`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({settings}),
-        });
-
-        if (!response.ok) {
-            console.error('[UserSettings] Failed to update settings:', response.status, response.statusText);
-            return false;
-        }
-
+    const success = await updateUserSettingsAPI(settings);
+    if (success) {
         // Clear cache after successful update
         await clearSettingsCache();
-
-        console.log('[UserSettings] Settings updated successfully');
-        return true;
-    } catch (error) {
-        console.error('[UserSettings] Error updating settings:', error);
-        return false;
     }
+    return success;
 }
 
 /**
