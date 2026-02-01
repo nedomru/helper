@@ -127,7 +127,7 @@ export default function Popup(): ReactNode {
 
     if (isAuthenticatedState === null) {
         return (
-            <div className="w-160 min-h-145 bg-white flex items-center justify-center">
+            <div className="w-160 h-145 bg-white flex items-center justify-center overflow-hidden">
                 <div className="flex flex-col items-center gap-3">
                     <div
                         className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
@@ -142,7 +142,7 @@ export default function Popup(): ReactNode {
     }
 
     return (
-        <div className="w-160 min-h-145 bg-white">
+        <div className="w-160 h-145 bg-white overflow-hidden flex flex-col">
             {currentUser && (
                 <div
                     className="bg-gradient-to-r from-cyan-50 to-blue-50 px-4 py-2.5 border-b border-cyan-200/50 flex items-center justify-between shadow-sm">
@@ -212,7 +212,7 @@ export default function Popup(): ReactNode {
                 </div>
             </div>
 
-            <div className="p-4 animate-in fade-in duration-200">
+            <div className="p-4 animate-in fade-in duration-200 flex-1 overflow-auto">
                 {activeTab === 'Главная' && (
                     <div className="grid grid-cols-3 gap-6">
                         <div>
