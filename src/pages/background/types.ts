@@ -17,10 +17,13 @@ export interface FetchDiagnosticReportsMessage {
     };
 }
 
+export type UnitType = 5 | 6 | 7;
+
 export interface FetchAppealsMessage {
     action: "fetchAppeals";
     payload: {
         cityId: string;
+        unit?: UnitType;
     };
 }
 

@@ -1,6 +1,14 @@
 import {notify} from "@src/utils";
 import {getCookies} from "@pages/options/utils/arm-api";
 
+// Unit type definitions
+type UnitType = 5 | 6 | 7;
+const UNIT_TYPES: Record<UnitType, { name: string; label: string; color: string }> = {
+    7: {name: "НЦК", label: "НЦК", color: "#2071c2"},
+    5: {name: "НТП1", label: "НТП1", color: "#059669"},
+    6: {name: "НТП2", label: "НТП2", color: "#d97706"},
+} as const;
+
 // City IDs mapping from the select options
 const CITY_IDS: Record<string, string> = {
     "OTT": "10100",
@@ -118,14 +126,16 @@ function getCityId(cityName: string): string | null {
 /**
  * Fetches appeal details via background service worker
  */
-async function getDetailsByCity(cityId: string): Promise<AppealDetail[]> {
+async function getDetailsByCity(cityId: string, unit: UnitType = 7): Promise<AppealDetail[]> {
     const response = await chrome.runtime.sendMessage({
         action: "fetchAppeals",
-        payload: {cityId},
+        payload: {cityId, unit},
     }) as Response<AppealDetail[]>;
 
-    if (!response.ok) {
-        throw new Error(response.err || "Failed to fetch appeals");
+    if (!response?.ok) {
+        const errorMessage = response?.err || "Unknown error occurred";
+        console.error("[ARM] fetchAppeals failed:", errorMessage);
+        throw new Error(errorMessage);
     }
 
     return response.data || [];
@@ -247,11 +257,26 @@ interface AgreementGroup {
 /**
  * Displays appeal details in a draggable window with search, sort, and filter
  */
-function displayAppealDetails(
+async function displayAppealDetails(
     appeals: AppealDetail[],
     cityName: string,
     cityId: string,
-): void {
+    unit: UnitType = 7,
+): Promise<void> {
+    let currentUnit = unit;
+    let currentAppeals = appeals;
+    const unitInfo = UNIT_TYPES[unit];
+
+    // Function to fetch appeals for a specific unit
+    async function fetchAppealsForUnit(unitType: UnitType): Promise<AppealDetail[]> {
+        try {
+            return await getDetailsByCity(cityId, unitType);
+        } catch (error) {
+            console.error("[ARM] Error fetching appeals for unit:", error);
+            throw error;
+        }
+    }
+
     if (appeals.length === 0) {
         notify("🔍 Обращения", "Не найдено обращений для данного города", "info");
         return;
@@ -264,7 +289,11 @@ function displayAppealDetails(
 
     // Sort and filter function
     function getProcessedAppeals(): AppealDetail[] {
-        let result = [...appeals];
+        if (!Array.isArray(currentAppeals)) {
+            console.error("[ARM] appeals is not an array:", typeof currentAppeals, currentAppeals);
+            return [];
+        }
+        let result = [...currentAppeals];
 
         // Filter by search query
         if (currentSearchQuery) {
@@ -381,9 +410,10 @@ function displayAppealDetails(
 
     // Create header
     const header = document.createElement("div");
+    const headerColor = unitInfo.color;
     Object.assign(header.style, {
         padding: "8px 12px",
-        background: "#2071c2",
+        background: headerColor,
         borderBottom: "1px solid #1a5c9e",
         display: "flex",
         justifyContent: "space-between",
@@ -395,7 +425,7 @@ function displayAppealDetails(
 
     const titleEl = document.createElement("span");
     Object.assign(titleEl, {
-        textContent: `🔍 Обращения по городу ${cityName}`,
+        textContent: `🔍 Обращения ${unitInfo.label} - ${cityName}`,
         style: "font-weight: 600; font-size: 13px; color: white; flex: 1;",
     });
 
@@ -499,8 +529,82 @@ function displayAppealDetails(
     sortContainer.appendChild(sortSelect);
     sortContainer.appendChild(sortOrderBtn);
 
+    // Unit selector
+    const unitContainer = document.createElement("div");
+    unitContainer.style.cssText = "display: flex; align-items: center; gap: 8px;";
+
+    const unitLabel = document.createElement("span");
+    unitLabel.textContent = "Тип:";
+    unitLabel.style.cssText = "font-size: 12px; color: #6b7280;";
+
+    const unitSelect = document.createElement("select");
+    Object.assign(unitSelect.style, {
+        padding: "5px 8px",
+        border: "1px solid #d1d5db",
+        borderRadius: "4px",
+        fontSize: "12px",
+        cursor: "pointer",
+        fontWeight: "500",
+    });
+
+    // Populate unit options
+    Object.entries(UNIT_TYPES).forEach(([unitValue, unitData]) => {
+        const opt = document.createElement("option");
+        opt.value = unitValue;
+        opt.textContent = unitData.label;
+        if (parseInt(unitValue) === currentUnit) {
+            opt.selected = true;
+        }
+        unitSelect.appendChild(opt);
+    });
+
+    // Handle unit change
+    unitSelect.addEventListener('change', async () => {
+        const newUnit = parseInt(unitSelect.value) as UnitType;
+        if (newUnit === currentUnit) return;
+
+        // Show loading state
+        unitSelect.disabled = true;
+        searchInput.disabled = true;
+        sortSelect.disabled = true;
+        sortOrderBtn.disabled = true;
+        resultCount.textContent = "⏳ Загрузка...";
+
+        try {
+            // Fetch new appeals for the selected unit
+            currentAppeals = await fetchAppealsForUnit(newUnit);
+            currentUnit = newUnit;
+
+            // Update header and title
+            const newUnitInfo = UNIT_TYPES[newUnit];
+            header.style.background = newUnitInfo.color;
+            titleEl.textContent = `🔍 Обращения ${newUnitInfo.label} - ${cityName}`;
+
+            // Re-render
+            renderAppeals();
+
+            console.info(`[ARM] Switched to unit ${newUnitInfo.name}, found ${currentAppeals.length} appeals`);
+        } catch (error) {
+            console.error("[ARM] Error switching unit:", error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            notify("🔍 Обращения", `Ошибка при переключении типа: ${errorMessage}`, "error");
+
+            // Revert selection
+            unitSelect.value = currentUnit.toString();
+        } finally {
+            unitSelect.disabled = false;
+            searchInput.disabled = false;
+            sortSelect.disabled = false;
+            sortOrderBtn.disabled = false;
+        }
+    });
+
+    unitContainer.appendChild(unitLabel);
+    unitContainer.appendChild(unitSelect);
+
     toolbar.appendChild(searchContainer);
     toolbar.appendChild(sortContainer);
+    toolbar.appendChild(unitContainer);
 
     // Create content area
     const content = document.createElement("div");
@@ -523,7 +627,7 @@ function displayAppealDetails(
     // Render function
     function renderAppeals(): void {
         const processedAppeals = getProcessedAppeals();
-        resultCount.textContent = `${processedAppeals.length} из ${appeals.length}`;
+        resultCount.textContent = `${processedAppeals.length} из ${currentAppeals.length}`;
         list.innerHTML = '';
 
         if (processedAppeals.length === 0) {
@@ -946,14 +1050,20 @@ export async function findAppealsButton(): Promise<void> {
                 return;
             }
 
-            // Fetch appeal details
-            const appeals = await getDetailsByCity(cityId);
-            displayAppealDetails(appeals, cityName, cityId);
+            // Fetch appeal details with default unit (НЦК = 7)
+            const appeals = await getDetailsByCity(cityId, 7);
+            await displayAppealDetails(appeals, cityName, cityId);
 
             console.info(`[ARM] Found ${appeals.length} appeals for city ${cityName}`);
         } catch (error) {
             console.error("[ARM] Error fetching appeals:", error);
-            notify("🔍 Обращения", "Ошибка при поиске обращений", "error");
+            const errorMessage = error instanceof Error ? error.message : String(error);
+
+            if (errorMessage.includes("Вы не авторизованы") || errorMessage.includes("не авториз")) {
+                notify("🔍 Обращения", "Необходимо авторизоваться на okc.ertelecom.ru", "error");
+            } else {
+                notify("🔍 Обращения", `Ошибка при поиске обращений: ${errorMessage}`, "error");
+            }
         } finally {
             findAppealsButton.textContent = originalText;
             findAppealsButton.disabled = false;
