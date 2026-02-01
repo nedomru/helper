@@ -1,30 +1,85 @@
-import {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
-import {fetchMNAData, fetchRoutersData, type MNAProvider, type Router} from '@src/utils/api';
+import {type ReactNode, useCallback, useEffect, useState} from 'react';
+import {TelegramUser} from "@src/shared/types/auth";
+import {getAuthState, isAuthenticated, logout} from "@src/utils/auth";
+import Auth from "@src/components/Auth";
 
-type Tab = 'Главная' | 'MnA' | 'Роутеры' | 'РМы' | 'Инструменты';
+type Tab = 'Главная' | 'Инструменты';
 
 interface ToolState {
     macAddress: string;
-    ipAddress: string;
-    link: string;
-    specialist: string;
+}
+
+interface MacLookupResult {
+    company: string;
+    error?: string;
+}
+
+interface ToolInputProps {
+    label: string;
+    value: string;
+    placeholder: string;
+    onChange: (value: string) => void;
+    buttonLabel: string;
+    onAction?: () => void;
+}
+
+function ToolInput({label, value, placeholder, onChange, buttonLabel, onAction}: ToolInputProps): ReactNode {
+    return (
+        <div className="flex gap-2 items-center">
+            <span
+                className="w-40 px-3 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg text-sm font-medium text-gray-700 flex items-center">
+                {label}
+            </span>
+            <input
+                type="text"
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder={placeholder}
+                className="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all text-sm"
+            />
+            <button
+                onClick={onAction}
+                className="px-4 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 hover:border-gray-300 active:scale-95 transition-all text-sm font-medium text-gray-700 shadow-sm"
+            >
+                {buttonLabel}
+            </button>
+        </div>
+    );
 }
 
 export default function Popup(): ReactNode {
+    const [isAuthenticatedState, setIsAuthenticatedState] = useState<boolean | null>(null);
+    const [currentUser, setCurrentUser] = useState<TelegramUser | null>(null);
     const [activeTab, setActiveTab] = useState<Tab>('Главная');
-    const [searchProvider, setSearchProvider] = useState('');
-    const [searchRouter, setSearchRouter] = useState('');
     const [tools, setTools] = useState<ToolState>({
         macAddress: '',
-        ipAddress: '',
-        link: '',
-        specialist: '',
     });
+    const [macResult, setMacResult] = useState<MacLookupResult | null>(null);
 
-    const [mnaData, setMnaData] = useState<MNAProvider[]>([]);
-    const [routersData, setRoutersData] = useState<Router[]>([]);
-    const [loadingMna, setLoadingMna] = useState(false);
-    const [loadingRouters, setLoadingRouters] = useState(false);
+    useEffect(() => {
+        const checkAuth = async () => {
+            const authenticated = await isAuthenticated();
+            setIsAuthenticatedState(authenticated);
+            if (authenticated) {
+                const state = await getAuthState();
+                if (state?.user) {
+                    setCurrentUser(state.user);
+                }
+            }
+        };
+        checkAuth();
+    }, []);
+
+    const handleAuthorized = useCallback((user: TelegramUser) => {
+        setCurrentUser(user);
+        setIsAuthenticatedState(true);
+    }, []);
+
+    const handleLogout = useCallback(async () => {
+        await logout();
+        setIsAuthenticatedState(false);
+        setCurrentUser(null);
+    }, []);
 
     const handleOpenSettings = useCallback(() => {
         chrome.runtime.openOptionsPage();
@@ -34,76 +89,31 @@ export default function Popup(): ReactNode {
         window.open(url, '_blank', 'noopener,noreferrer');
     }, []);
 
-    useEffect(() => {
-        if (activeTab === 'MnA' && mnaData.length === 0 && !loadingMna) {
-            setLoadingMna(true);
-            fetchMNAData()
-                .then((data) => setMnaData(data.mna))
-                .catch((error) => console.error('Error loading MNA data:', error))
-                .finally(() => setLoadingMna(false));
+    const handleMacLookup = useCallback(async () => {
+        if (!tools.macAddress.trim()) {
+            setMacResult({company: '', error: 'Пожалуйста, введите MAC-адрес'});
+            return;
         }
-    }, [activeTab, mnaData.length, loadingMna]);
 
-    useEffect(() => {
-        if (activeTab === 'Роутеры' && routersData.length === 0 && !loadingRouters) {
-            setLoadingRouters(true);
-            fetchRoutersData()
-                .then((data) => setRoutersData(data.routers))
-                .catch((error) => console.error('Error loading routers data:', error))
-                .finally(() => setLoadingRouters(false));
-        }
-    }, [activeTab, routersData.length, loadingRouters]);
+        setMacResult(null); // Clear previous result
 
-    const filteredMnaData = useMemo(() => {
-        if (!searchProvider.trim()) return mnaData;
-        const search = searchProvider.trim().toUpperCase();
-        return mnaData.filter(
-            ({name, authorization, connection}) =>
-                name.toUpperCase().includes(search) ||
-                authorization.toUpperCase().includes(search) ||
-                connection.toUpperCase().includes(search)
-        );
-    }, [mnaData, searchProvider]);
+        try {
+            const response = await chrome.runtime.sendMessage({
+                type: 'LOOKUP_MAC',
+                mac: tools.macAddress.trim()
+            });
 
-    const filteredRoutersData = useMemo(() => {
-        if (!searchRouter.trim()) return routersData;
-        const search = searchRouter.trim().toUpperCase();
-        return routersData.filter(({Name, Settings}) =>
-            Name.toUpperCase().includes(search) || Settings.toUpperCase().includes(search)
-        );
-    }, [routersData, searchRouter]);
-
-    const createLinkOrText = useCallback((value: string | string[], text: string, isEmulator = false): ReactNode => {
-        if (value === 'Нет') return 'Нет';
-
-        const linkClass = "text-blue-600 hover:underline";
-
-        if (Array.isArray(value)) {
-            if (isEmulator) {
-                return value.map((link, index) => (
-                    <span key={link}>
-            {index > 0 && ', '}
-                        <a href={link} target="_blank" rel="noopener noreferrer" className={linkClass}>
-              {text}
-            </a>
-          </span>
-                ));
+            if (response.ok) {
+                setMacResult({company: response.data.company});
+            } else {
+                setMacResult({company: '', error: response.err || 'Ошибка при поиске'});
             }
-            return (
-                <a href={value[0]} target="_blank" rel="noopener noreferrer" className={linkClass}>
-                    {text}
-                </a>
-            );
+        } catch (error) {
+            setMacResult({company: '', error: String(error)});
         }
+    }, [tools.macAddress]);
 
-        return (
-            <a href={value} target="_blank" rel="noopener noreferrer" className={linkClass}>
-                {text}
-            </a>
-        );
-    }, []);
-
-    const TABS: Tab[] = ['Главная', 'MnA', 'Роутеры', 'РМы', 'Инструменты'];
+    const TABS: Tab[] = ['Главная', 'Инструменты'];
 
     const TOOLBAR_BUTTONS = [
         {title: 'Перейти в настройки', icon: '⚙️', onClick: handleOpenSettings},
@@ -115,19 +125,57 @@ export default function Popup(): ReactNode {
         {title: 'Поддержать проект', icon: '💰', onClick: () => handleOpenLink('https://pay.cloudtips.ru/p/787b494c')},
     ] as const;
 
+    if (isAuthenticatedState === null) {
+        return (
+            <div className="w-160 h-145 bg-white flex items-center justify-center overflow-hidden">
+                <div className="flex flex-col items-center gap-3">
+                    <div
+                        className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+                    <div className="text-gray-600 text-sm font-medium">Загрузка...</div>
+                </div>
+            </div>
+        );
+    }
+
+    if (!isAuthenticatedState) {
+        return <Auth onAuthorized={handleAuthorized}/>;
+    }
+
     return (
-        <div className="w-[640px] min-h-[580px] bg-white">
-            {/* Toolbar */}
-            <div className="flex items-center gap-2 p-4 border-b border-gray-200">
-                <div className="flex gap-1">
+        <div className="w-160 h-145 bg-white overflow-hidden flex flex-col">
+            {currentUser && (
+                <div
+                    className="bg-gradient-to-r from-cyan-50 to-blue-50 px-4 py-2.5 border-b border-cyan-200/50 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-3">
+                        <div
+                            className="w-9 h-9 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md">
+                            {currentUser.first_name![0]}
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-sm font-semibold text-gray-800">
+                                {currentUser.first_name} {currentUser.last_name || ''}
+                            </span>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleLogout}
+                        className="text-xs text-red-600 hover:text-red-700 font-medium px-3 py-1 rounded-full hover:bg-red-50 transition-colors"
+                    >
+                        Выйти
+                    </button>
+                </div>
+            )}
+
+            <div className="flex items-center gap-2 p-4 border-b border-gray-200/80 bg-white">
+                <div className="flex gap-1.5">
                     {TABS.map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
-                            className={`px-3 py-1.5 text-sm font-medium rounded transition-colors ${
+                            className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 ${
                                 activeTab === tab
-                                    ? 'bg-blue-600 text-white'
-                                    : 'bg-white text-blue-600 border border-blue-600 hover:bg-blue-50'
+                                    ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md shadow-blue-200'
+                                    : 'bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 hover:border-blue-300'
                             }`}
                         >
                             {tab}
@@ -135,12 +183,12 @@ export default function Popup(): ReactNode {
                     ))}
                 </div>
 
-                <div className="flex gap-1 ml-auto">
+                <div className="flex gap-1.5 ml-auto">
                     {TOOLBAR_BUTTONS.map(({title, icon, onClick}) => (
                         <button
                             key={title}
                             onClick={onClick}
-                            className="px-3 py-1.5 text-sm border border-blue-600 text-blue-600 rounded hover:bg-blue-50 transition-colors flex items-center"
+                            className="px-3 py-2 text-sm border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 hover:border-blue-300 active:scale-95 transition-all duration-200 shadow-sm"
                             title={title}
                         >
                             {icon === 'telegram' ? (
@@ -164,8 +212,7 @@ export default function Popup(): ReactNode {
                 </div>
             </div>
 
-            {/* Tab Content */}
-            <div className="p-4">
+            <div className="p-4 animate-in fade-in duration-200 flex-1 overflow-auto">
                 {activeTab === 'Главная' && (
                     <div className="grid grid-cols-3 gap-6">
                         <div>
@@ -175,7 +222,7 @@ export default function Popup(): ReactNode {
                                        className="text-blue-600 hover:underline text-sm">Генезис</a></li>
                                 <li><a href="https://perm.db.ertelecom.ru/cgi-bin/ppo/excells/wcc_main.entry_continue"
                                        className="text-blue-600 hover:underline text-sm">Веб-АРМ</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/breaks/ntp-nck"
+                                <li><a href="https://okc.ertelecom.ru/yii/breaks/ntp-nck"
                                        className="text-blue-600 hover:underline text-sm">Перерывы</a></li>
                                 <li><a href="https://clever.ertelecom.ru"
                                        className="text-blue-600 hover:underline text-sm">Clever</a></li>
@@ -185,26 +232,26 @@ export default function Popup(): ReactNode {
 
                             <h4 className="font-bold mt-4 text-gray-800">Линии</h4>
                             <ul>
-                                <li><a href="https://okc2.ertelecom.ru/yii/genesys-ntp/line"
+                                <li><a href="https://okc.ertelecom.ru/yii/genesys-ntp/line"
                                        className="text-blue-600 hover:underline text-sm">НЦК</a></li>
                                 <li>
-                                    <a href="https://okc2.ertelecom.ru/yii/line_ts/ntp1/index"
+                                    <a href="https://okc.ertelecom.ru/yii/line_ts/ntp1/index"
                                        className="text-blue-600 hover:underline text-sm">НТП1</a>
                                     {' / '}
-                                    <a href="https://okc2.ertelecom.ru/yii/line_ts/ntp2/index"
+                                    <a href="https://okc.ertelecom.ru/yii/line_ts/ntp2/index"
                                        className="text-blue-600 hover:underline text-sm">НТП2</a>
                                 </li>
                             </ul>
 
                             <h4 className="font-bold mt-4 text-gray-800">Графики</h4>
                             <ul>
-                                <li><a href="https://okc2.ertelecom.ru/wfm/vueapp/personal"
+                                <li><a href="https://okc.ertelecom.ru/wfm/vueapp/personal"
                                        className="text-blue-600 hover:underline text-sm">Личный</a></li>
                                 <li>
-                                    <a href="https://okc2.ertelecom.ru/wfm/vueapp/day"
+                                    <a href="https://okc.ertelecom.ru/wfm/vueapp/day"
                                        className="text-blue-600 hover:underline text-sm">День</a>
                                     {' / '}
-                                    <a href="https://okc2.ertelecom.ru/wfm/vueapp/month"
+                                    <a href="https://okc.ertelecom.ru/wfm/vueapp/month"
                                        className="text-blue-600 hover:underline text-sm">Месяц</a>
                                 </li>
                             </ul>
@@ -226,23 +273,23 @@ export default function Popup(): ReactNode {
                         <div>
                             <h4 className="font-bold text-gray-800">Статистика</h4>
                             <ul>
-                                <li><a href="https://okc2.ertelecom.ru/yii/ure/report/index"
+                                <li><a href="https://okc.ertelecom.ru/yii/ure/report/index"
                                        className="text-blue-600 hover:underline text-sm">URE</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/premium/ntp-nck/spec_month"
+                                <li><a href="https://okc.ertelecom.ru/yii/premium/ntp-nck/spec_month"
                                        className="text-blue-600 hover:underline text-sm">Премия</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/gok/detail/ntpNck"
+                                <li><a href="https://okc.ertelecom.ru/yii/gok/detail/ntpNck"
                                        className="text-blue-600 hover:underline text-sm">Гок</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/csi/report/index"
+                                <li><a href="https://okc.ertelecom.ru/yii/csi/report/index"
                                        className="text-blue-600 hover:underline text-sm">Оценки CSI</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/appl/thanks/index"
+                                <li><a href="https://okc.ertelecom.ru/yii/appl/thanks/index"
                                        className="text-blue-600 hover:underline text-sm">Благодарности</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/sales/report/index"
+                                <li><a href="https://okc.ertelecom.ru/yii/sales/report/index"
                                        className="text-blue-600 hover:underline text-sm">Отчет по продажам</a></li>
                             </ul>
 
                             <h4 className="font-bold mt-4 text-gray-800">Обучение</h4>
                             <ul>
-                                <li><a href="https://okc2.ertelecom.ru/yii/testing/lk/profile"
+                                <li><a href="https://okc.ertelecom.ru/yii/testing/lk/profile"
                                        className="text-blue-600 hover:underline text-sm">Тесты</a></li>
                                 <li><a href="https://clever.ertelecom.ru/content/space/4/article/8036"
                                        className="text-blue-600 hover:underline text-sm">Электронные курсы</a></li>
@@ -297,7 +344,7 @@ export default function Popup(): ReactNode {
                             <ul>
                                 <li><a href="https://flomaster.chrsnv.ru"
                                        className="text-blue-600 hover:underline text-sm">Фломастер (РМы)</a></li>
-                                <li><a href="https://okc2.ertelecom.ru/yii/appl/chart/index"
+                                <li><a href="https://okc.ertelecom.ru/yii/appl/chart/index"
                                        className="text-blue-600 hover:underline text-sm">Обращения в КЦ</a></li>
                                 <li><a href="https://clever.ertelecom.ru/content/space/4/article/1625"
                                        className="text-blue-600 hover:underline text-sm">Разблокировка логинов</a></li>
@@ -310,231 +357,39 @@ export default function Popup(): ReactNode {
                     </div>
                 )}
 
-                {activeTab === 'MnA' && (
-                    <div>
-                        <input
-                            type="text"
-                            value={searchProvider}
-                            onChange={(e) => setSearchProvider(e.target.value)}
-                            placeholder="Поиск провайдера"
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-                            autoFocus
-                        />
-                        {loadingMna ? (
-                            <div className="text-center py-8 text-gray-600">Загрузка данных...</div>
-                        ) : (
-                            <div className="overflow-auto" style={{maxHeight: '480px'}}>
-                                <table className="w-full border-collapse border border-gray-300 text-sm">
-                                    <thead className="bg-gray-100 sticky top-0">
-                                    <tr>
-                                        <th className="border border-gray-300 px-3 py-2 text-left">Провайдер</th>
-                                        <th className="border border-gray-300 px-3 py-2 text-left">Авторизация</th>
-                                        <th className="border border-gray-300 px-3 py-2 text-left">Подключение</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {filteredMnaData.map((provider, index) => (
-                                        <tr key={index} className="hover:bg-gray-50">
-                                            <td className="border border-gray-300 px-3 py-2">
-                                                <a href={provider.link} target="_blank" rel="noopener noreferrer"
-                                                   className="text-blue-600 hover:underline">
-                                                    {provider.name}
-                                                </a>
-                                            </td>
-                                            <td className="border border-gray-300 px-3 py-2">{provider.authorization}</td>
-                                            <td className="border border-gray-300 px-3 py-2">{provider.connection}</td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'Роутеры' && (
-                    <div>
-                        <input
-                            type="text"
-                            value={searchRouter}
-                            onChange={(e) => setSearchRouter(e.target.value)}
-                            placeholder="Поиск роутера"
-                            className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
-                            autoFocus
-                        />
-                        {loadingRouters ? (
-                            <div className="text-center py-8 text-gray-600">Загрузка данных...</div>
-                        ) : (
-                            <div className="overflow-y-auto" style={{maxHeight: '480px'}}>
-                                <table className="w-full border-collapse border border-gray-300 text-xs table-fixed">
-                                    <thead className="bg-gray-100 sticky top-0">
-                                    <tr>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '20%'}}>Название
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '10%'}}>PPPoE
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '10%'}}>DHCP
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '10%'}}>IPoE
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '10%'}}>Каналы
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '15%'}}>Интерфейс
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '10%'}}>БЗ
-                                        </th>
-                                        <th className="border border-gray-300 px-1 py-1 text-left"
-                                            style={{width: '15%'}}>Эмулятор
-                                        </th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {filteredRoutersData.map((router, index) => (
-                                        <tr key={index} className="hover:bg-gray-50">
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{router.Name}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.PPPoE, 'PPPoE')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.DHCP, 'DHCP')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.IPoE, 'IPoE')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.Channels, 'Каналы')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{router.Settings}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.KnowledgeBase, 'БЗ')}</td>
-                                            <td className="border border-gray-300 px-1 py-1 break-words">{createLinkOrText(router.Emulator, 'Эмулятор', true)}</td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        )}
-                    </div>
-                )}
-
-                {activeTab === 'РМы' && (
-                    <div className="border border-gray-300 overflow-hidden w-full" style={{height: '527px'}}>
-                        <iframe
-                            src="https://flomaster.chrsnv.ru/phrases"
-                            className="w-full h-full border-0"
-                            loading="lazy"
-                            sandbox="allow-downloads allow-scripts allow-same-origin allow-popups allow-forms"
-                            referrerPolicy="no-referrer"
-                        />
-                    </div>
-                )}
-
                 {activeTab === 'Инструменты' && (
                     <div className="space-y-3">
-                        <div className="flex gap-2">
-                            <span
-                                className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Проверка MAC</span>
-                            <input
-                                type="text"
-                                value={tools.macAddress}
-                                onChange={(e) => setTools(prev => ({...prev, macAddress: e.target.value}))}
-                                placeholder="Введи MAC"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm">
-                                Проверить
-                            </button>
-                        </div>
+                        <ToolInput
+                            label="Проверка MAC"
+                            value={tools.macAddress}
+                            onChange={(v) => setTools(prev => ({...prev, macAddress: v}))}
+                            placeholder="Введи MAC"
+                            buttonLabel="Проверить"
+                            onAction={handleMacLookup}
+                        />
 
-                        <div className="flex gap-2">
-                            <span
-                                className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Проверка IP</span>
-                            <input
-                                type="text"
-                                value={tools.ipAddress}
-                                onChange={(e) => setTools(prev => ({...prev, ipAddress: e.target.value}))}
-                                placeholder="Введи IP"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm">
-                                Проверить
-                            </button>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <span
-                                className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Сокращ. ссылок</span>
-                            <input
-                                type="text"
-                                value={tools.link}
-                                onChange={(e) => setTools(prev => ({...prev, link: e.target.value}))}
-                                placeholder="Введи ссылку"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm">
-                                Сократить
-                            </button>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <span
-                                className="w-40 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Проверка спеца</span>
-                            <input
-                                type="text"
-                                value={tools.specialist}
-                                onChange={(e) => setTools(prev => ({...prev, specialist: e.target.value}))}
-                                placeholder="Введи фамилию и имя"
-                                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            />
-                            <button
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm">
-                                Проверить
-                            </button>
-                        </div>
-
-                        <div className="flex gap-2">
-                            <span
-                                className="w-32 px-3 py-2 bg-gray-100 border border-gray-300 rounded text-sm flex items-center">Премия</span>
-                            <select
-                                className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                                <option value="specialist">Спец</option>
-                                <option value="head">РГ</option>
-                            </select>
-                            <select
-                                className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                                <option value="1">Январь</option>
-                                <option value="2">Февраль</option>
-                                <option value="3">Март</option>
-                                <option value="4">Апрель</option>
-                                <option value="5">Май</option>
-                                <option value="6">Июнь</option>
-                                <option value="7">Июль</option>
-                                <option value="8">Август</option>
-                                <option value="9">Сентябрь</option>
-                                <option value="10">Октябрь</option>
-                                <option value="11">Ноябрь</option>
-                                <option value="12">Декабрь</option>
-                            </select>
-                            <select
-                                className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
-                                <option value="2025">2025</option>
-                                <option value="2024">2024</option>
-                                <option value="2023">2023</option>
-                            </select>
-                            <input
-                                type="text"
-                                placeholder="Часы"
-                                className="w-20 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
-                            />
-                            <button
-                                className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors text-sm">
-                                Проверить
-                            </button>
-                        </div>
-
-                        <div id="specialist-results" className="mt-4"></div>
-                        <div id="result-container" className="mt-4"></div>
+                        {macResult && (
+                            <div className={`px-4 py-3 rounded-lg border ${
+                                macResult.error
+                                    ? 'bg-red-50 border-red-200 text-red-800'
+                                    : 'bg-green-50 border-green-200 text-green-800'
+                            }`}>
+                                {macResult.error ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm">❌</span>
+                                        <span className="text-sm font-medium">{macResult.error}</span>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-sm">✓</span>
+                                        <div className="text-sm">
+                                            <span className="font-medium">Производитель:</span>{' '}
+                                            <span>{macResult.company}</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </div>

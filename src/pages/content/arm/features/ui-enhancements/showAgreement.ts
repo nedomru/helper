@@ -4,7 +4,7 @@
  * Gets agreement number from agr_num input.
  * There is no other elements containing agreement number on this page.
  */
-export function showAgreementOnRequestChange(): void {
+export async function showAgreementOnRequestChange(): Promise<void> {
     const headerText: HTMLElement | null = document.querySelector(".text-primary");
     const agreement_num: HTMLInputElement | null = document.querySelector('input[name="agr_num"]');
 

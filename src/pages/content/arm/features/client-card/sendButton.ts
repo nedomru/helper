@@ -1,3 +1,5 @@
+import {notify} from "@src/utils";
+
 /**
  * Creates and inserts a button to send client card to duty person
  */
@@ -33,7 +35,7 @@ export async function sendClientCardButton() {
 
         const userMessage = prompt("Введи сообщение к примеру для отправки дежурному",);
         if (!userMessage || userMessage.length < 1) {
-            //  # TODO Add notification
+            notify("💡 Примерочная", "Введите сообщение для отправки", "warning");
             return;
         }
 
@@ -42,10 +44,10 @@ export async function sendClientCardButton() {
             payload: {message: `${formattedClientCardText}<br><br>${userMessage}`}
         }, (response) => {
             if (response?.ok) {
-                //  # TODO Add notification
+                notify("💡 Примерочная", "Карточка клиента отправлена дежурному", "success");
                 console.info("[ARM] — Client card successfully sent");
             } else {
-                //  # TODO Add notification
+                notify("💡 Примерочная", `Ошибка при отправке: ${response?.err || 'неизвестная ошибка'}`, "error");
                 console.error("[ARM] — Error:", response?.err);
             }
         });

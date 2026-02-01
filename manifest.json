@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "Хелпер",
-  "version": "3.0",
-  "description": "Инструмент для помощи в работе",
+  "version": "3.0.0.1",
+  "description": "Твой швейцарский нож для работы \uD83D\uDE0E",
   "options_ui": {
     "page": "src/pages/options/index.html",
     "open_in_tab": true
@@ -24,13 +24,16 @@
     "tabs",
     "storage",
     "management",
-    "activeTab",
     "contextMenus",
-    "browsingData"
+    "browsingData",
+    "cookies"
   ],
   "host_permissions": [
     "*://*.ertelecom.ru/*",
-    "https://helper.chrsnv.ru/*"
+    "*://*.ertelecom.loc/*",
+    "http://octptest.corp.ertelecom.loc/*",
+    "https://helper.chrsnv.ru/*",
+    "https://api.macvendors.com/*"
   ],
   "content_scripts": [
     {
@@ -46,6 +49,18 @@
         "contentStyle.css"
       ],
       "all_frames": true
+    },
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "src/pages/content/speech-phrases/index.ts"
+      ],
+      "all_frames": true,
+      "exclude_matches": [
+        "*://*/*options*"
+      ]
     }
   ],
   "devtools_page": "src/pages/devtools/index.html",
@@ -57,7 +72,13 @@
         "icon-32.png",
         "sounds/*.mp3"
       ],
-      "matches": ["<all_urls>"]
+      "matches": [
+        "<all_urls>"
+      ]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-hashes'; object-src 'self'; connect-src 'self' http: https:"
+  },
+  "author": "Roman Chursanov"
 }

@@ -1,29 +1,70 @@
-/**
- * Set custom colors for operator and client.
- *
- * Uses basic genesys configuration:
- * chat.agent.prompt-color - Color of agent name
- * chat.agent.text-color - Color of agent message text
- * chat.client.prompt-color - Color of client name
- * chat.client.text-color - Color of client message text.
- */
-export function customChatColors() {
-    chrome.storage.sync.get('settings', (result) => {
-        if (result?.settings?.genesys?.chats) {
-            const {
-                operatorNameColor,
-                operatorMessageColor,
-                clientNameColor,
-                clientMessageColor
-            } = result.settings.genesys.chats;
+import {getUserSettings} from '@src/shared/user-settings';
 
-            const genesys = (window as any).genesys;
-            if (genesys?.wwe?.configuration?.set) {
-                genesys.wwe.configuration.set("chat.agent.prompt-color", operatorNameColor);
-                genesys.wwe.configuration.set("chat.agent.text-color", operatorMessageColor);
-                genesys.wwe.configuration.set("chat.client.prompt-color", clientNameColor);
-                genesys.wwe.configuration.set("chat.client.text-color", clientMessageColor);
-            }
+interface ChatColors {
+    agentPrompt: string;
+    agentText: string;
+    clientPrompt: string;
+    clientText: string;
+}
+
+const DEFAULT_COLORS: ChatColors = {
+    agentPrompt: '#FF6B35',
+    agentText: '#2C3E50',
+    clientPrompt: '#27AE60',
+    clientText: '#34495E',
+};
+
+const GENESYS_SELECTOR = '.wwe-account-state';
+
+async function getChatColors(): Promise<ChatColors> {
+    const settings = await getUserSettings();
+    if (!settings) {
+        return DEFAULT_COLORS;
+    }
+
+    const genesysSettings = settings.genesys as Record<string, unknown> | undefined;
+    if (!genesysSettings) {
+        return DEFAULT_COLORS;
+    }
+
+    const chatColors = genesysSettings.chatColors as ChatColors | undefined;
+    if (!chatColors || typeof chatColors !== 'object') {
+        return DEFAULT_COLORS;
+    }
+
+    return {
+        agentPrompt: chatColors.agentPrompt || DEFAULT_COLORS.agentPrompt,
+        agentText: chatColors.agentText || DEFAULT_COLORS.agentText,
+        clientPrompt: chatColors.clientPrompt || DEFAULT_COLORS.clientPrompt,
+        clientText: chatColors.clientText || DEFAULT_COLORS.clientText,
+    };
+}
+
+function injectColorScript(colors: ChatColors): void {
+    const script = document.createElement('script');
+    script.textContent = `
+window.genesys.wwe.configuration.set("chat.agent.prompt-color", "${colors.agentPrompt}");
+window.genesys.wwe.configuration.set("chat.agent.text-color", "${colors.agentText}");
+window.genesys.wwe.configuration.set("chat.client.prompt-color", "${colors.clientPrompt}");
+window.genesys.wwe.configuration.set("chat.client.text-color", "${colors.clientText}");
+    `;
+    document.body.appendChild(script);
+}
+
+export async function customChatColors(): Promise<void> {
+    const colors = await getChatColors();
+
+    const applyIfReady = (): boolean => {
+        if (document.querySelector(GENESYS_SELECTOR)) {
+            injectColorScript(colors);
+            return true;
         }
-    });
+        return false;
+    };
+
+    if (!applyIfReady()) {
+        new MutationObserver((_, obs) => {
+            if (applyIfReady()) obs.disconnect();
+        }).observe(document, {childList: true, subtree: true});
+    }
 }

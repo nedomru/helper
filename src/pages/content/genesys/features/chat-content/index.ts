@@ -1,9 +1,9 @@
 // Stub implementations for chat content features
 
-export function removeAnswers() {
+export async function removeAnswers(): Promise<void> {
     // TODO: Implement remove answers feature
 }
 
-export function removeRMs() {
+export async function removeRMs(): Promise<void> {
     // TODO: Implement remove RMs feature
 }

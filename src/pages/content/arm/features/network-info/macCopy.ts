@@ -1,9 +1,11 @@
+import {notify} from "@src/utils";
+
 /**
  * Adds functionality to copy MAC address from client session
  *
  * Finds all available MAC address rows and replace onclick event
  */
-export function copyMACAddress(): void {
+export async function copyMACAddress(): Promise<void> {
     const macElements: NodeListOf<HTMLSpanElement> = document.querySelectorAll("span.mac");
 
     macElements.forEach((macElement: HTMLSpanElement): void => {
@@ -26,12 +28,13 @@ export function copyMACAddress(): void {
                     macElement.style.color = "";
                     macElement.style.backgroundColor = "";
                 }, 600);
-                console.log("[АРМ - Копирование] Скопировали MAC-адрес из сессии");
+                notify("📋 Копирование", `MAC-адрес скопирован: ${macText}`, "success");
             }).catch((err): void => {
                 console.error(
                     "[АРМ - Копирование] Не удалось скопировать MAC-адрес из сессии",
                     err
                 );
+                notify("📋 Копирование", "Не удалось скопировать MAC-адрес", "error");
             });
         };
     });

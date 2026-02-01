@@ -1,8 +1,10 @@
-import type {PageConfig, SettingsStorage} from './types';
+import type {PageConfig} from './types';
+import {clearSettingsCache, getUserSettings, isFeatureEnabled} from '@src/shared/user-settings';
+import {getAccessToken} from '@src/utils/auth';
 
 class ContentInitializer {
     private static instance: ContentInitializer;
-    private settingsCache: SettingsStorage | null = null;
+    private settingsCache: Record<string, unknown> | null = null;
     private allConfigs: PageConfig[] = [];
     private isInitialized: boolean = false;
     private isInitializing: boolean = false;
@@ -65,6 +67,7 @@ class ContentInitializer {
         this.isInitialized = false;
         this.isInitializing = false;
         this.pendingModules = [];
+        clearSettingsCache();
     }
 
     /**
@@ -91,6 +94,14 @@ class ContentInitializer {
         this.isInitializing = true;
 
         try {
+            // Проверяем авторизацию перед инициализацией
+            const token = await getAccessToken();
+            if (!token) {
+                console.log('[Initializer] User not authorized, skipping feature initialization');
+                this.isInitialized = true;
+                return;
+            }
+
             // Определяем тип фрейма для лучшего логирования
             const frameInfo = this.getFrameInfo();
 
@@ -154,11 +165,11 @@ class ContentInitializer {
     }
 
     /**
-     * Загружает настройки из chrome.storage с кешированием
+     * Загружает настройки пользователя из /me endpoint
      */
-    private async getSettings(keys: string[]): Promise<SettingsStorage> {
+    private async getSettings(): Promise<Record<string, unknown> | null> {
         if (!this.settingsCache) {
-            this.settingsCache = await chrome.storage.sync.get(keys) as SettingsStorage;
+            this.settingsCache = await getUserSettings();
         }
         return this.settingsCache;
     }
@@ -177,14 +188,28 @@ class ContentInitializer {
         // Если нет функций зависящих от настроек, выходим
         if (!features.length) return;
 
-        // Получаем настройки для всех функций одним запросом
-        const featureKeys = features.map(f => f.key);
-        const settings = await this.getSettings(featureKeys);
+        // Получаем настройки пользователя с /me endpoint
+        const settings = await this.getSettings();
+
+        if (!settings) {
+            console.log('[Initializer] No user settings found, skipping optional features');
+            return;
+        }
 
         // Запускаем только включенные функции параллельно
         const enabledFeatures = features
-            .filter(({key}) => settings[key])
+            .filter(({key}) => isFeatureEnabled(key, settings))
             .map(({handler}) => handler());
+
+        if (enabledFeatures.length === 0) {
+            console.log('[Initializer] No optional features enabled');
+            return;
+        }
+
+        const skippedFeatures = features.length - enabledFeatures.length;
+        if (skippedFeatures > 0) {
+            console.log(`[Initializer] Skipped ${skippedFeatures} disabled features`);
+        }
 
         await Promise.all(enabledFeatures);
     }

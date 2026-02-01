@@ -1,4 +1,5 @@
 import {getARMBaseUrl} from "../../shared/api";
+import {notify} from "@src/utils";
 
 /**
  * Executes the compensation API call for a single date.
@@ -42,13 +43,13 @@ export async function compensate(date: string, ssn: string, user_id: string, agr
 
     // Notify based on response content
     if (responseText.includes("УСПЕШНОЕ") || responseText.includes("Флаг успешно добавлен")) {
-        (window as any).$.notify(`Компенсация за ${date}: УСПЕШНО`, "success");
+        notify("💸 Компенсация", `Компенсация за ${date}: УСПЕШНО`, "success");
         return true;
     } else if (responseText.includes("Данный признак уже есть на приложении")) {
-        (window as any).$.notify(`Компенсация за ${date}: Признак уже существует`, "warn");
+        notify("💸 Компенсация", `Компенсация за ${date}: Признак уже существует`, "warning");
         return false;
     } else {
-        (window as any).$.notify(`Компенсация за ${date}: ОШИБКА`, "error");
+        notify("💸 Компенсация", `Компенсация за ${date}: ОШИБКА`, "error");
         return false;
     }
 }

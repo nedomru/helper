@@ -1,25 +1,68 @@
-/**
- * Set custom chat sounds.
- *
- * Uses basic genesys configuration:
- * chat.ringing-bell - Sound of new chat
- * chat.new-message-bell - Sound of new message in chat.
- */
-export function customChatSounds() {
-    const baseURL = "http://genesys-srv.cc3.ertelecom.ru/sounds/";
+import {getUserSettings} from '@src/shared/user-settings';
 
-    chrome.storage.sync.get('settings', (result) => {
-        if (result?.settings?.genesys?.chats) {
-            const {
-                incomingChatSound,
-                incomingMessageSound,
-            } = result.settings.genesys.chats;
+interface ChatSounds {
+    incomingChat: string;
+    incomingMessage: string;
+}
 
-            const genesys = (window as any).genesys;
-            if (genesys?.wwe?.configuration?.set) {
-                genesys.wwe.configuration.set("chat.ringing-bell", `${baseURL}/${incomingChatSound}|-1|0`);
-                genesys.wwe.configuration.set("chat.new-message-bell", `${baseURL}/${incomingMessageSound}|-1|0`);
-            }
+const DEFAULT_SOUNDS: ChatSounds = {
+    incomingChat: 'zvuk-chpok-4.mp3',
+    incomingMessage: 'zvuk-chpok-4.mp3',
+};
+
+const SOUND_BASE_URL = chrome.runtime.getURL('sounds/');
+const GENESYS_SELECTOR = '.wwe-account-state';
+
+async function getChatSounds(): Promise<ChatSounds> {
+    const settings = await getUserSettings();
+    if (!settings) {
+        return DEFAULT_SOUNDS;
+    }
+
+    const genesysSettings = settings.genesys as Record<string, unknown> | undefined;
+    if (!genesysSettings) {
+        return DEFAULT_SOUNDS;
+    }
+
+    // Check if custom chat sounds are enabled
+    if (genesysSettings.customChatSounds !== true) {
+        return DEFAULT_SOUNDS;
+    }
+
+    const chatSounds = genesysSettings.chatSounds as ChatSounds | undefined;
+    if (!chatSounds || typeof chatSounds !== 'object') {
+        return DEFAULT_SOUNDS;
+    }
+
+    return {
+        incomingChat: chatSounds.incomingChat || DEFAULT_SOUNDS.incomingChat,
+        incomingMessage: chatSounds.incomingMessage || DEFAULT_SOUNDS.incomingMessage,
+    };
+}
+
+function injectSoundScript(sounds: ChatSounds): void {
+    const script = document.createElement('script');
+    script.textContent = `
+window.genesys.wwe.configuration.set("chat.ringing-bell", "${SOUND_BASE_URL}${sounds.incomingChat}|-1|0");
+window.genesys.wwe.configuration.set("chat.new-message-bell", "${SOUND_BASE_URL}${sounds.incomingMessage}|-1|0");
+    `;
+    document.body.appendChild(script);
+}
+
+export async function customChatSounds(): Promise<void> {
+    const sounds = await getChatSounds();
+
+    const applyIfReady = (): boolean => {
+        if (document.querySelector(GENESYS_SELECTOR)) {
+            injectSoundScript(sounds);
+            return true;
         }
-    });
+        return false;
+    };
+
+    if (!applyIfReady()) {
+        new MutationObserver((_, obs) => {
+            if (applyIfReady()) obs.disconnect();
+        }).observe(document, {childList: true, subtree: true});
+    }
 }
