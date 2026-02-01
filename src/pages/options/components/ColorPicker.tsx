@@ -271,7 +271,7 @@ export default function ColorPicker({label, description, value, onChange}: Color
                     <div
                         ref={toggleButtonRef}
                         onClick={() => setShowPicker(!showPicker)}
-                        className="w-[50px] h-[40px] rounded cursor-pointer shadow-sm"
+                        className="w-12.5 h-10 rounded cursor-pointer shadow-sm"
                         style={{
                             backgroundColor: value,
                             border: '2px solid var(--border-color)',
@@ -280,7 +280,7 @@ export default function ColorPicker({label, description, value, onChange}: Color
                     {showPicker && (
                         <div
                             ref={containerRef}
-                            className="absolute top-[44px] left-0 z-[1000] bg-white rounded-lg shadow-lg p-3 w-[220px]"
+                            className="absolute top-11 left-0 z-1000 bg-white rounded-lg shadow-lg p-3 w-55"
                             style={{backgroundColor: 'var(--card-bg)'}}
                         >
                             {/* Close button */}
@@ -301,7 +301,7 @@ export default function ColorPicker({label, description, value, onChange}: Color
                             {/* Saturation-Brightness box */}
                             <div
                                 ref={saturationRef}
-                                className="relative w-full h-[120px] rounded cursor-crosshair mb-3 overflow-hidden"
+                                className="relative w-full h-30 rounded cursor-crosshair mb-3 overflow-hidden"
                                 onMouseDown={(e) => {
                                     handleSaturationChange(e);
                                     startDrag();
@@ -311,10 +311,10 @@ export default function ColorPicker({label, description, value, onChange}: Color
                                     border: '1px solid var(--border-color)',
                                 }}
                             >
-                                <div className="absolute inset-0 bg-gradient-to-r from-white to-transparent"/>
-                                <div className="absolute inset-0 bg-gradient-to-t from-black to-transparent"/>
+                                <div className="absolute inset-0 bg-linear-to-r from-white to-transparent"/>
+                                <div className="absolute inset-0 bg-linear-to-t from-black to-transparent"/>
                                 <div
-                                    className="absolute w-[10px] h-[10px] rounded-full border-2 border-white shadow-lg transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
+                                    className="absolute w-2.5 h-2.5 rounded-full border-2 border-white shadow-lg transform -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                                     style={{
                                         left: `${hsb.s}%`,
                                         top: `${100 - hsb.b}%`,
@@ -325,7 +325,7 @@ export default function ColorPicker({label, description, value, onChange}: Color
 
                             {/* Hue slider */}
                             <div
-                                className="relative w-full h-[12px] rounded cursor-pointer mb-3"
+                                className="relative w-full h-3 rounded cursor-pointer mb-3"
                                 onMouseDown={handleHueChange}
                                 style={{
                                     background: 'linear-gradient(to right, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%)',
@@ -333,7 +333,7 @@ export default function ColorPicker({label, description, value, onChange}: Color
                                 }}
                             >
                                 <div
-                                    className="absolute top-1/2 -translate-y-1/2 w-[12px] h-[16px] rounded shadow"
+                                    className="absolute top-1/2 -translate-y-1/2 w-3 h-4 rounded shadow"
                                     style={{
                                         left: `calc(${hsb.h / 360 * 100}% - 6px)`,
                                         backgroundColor: value,
@@ -407,7 +407,7 @@ export default function ColorPicker({label, description, value, onChange}: Color
                                             setHsb(hexToHsb(color));
                                             onChange(color);
                                         }}
-                                        className="w-[20px] h-[20px] rounded cursor-pointer transition-transform hover:scale-110"
+                                        className="w-5 h-5 rounded cursor-pointer transition-transform hover:scale-110"
                                         style={{
                                             backgroundColor: color,
                                             border: color === '#FFFFFF' ? '1px solid var(--border-color)' : 'none',
@@ -419,32 +419,8 @@ export default function ColorPicker({label, description, value, onChange}: Color
                     )}
                 </div>
 
-                {/* Hex input */}
-                <div className="flex-1">
-                    <input
-                        type="text"
-                        value={value.toUpperCase()}
-                        onChange={(e) => {
-                            const hex = e.target.value;
-                            if (/^#[0-9A-Fa-f]{0,6}$/.test(hex)) {
-                                if (hex.length === 7) {
-                                    setHsb(hexToHsb(hex));
-                                    onChange(hex);
-                                }
-                            }
-                        }}
-                        placeholder="#000000"
-                        className="w-full px-3 py-2 rounded border bg-white text-sm font-mono uppercase"
-                        style={{
-                            border: '1px solid var(--border-color)',
-                            backgroundColor: 'var(--card-bg)',
-                            color: 'var(--text-primary)',
-                        }}
-                    />
-                </div>
-
                 {/* Quick preset colors */}
-                <div className="flex gap-1 flex-wrap max-w-[150px]">
+                <div className="flex gap-1 flex-wrap max-w-37.5">
                     {PRESET_COLORS.slice(0, 10).map((color) => (
                         <div
                             key={color}
@@ -452,7 +428,7 @@ export default function ColorPicker({label, description, value, onChange}: Color
                                 setHsb(hexToHsb(color));
                                 onChange(color);
                             }}
-                            className="w-[20px] h-[20px] rounded cursor-pointer transition-transform hover:scale-110"
+                            className="w-5 h-5 rounded cursor-pointer transition-transform hover:scale-110"
                             style={{
                                 backgroundColor: color,
                                 border: color === '#FFFFFF' ? '1px solid var(--border-color)' : 'none',

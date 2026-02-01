@@ -1,10 +1,11 @@
-import type {UpdateStatus} from '../types';
+import type {UpdateChannel, UpdateStatus} from '../types';
 import {exportSettings} from '../utils/export-import';
 import {checkForUpdates} from '../utils/updates';
 
 interface ActionsToolbarProps {
     updateStatus: UpdateStatus;
     version: string;
+    updateChannel: UpdateChannel;
     setUpdateStatus: (status: UpdateStatus) => void;
     onImportSettings: (event: React.ChangeEvent<HTMLInputElement>) => Promise<void>;
 }
@@ -12,12 +13,13 @@ interface ActionsToolbarProps {
 export default function ActionsToolbar({
                                            updateStatus,
                                            version,
+                                           updateChannel,
                                            setUpdateStatus,
                                            onImportSettings
                                        }: ActionsToolbarProps) {
     const handleCheckUpdates = async () => {
         setUpdateStatus({checking: true, hasUpdate: null, latestVersion: null});
-        const status = await checkForUpdates(version, false);
+        const status = await checkForUpdates(version, false, updateChannel);
         setUpdateStatus(status);
     };
 

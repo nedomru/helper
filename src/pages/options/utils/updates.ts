@@ -1,10 +1,10 @@
-import type {UpdateStatus} from '../types';
+import type {UpdateChannel, UpdateStatus} from '../types';
 import {notify} from '@src/utils/notify';
 
 function compareVersions(v1: string, v2: string): number {
     const normalize = (v: string) => {
-        return v.split('.').map((part) => {
-            const num = parseInt(part, 10);
+        return v.replace('v', '').split('.').map((part) => {
+            const num = parseInt(part.replace(/[^\d]/g, ''), 10);
             return isNaN(num) ? 0 : num;
         });
     };
@@ -25,12 +25,21 @@ function compareVersions(v1: string, v2: string): number {
     return 0;
 }
 
+function getUpdateUrl(channel: UpdateChannel): string {
+    if (channel === 'beta') {
+        return 'https://helper.chrsnv.ru/api/versions-beta.json';
+    }
+    return 'https://helper.chrsnv.ru/api/versions.json';
+}
+
 export async function checkForUpdates(
     currentVersion: string,
-    autoCheck = false
+    autoCheck = false,
+    channel: UpdateChannel = 'stable'
 ): Promise<UpdateStatus> {
     try {
-        const response = await fetch('https://helper.chrsnv.ru/api/versions.json');
+        const updateUrl = getUpdateUrl(channel);
+        const response = await fetch(updateUrl);
         if (!response.ok) throw new Error('Failed to fetch');
         const data = await response.json();
 
@@ -52,7 +61,8 @@ export async function checkForUpdates(
                 link.click();
                 document.body.removeChild(link);
 
-                notify('Обновление', `Начата загрузка версии ${latestVersion}`, 'success');
+                const channelLabel = channel === 'beta' ? ' (beta)' : '';
+                notify('Обновление', `Начата загрузка версии ${latestVersion}${channelLabel}`, 'success');
             } else if (!hasUpdate && !autoCheck) {
                 notify('Обновление', 'Установлена последняя версия!', 'success');
             }
