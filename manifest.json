@@ -13,9 +13,6 @@
       "32": "icon-32.png"
     }
   },
-  "chrome_url_overrides": {
-    "newtab": "src/pages/newtab/index.html"
-  },
   "icons": {
     "128": "icon-128.png"
   },
@@ -31,22 +28,44 @@
   "host_permissions": [
     "*://*.ertelecom.ru/*",
     "*://*.ertelecom.loc/*",
-    "http://octptest.corp.ertelecom.loc/*",
     "https://helper.chrsnv.ru/*",
     "https://api.macvendors.com/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "*://*.ertelecom.ru/*"
+        "*://genesys-app1.cc1.ertelecom.ru/*",
+        "*://genesys-app1.cc4.ertelecom.ru/*"
       ],
       "js": [
-        "src/pages/content/arm/init.ts",
-        "src/pages/content/genesys/init.ts",
+        "src/pages/content/genesys/init.ts"
+      ],
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://*.db.ertelecom.ru/*"
+      ],
+      "js": [
+        "src/pages/content/arm/init.ts"
+      ],
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://okc.ertelecom.ru/*"
+      ],
+      "js": [
         "src/pages/content/line/init.ts"
       ],
-      "css": [
-        "contentStyle.css"
+      "all_frames": true
+    },
+    {
+      "matches": [
+        "*://scripting-app.ertelecom.ru/*"
+      ],
+      "js": [
+        "src/pages/content/scripting/init.ts"
       ],
       "all_frames": true
     },
