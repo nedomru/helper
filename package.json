@@ -1,6 +1,6 @@
 {
   "name": "helper-ext",
-  "version": "3.0",
+  "version": "3.0.0-beta.1",
   "description": "Инструмент для помощи в работе",
   "license": "MIT",
   "repository": {
@@ -16,13 +16,16 @@
     "dev:firefox": "nodemon --config nodemon.firefox.json",
     "format": "biome format --write",
     "check": "biome check --write",
-    "lint": "biome lint --write"
+    "lint": "biome lint --write",
+    "sign:firefox": "web-ext sign --api-key=${AMO_JWT_ISSUER} --api-secret=${AMO_JWT_SECRET} --source-dir=dist_firefox --channel=unlisted",
+    "lint:firefox": "web-ext lint --source-dir=dist_firefox"
   },
   "type": "module",
   "dependencies": {
     "biome": "^0.3.3",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
+    "web-ext": "^9.2.0",
     "webextension-polyfill": "^0.12.0"
   },
   "devDependencies": {
