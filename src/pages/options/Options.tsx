@@ -3,7 +3,7 @@ import Auth from '@src/components/Auth';
 import type {QuickAppealsPreset} from '@src/shared/user-settings';
 import {updateUserSettings} from '@src/shared/user-settings';
 import {notify} from '@src/utils/notify';
-import type {ChatColors, SelectOption, Settings, UpdateChannel, UpdateStatus} from './types';
+import type {ChatColors, ChatSounds, SelectOption, Settings, UpdateChannel, UpdateStatus} from './types';
 import {armFeatureGroups, extensionFeatureGroups, genesysFeatureGroups} from './constants/feature-groups';
 import {importSettings} from './utils/export-import';
 import {useAuth} from './hooks/useAuth';
@@ -20,6 +20,7 @@ import HiddenTabsSection from './components/HiddenTabsSection';
 import AnticipationFoldingSection from './components/AnticipationFoldingSection';
 import SpeechPhrasesSection from './components/SpeechPhrasesSection';
 import ChatColorsSection, {DEFAULT_COLORS} from './components/ChatColorsSection';
+import ChatSoundsSection, {DEFAULT_SOUNDS} from './components/ChatSoundsSection';
 import UpdateChannelSection from './components/UpdateChannelSection';
 import PresetWizard from './components/PresetWizard';
 import {checkForUpdates} from './utils/updates';
@@ -32,6 +33,8 @@ export default function Options() {
     const [foldingTabs, setFoldingTabs] = useState<string[]>([]);
     const [chatColors, setChatColors] = useState<ChatColors>(DEFAULT_COLORS);
     const [customChatColorsEnabled, setCustomChatColorsEnabled] = useState(false);
+    const [chatSounds, setChatSounds] = useState<ChatSounds>(DEFAULT_SOUNDS);
+    const [customChatSoundsEnabled, setCustomChatSoundsEnabled] = useState(false);
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [isMac, setIsMac] = useState(false);
     const [version, setVersion] = useState<string>('');
@@ -120,6 +123,15 @@ export default function Options() {
         if (settings?.genesys?.customChatColors) {
             setCustomChatColorsEnabled(settings.genesys.customChatColors === true);
         }
+        if (settings?.genesys?.chatSounds) {
+            const sounds = settings.genesys.chatSounds as ChatSounds;
+            if (sounds && typeof sounds === 'object') {
+                setChatSounds(sounds);
+            }
+        }
+        if (settings?.genesys?.customChatSounds) {
+            setCustomChatSoundsEnabled(settings.genesys.customChatSounds === true);
+        }
         if (settings?.updateChannel) {
             setUpdateChannel(settings.updateChannel as UpdateChannel);
         }
@@ -180,6 +192,47 @@ export default function Options() {
             genesys: {
                 ...(settings.genesys ?? {}),
                 customChatColors: enabled,
+            },
+        };
+        setSettings(newSettings);
+        try {
+            const success = await updateUserSettings(newSettings);
+            if (!success) {
+                notify('Настройки', 'Ошибка при сохранении настроек', 'error');
+            }
+        } catch {
+            notify('Настройки', 'Ошибка при сохранении настроек', 'error');
+        }
+    };
+
+    const updateChatSounds = async (sounds: ChatSounds) => {
+        const newSettings = {
+            ...settings,
+            genesys: {
+                ...(settings.genesys ?? {}),
+                chatSounds: sounds,
+            },
+        };
+        setSettings(newSettings);
+        try {
+            const success = await updateUserSettings(newSettings);
+            if (success) {
+                notify('Звуки чата', 'Звуки сохранены', 'success');
+            } else {
+                notify('Настройки', 'Ошибка при сохранении настроек', 'error');
+            }
+        } catch {
+            notify('Настройки', 'Ошибка при сохранении настроек', 'error');
+        }
+    };
+
+    const updateCustomChatSoundsEnabled = async (enabled: boolean) => {
+        setCustomChatSoundsEnabled(enabled);
+        const newSettings = {
+            ...settings,
+            genesys: {
+                ...(settings.genesys ?? {}),
+                customChatSounds: enabled,
             },
         };
         setSettings(newSettings);
@@ -341,6 +394,16 @@ export default function Options() {
                     onColorsChange={updateChatColors}
                     enabled={customChatColorsEnabled}
                     onEnabledChange={updateCustomChatColorsEnabled}
+                />
+            );
+        }
+        if (group.title === 'Кастомные звуки') {
+            return (
+                <ChatSoundsSection
+                    sounds={chatSounds}
+                    onSoundsChange={updateChatSounds}
+                    enabled={customChatSoundsEnabled}
+                    onEnabledChange={updateCustomChatSoundsEnabled}
                 />
             );
         }
