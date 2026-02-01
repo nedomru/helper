@@ -56,7 +56,7 @@ export async function checkForUpdates(
             if (hasUpdate && !autoCheck) {
                 const link = document.createElement('a');
                 link.href = updateLink;
-                link.download = `domhelper-${latestVersion}.xpi`;
+                link.download = `helper-${latestVersion}.xpi`;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
