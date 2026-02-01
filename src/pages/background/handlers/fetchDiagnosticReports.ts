@@ -47,8 +47,7 @@ async function fetchDiagnosticFiles(url: string, source: string): Promise<Diagno
         }
 
         const html = await response.text();
-        const files = parseNginxDirectoryListing(html, url, source);
-        return files;
+        return parseNginxDirectoryListing(html, url, source);
     } catch (error) {
         console.error(`Error fetching ${source}:`, error);
         return [];

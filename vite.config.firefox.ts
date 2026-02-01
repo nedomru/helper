@@ -18,8 +18,12 @@ export default mergeConfig(
                     browser_specific_settings: {
                         gecko: {
                             id: "{724d1c91-059e-4392-8478-494513fc8241}",
-                            update_url: "https://helper.chrsnv.ru/api/versions.json"
-                        }
+                            update_url: "https://helper.chrsnv.ru/api/versions.json",
+                            data_collection_permissions: {
+                                "required": ["browsingActivity", "websiteContent", "websiteActivity"],
+                                "optional": []
+                            }
+                        },
                     }
                 } as unknown as ManifestV3Export,
                 browser: 'firefox',

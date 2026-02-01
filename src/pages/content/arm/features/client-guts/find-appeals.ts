@@ -173,7 +173,7 @@ async function createAgreementUrl(agreementNumber: string, cityId: string): Prom
         if (sessionParams) {
             const {ssn, usr} = sessionParams;
             const url = `https://${cityPrefix}.db.ertelecom.ru/cgi-bin/ppo/excells/wcc2_main.open_wa?ssn$c=${ssn}&usr$i=${usr}&agr_num$n=${agreementNumber}&city_id$i=${cityId}`;
-            console.log("[ARM] Generated agreement URL from URL params:", url);
+            console.debug("[ARM] Generated agreement URL from URL params:", url);
             return url;
         }
 
