@@ -516,7 +516,7 @@ export async function diagnosticReportsButton(): Promise<void> {
             // Store reference to the new container
             currentContainer = document.querySelector(".helper-diagnostic-container");
 
-            if (showNotification) {
+            if (showNotification && matchingFiles.length > 0) {
                 notify("🔍 Диагностические отчеты", `Найдено отчетов: ${matchingFiles.length}`, "success");
             }
         } catch (error) {
