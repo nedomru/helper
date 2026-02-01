@@ -71,15 +71,16 @@
     },
     {
       "matches": [
-        "<all_urls>"
+        "*://scripting-app.ertelecom.ru/*",
+        "*://okc.ertelecom.ru/*",
+        "*://*.db.ertelecom.ru/*",
+        "*://genesys-app1.cc1.ertelecom.ru/*",
+        "*://genesys-app1.cc4.ertelecom.ru/*"
       ],
       "js": [
         "src/pages/content/speech-phrases/index.ts"
       ],
-      "all_frames": true,
-      "exclude_matches": [
-        "*://*/*options*"
-      ]
+      "all_frames": true
     }
   ],
   "devtools_page": "src/pages/devtools/index.html",
