@@ -1,7 +1,6 @@
 import {compensate} from "./api";
 import {formatDateWithYear, getCurrentDay, getDatesArray, isValidDate, parseDateString} from "./validation";
 import {notify} from "@src/utils";
-import {getCookies} from "@src/pages/options/utils/arm-api";
 
 /**
  * Creates and inserts a "Compensate" button
@@ -44,13 +43,12 @@ export async function compensateButton(): Promise<void> {
             return;
         }
 
-        const cookieResponse = await getCookies();
-        if (!cookieResponse.ok || !cookieResponse.data?.wccUsrName || !cookieResponse.data?.wccSsnName) {
+        const ssn = document.querySelector("#ssn") as HTMLInputElement;
+        const userId = document.querySelector("#user_id") as HTMLInputElement;
+        if (!ssn || !userId) {
             notify("💸 Компенсация", "Не удалось получить данные авторизации (SSN, User ID).", "error");
             return;
         }
-
-        const {wccSsnName: ssn, wccUsrName: user_id} = cookieResponse.data;
 
         const is_one_day: boolean = confirm("Компенсация за один день - ОК\nКомпенсация за несколько дней - Отмена");
         const currentDay = getCurrentDay();
@@ -65,7 +63,7 @@ export async function compensateButton(): Promise<void> {
             }
 
             const compensationDateWithYear: string = formatDateWithYear(compensationDay);
-            await compensate(compensationDateWithYear, ssn, user_id, agreement_id);
+            await compensate(compensationDateWithYear, ssn.value, userId.value, agreement_id);
 
         } else {
             const startDatePrompt: string | null = prompt("Введи начальную дату (ДД.ММ)", currentDay);
@@ -98,7 +96,7 @@ export async function compensateButton(): Promise<void> {
                 const dates: string[] = getDatesArray(startDate, endDate);
 
                 for (const date of dates) {
-                    await compensate(date, ssn, user_id, agreement_id);
+                    await compensate(date, ssn.value, userId.value, agreement_id);
 
                     await new Promise<void>((resolve) => setTimeout(resolve, 100));
                 }
