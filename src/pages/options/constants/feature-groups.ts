@@ -67,6 +67,13 @@ export const genesysFeatureGroups: FeatureGroup[] = [
         ],
     },
     {
+        title: 'Кастомные цвета',
+        icon: '🎨',
+        description: 'Настройка цветов чата',
+        features: [],
+        isCustom: true,
+    },
+    {
         title: 'Чат',
         icon: '💬',
         description: 'Настройки чата',
@@ -86,12 +93,21 @@ export const genesysFeatureGroups: FeatureGroup[] = [
                 label: 'Вставка изображений',
                 description: 'Разрешить вставку изображений из буфера',
             },
-            {key: 'customChatColors', label: 'Кастомные цвета', description: 'Использовать кастомные цвета чата'},
             {
                 key: 'customChatSounds',
                 label: 'Кастомные звуки',
                 description: 'Использовать кастомные звуки уведомлений',
             },
         ],
+    },
+];
+
+export const extensionFeatureGroups: FeatureGroup[] = [
+    {
+        title: 'Обновления',
+        icon: '🔄',
+        description: 'Управление каналами обновлений',
+        features: [],
+        isCustom: true,
     },
 ];

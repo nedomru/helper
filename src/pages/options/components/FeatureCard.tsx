@@ -42,7 +42,8 @@ export default function FeatureCard({
                             f.description.toLowerCase().includes(searchQuery.toLowerCase())
                     )
                     .map((feature) => {
-                        const isChecked = settings[category]?.[feature.key] === true;
+                        const categorySettings = settings[category] as Record<string, boolean> | undefined;
+                        const isChecked = categorySettings?.[feature.key] === true;
                         return (
                             <div key={feature.key} className="feature-item">
                                 <div className="feature-info">

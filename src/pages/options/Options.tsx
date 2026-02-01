@@ -3,8 +3,8 @@ import Auth from '@src/components/Auth';
 import type {QuickAppealsPreset} from '@src/shared/user-settings';
 import {updateUserSettings} from '@src/shared/user-settings';
 import {notify} from '@src/utils/notify';
-import type {SelectOption, Settings, UpdateStatus} from './types';
-import {armFeatureGroups, genesysFeatureGroups} from './constants/feature-groups';
+import type {ChatColors, SelectOption, Settings, UpdateChannel, UpdateStatus} from './types';
+import {armFeatureGroups, extensionFeatureGroups, genesysFeatureGroups} from './constants/feature-groups';
 import {importSettings} from './utils/export-import';
 import {useAuth} from './hooks/useAuth';
 import {useQuickAppeals} from './hooks/useQuickAppeals';
@@ -19,15 +19,19 @@ import QuickAppealsSection from './components/QuickAppealsSection';
 import HiddenTabsSection from './components/HiddenTabsSection';
 import AnticipationFoldingSection from './components/AnticipationFoldingSection';
 import SpeechPhrasesSection from './components/SpeechPhrasesSection';
+import ChatColorsSection, {DEFAULT_COLORS} from './components/ChatColorsSection';
+import UpdateChannelSection from './components/UpdateChannelSection';
 import PresetWizard from './components/PresetWizard';
 import {checkForUpdates} from './utils/updates';
 import './Options.css';
 
 export default function Options() {
-    const [activeSection, setActiveSection] = useState<'arm' | 'genesys' | 'line' | 'speech'>('arm');
+    const [activeSection, setActiveSection] = useState<'arm' | 'genesys' | 'line' | 'speech' | 'extension'>('arm');
     const [searchQuery, setSearchQuery] = useState('');
     const [hiddenTabs, setHiddenTabs] = useState<string[]>([]);
     const [foldingTabs, setFoldingTabs] = useState<string[]>([]);
+    const [chatColors, setChatColors] = useState<ChatColors>(DEFAULT_COLORS);
+    const [customChatColorsEnabled, setCustomChatColorsEnabled] = useState(false);
     const [theme, setTheme] = useState<'light' | 'dark'>('light');
     const [isMac, setIsMac] = useState(false);
     const [version, setVersion] = useState<string>('');
@@ -36,6 +40,7 @@ export default function Options() {
         hasUpdate: null,
         latestVersion: null,
     });
+    const [updateChannel, setUpdateChannel] = useState<UpdateChannel>('stable');
 
     // Wizard search queries
     const [processingSearchQuery, setProcessingSearchQuery] = useState('');
@@ -89,9 +94,9 @@ export default function Options() {
 
     useEffect(() => {
         if (version) {
-            checkForUpdates(version, true).then(setUpdateStatus);
+            checkForUpdates(version, true, updateChannel).then(setUpdateStatus);
         }
-    }, [version]);
+    }, [version, updateChannel]);
 
     useEffect(() => {
         if (settings?.arm?.hiddenTabs) {
@@ -106,6 +111,18 @@ export default function Options() {
                 setFoldingTabs(tabs);
             }
         }
+        if (settings?.genesys?.chatColors) {
+            const colors = settings.genesys.chatColors as ChatColors;
+            if (colors && typeof colors === 'object') {
+                setChatColors(colors);
+            }
+        }
+        if (settings?.genesys?.customChatColors) {
+            setCustomChatColorsEnabled(settings.genesys.customChatColors === true);
+        }
+        if (settings?.updateChannel) {
+            setUpdateChannel(settings.updateChannel as UpdateChannel);
+        }
     }, [settings]);
 
     const toggleTheme = () => {
@@ -116,11 +133,53 @@ export default function Options() {
     };
 
     const updateSetting = async (category: keyof Settings, key: string, value: boolean) => {
+        const currentCategorySettings = settings[category] as Record<string, boolean> | undefined;
         const newSettings = {
             ...settings,
             [category]: {
-                ...(settings[category] ?? {}),
+                ...(currentCategorySettings ?? {}),
                 [key]: value,
+            },
+        };
+        setSettings(newSettings);
+        try {
+            const success = await updateUserSettings(newSettings);
+            if (!success) {
+                notify('Настройки', 'Ошибка при сохранении настроек', 'error');
+            }
+        } catch {
+            notify('Настройки', 'Ошибка при сохранении настроек', 'error');
+        }
+    };
+
+    const updateChatColors = async (colors: ChatColors) => {
+        const newSettings = {
+            ...settings,
+            genesys: {
+                ...(settings.genesys ?? {}),
+                chatColors: colors,
+            },
+        };
+        setSettings(newSettings);
+        try {
+            const success = await updateUserSettings(newSettings);
+            if (success) {
+                notify('Цвета чата', 'Цвета сохранены', 'success');
+            } else {
+                notify('Настройки', 'Ошибка при сохранении настроек', 'error');
+            }
+        } catch {
+            notify('Настройки', 'Ошибка при сохранении настроек', 'error');
+        }
+    };
+
+    const updateCustomChatColorsEnabled = async (enabled: boolean) => {
+        setCustomChatColorsEnabled(enabled);
+        const newSettings = {
+            ...settings,
+            genesys: {
+                ...(settings.genesys ?? {}),
+                customChatColors: enabled,
             },
         };
         setSettings(newSettings);
@@ -275,6 +334,24 @@ export default function Options() {
         if (group.title === 'Сворачивание') {
             return renderAnticipationFoldingCustom();
         }
+        if (group.title === 'Кастомные цвета') {
+            return (
+                <ChatColorsSection
+                    colors={chatColors}
+                    onColorsChange={updateChatColors}
+                    enabled={customChatColorsEnabled}
+                    onEnabledChange={updateCustomChatColorsEnabled}
+                />
+            );
+        }
+        if (group.title === 'Обновления') {
+            return (
+                <UpdateChannelSection
+                    currentChannel={updateChannel}
+                    onChannelChange={setUpdateChannel}
+                />
+            );
+        }
         return null;
     };
 
@@ -295,6 +372,7 @@ export default function Options() {
                     <ActionsToolbar
                         updateStatus={updateStatus}
                         version={version}
+                        updateChannel={updateChannel}
                         setUpdateStatus={setUpdateStatus}
                         onImportSettings={handleImportSettings}
                     />
@@ -342,6 +420,7 @@ export default function Options() {
                                             settings={settings}
                                             searchQuery={searchQuery}
                                             updateSetting={updateSetting}
+                                            renderCustomContent={renderCustomContent}
                                         />
                                     ))}
                                 </div>
@@ -463,6 +542,26 @@ export default function Options() {
                                         importPhrases={speechPhrases.importPhrases}
                                         clearAll={speechPhrases.clearAll}
                                     />
+                                </div>
+                            )}
+
+                            {activeSection === 'extension' && (
+                                <div className="section">
+                                    <div className="section-header">
+                                        <h2 className="section-title">Настройки расширения</h2>
+                                        <p className="section-description">Управление общими настройками расширения</p>
+                                    </div>
+                                    {extensionFeatureGroups.map((group) => (
+                                        <FeatureCard
+                                            key={group.title}
+                                            category="extension"
+                                            group={group}
+                                            settings={settings}
+                                            searchQuery={searchQuery}
+                                            updateSetting={updateSetting}
+                                            renderCustomContent={renderCustomContent}
+                                        />
+                                    ))}
                                 </div>
                             )}
                         </>
