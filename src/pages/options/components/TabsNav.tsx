@@ -20,13 +20,13 @@ export default function TabsNav({activeSection, onSectionChange}: TabsNavProps) 
                 <span className="tab-icon">💬</span>
                 <span>Генезис</span>
             </button>
-            <button
-                className={`tab-button ${activeSection === 'line' ? 'active' : ''}`}
-                onClick={() => onSectionChange('line')}
-            >
-                <span className="tab-icon">💚</span>
-                <span>Линия</span>
-            </button>
+            {/*<button*/}
+            {/*    className={`tab-button ${activeSection === 'line' ? 'active' : ''}`}*/}
+            {/*    onClick={() => onSectionChange('line')}*/}
+            {/*>*/}
+            {/*    <span className="tab-icon">💚</span>*/}
+            {/*    <span>Линия</span>*/}
+            {/*</button>*/}
             <button
                 className={`tab-button ${activeSection === 'speech' ? 'active' : ''}`}
                 onClick={() => onSectionChange('speech')}
