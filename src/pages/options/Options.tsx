@@ -115,7 +115,7 @@ export default function Options() {
             }
         }
         if (settings?.genesys?.chatColors) {
-            const colors = settings.genesys.chatColors as ChatColors;
+            const colors = settings.genesys.chatColors as unknown as ChatColors;
             if (colors && typeof colors === 'object') {
                 setChatColors(colors);
             }

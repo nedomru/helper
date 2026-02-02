@@ -10,6 +10,7 @@ import {hideButtons} from "@pages/content/genesys/features/ui-enhancements/hideB
 import {showClock} from "@pages/content/genesys/features/ui-enhancements/clock";
 import {initAutoClose} from "@pages/content/genesys/features/chat/auto-close";
 import {setupPresets} from "@pages/content/genesys/features/chat/presets";
+import {initCtrlSend} from "@pages/content/genesys/features/chat/close";
 
 export const URL_PATTERNS = {
     GENESYS_BASE: "genesys-app1",
@@ -28,10 +29,10 @@ export const genesysPageConfigs: PageConfig[] = [
             {key: 'allowChatSizeEdit', handler: allowChatSizeEdit},
             {key: 'autoCollapseChatHeader', handler: autoCollapseChatHeader},
             {key: 'allowPaste', handler: allowPaste},
+            {key: 'autoClose', handler: initAutoClose},
+            {key: 'ctrlClose', handler: initCtrlSend},
+            {key: 'showPresets', handler: setupPresets}
         ],
-        alwaysRun: [
-            initAutoClose,
-            setupPresets
-        ]
+        alwaysRun: []
     }
 ];
