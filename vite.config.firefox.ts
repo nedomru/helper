@@ -37,7 +37,7 @@ export default mergeConfig(
             outDir,
             rollupOptions: {
                 input: {
-                    'speech-phrases-manager': resolve(__dirname, 'src/pages/speech-phrases-manager/index.html'),
+                    'speech-phrases': resolve(__dirname, 'src/pages/speech-phrases/index.html'),
                 },
             },
         },

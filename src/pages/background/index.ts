@@ -61,6 +61,14 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
             .catch(err => sendResponse({ok: false, err: String(err)}));
         return true;
     }
+
+    // Open speech phrases manager
+    if (request.action === "openSpeechPhrasesManager") {
+        handleExtensionIconClick()
+            .then(() => sendResponse({ok: true}))
+            .catch(err => sendResponse({ok: false, err: String(err)}));
+        return true;
+    }
 });
 
 // Initialize speech phrases context menu on extension install or startup

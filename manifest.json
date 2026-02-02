@@ -81,7 +81,9 @@
         "contentStyle.css",
         "icon-128.png",
         "icon-32.png",
-        "sounds/*.mp3"
+        "sounds/*.mp3",
+        "src/pages/speech-phrases/*",
+        "assets/speech-phrases*"
       ],
       "matches": [
         "<all_urls>"

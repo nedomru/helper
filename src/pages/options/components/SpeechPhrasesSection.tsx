@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {JSX, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {SpeechPhrase, SpeechPhraseCategory} from '@src/shared/speech-phrases';
 import {buildCategoryTree} from '@src/shared/speech-phrases';
 import {notify} from '@src/utils/notify';
@@ -82,12 +82,10 @@ export default function SpeechPhrasesSection({
                                                  newPhraseShortcut,
                                                  newPhraseName,
                                                  newPhraseText,
-                                                 newPhraseCategoryId,
                                                  newCategoryName,
                                                  editPhraseShortcut,
                                                  editPhraseName,
                                                  editPhraseText,
-                                                 editPhraseCategoryId,
                                                  editCategoryName,
                                                  setNewPhraseShortcut,
                                                  setNewPhraseName,
@@ -97,7 +95,6 @@ export default function SpeechPhrasesSection({
                                                  setEditPhraseShortcut,
                                                  setEditPhraseName,
                                                  setEditPhraseText,
-                                                 setEditPhraseCategoryId,
                                                  setEditCategoryName,
                                                  startCreatePhrase,
                                                  cancelCreatePhrase,
@@ -115,10 +112,8 @@ export default function SpeechPhrasesSection({
                                                  updateCategory,
                                                  deleteCategory,
                                                  duplicateCategory,
-                                                 getCategoryTree,
                                                  moveCategory,
                                                  movePhrase,
-                                                 getCategoryPath,
                                                  importPhrases,
                                                  clearAll,
                                              }: SpeechPhrasesSectionProps) {
@@ -469,7 +464,6 @@ export default function SpeechPhrasesSection({
                     </div>
                 );
             } else {
-                const phrase = node.data as SpeechPhrase;
                 return (
                     <div key={node.id} className="tree-node-editing-container" style={{paddingLeft: `${indent + 8}px`}}>
                         <div className="tree-node-edit-inline tree-node-edit-inline-phrase">
@@ -620,20 +614,20 @@ export default function SpeechPhrasesSection({
 
     return (
         <div key="РМы" className="card">
-            <div className="card-header">
-                <div className="card-header-content">
-                    <span className="card-icon">🗣️</span>
-                    <div className="card-header-text">
-                        <h3 className="card-title">РМы</h3>
-                        <p className="card-description">
-                            Создавайте текстовые сокращения для быстрой вставки. Используйте фразы двумя способами:
-                            через сокращение (например, наберите "пр" для вставки текста) или через контекстное меню
-                            (правая кнопка мыши → РМы).
-                            Сокращение не обязательно — фразы без сокращений доступны только через меню.
-                        </p>
-                    </div>
-                </div>
-            </div>
+            {/*<div className="card-header">*/}
+            {/*    <div className="card-header-content">*/}
+            {/*        <span className="card-icon">🗣️</span>*/}
+            {/*        <div className="card-header-text">*/}
+            {/*            <h3 className="card-title">РМы</h3>*/}
+            {/*            <p className="card-description">*/}
+            {/*                Создавайте текстовые сокращения для быстрой вставки. Используйте фразы двумя способами:*/}
+            {/*                через сокращение (например, наберите &#34;пр&#34; для вставки текста) или через контекстное*/}
+            {/*                меню*/}
+            {/*                (правая кнопка мыши → РМы)*/}
+            {/*            </p>*/}
+            {/*        </div>*/}
+            {/*    </div>*/}
+            {/*</div>*/}
 
             <div className="speech-phrases-manager">
                 {/* Toolbar */}

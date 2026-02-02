@@ -9,6 +9,7 @@ import {showDutyMessages} from "@pages/content/genesys/features/ui-enhancements/
 import {hideButtons} from "@pages/content/genesys/features/ui-enhancements/hideButtons";
 import {showClock} from "@pages/content/genesys/features/ui-enhancements/clock";
 import {initAutoClose} from "@pages/content/genesys/features/chat/auto-close";
+import {setupPresets} from "@pages/content/genesys/features/chat/presets";
 
 export const URL_PATTERNS = {
     GENESYS_BASE: "genesys-app1",
@@ -29,7 +30,8 @@ export const genesysPageConfigs: PageConfig[] = [
             {key: 'allowPaste', handler: allowPaste},
         ],
         alwaysRun: [
-            initAutoClose
+            initAutoClose,
+            setupPresets
         ]
     }
 ];

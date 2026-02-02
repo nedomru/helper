@@ -468,6 +468,8 @@
     margin-bottom: 1rem;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid var(--border-color);
+    width: fit-content;
+    max-width: 100%;
 }
 
 .card-header-content {
@@ -482,7 +484,7 @@
 }
 
 .card-header-text {
-    flex: 1;
+    min-width: 0;
 }
 
 .card-title {

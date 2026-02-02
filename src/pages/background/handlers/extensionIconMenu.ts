@@ -54,7 +54,7 @@ export async function handleExtensionIconClick(): Promise<void> {
         const top = currentWindow.top ? Math.round(currentWindow.top + (currentWindow.height! - height) / 2) : 100;
 
         await browser.windows.create({
-            url: browser.runtime.getURL('src/pages/speech-phrases-manager/index.html'),
+            url: browser.runtime.getURL('src/pages/speech-phrases/index.html'),
             type: 'popup',
             width,
             height,
@@ -66,7 +66,7 @@ export async function handleExtensionIconClick(): Promise<void> {
         // Fallback: open window with default position
         try {
             await browser.windows.create({
-                url: browser.runtime.getURL('src/pages/speech-phrases-manager/index.html'),
+                url: browser.runtime.getURL('src/pages/speech-phrases/index.html'),
                 type: 'popup',
                 width,
                 height,
