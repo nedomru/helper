@@ -62,15 +62,6 @@
     },
     {
       "matches": [
-        "*://scripting-app.ertelecom.ru/*"
-      ],
-      "js": [
-        "src/pages/content/scripting/init.ts"
-      ],
-      "all_frames": true
-    },
-    {
-      "matches": [
         "*://scripting-app.ertelecom.ru/*",
         "*://okc.ertelecom.ru/*",
         "*://*.db.ertelecom.ru/*",
