@@ -606,10 +606,10 @@ export function useSpeechPhrases() {
         }
     };
 
-    const importQuickTextPasteFile = async (file: File): Promise<boolean> => {
+    const importQuickTextPasteFile = async (fileOrText: File | string): Promise<boolean> => {
         try {
             const {categories: newCategories, phrases: newPhrases} = await importQuickTextPaste(
-                file,
+                fileOrText,
                 categories,
                 phrases
             );
@@ -671,14 +671,20 @@ export function useSpeechPhrases() {
             let text = await file.text();
 
             // Handle UTF-16LE encoding (common for QuickTextPaste on Windows)
+            let decodedText = text;
             if (!text.includes('[list_text]')) {
                 try {
                     const buffer = await file.arrayBuffer();
                     const decoder = new TextDecoder('utf-16le');
-                    const decodedText = decoder.decode(buffer);
+                    const decoded = decoder.decode(buffer);
 
                     // Remove BOM if present
-                    text = decodedText.charCodeAt(0) === 0xFEFF ? decodedText.slice(1) : decodedText;
+                    decodedText = decoded.charCodeAt(0) === 0xFEFF ? decoded.slice(1) : decoded;
+
+                    // Check if decoding was successful
+                    if (decodedText.includes('[list_text]')) {
+                        text = decodedText;
+                    }
                 } catch {
                     // If UTF-16LE fails, continue with original text
                 }
@@ -686,7 +692,7 @@ export function useSpeechPhrases() {
 
             // Check for QuickTextPaste INI format
             if (isQuickTextPasteContent(text)) {
-                return importQuickTextPasteFile(file);
+                return importQuickTextPasteFile(text);
             }
 
             // Try to parse as JSON

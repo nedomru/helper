@@ -157,12 +157,12 @@ export async function parseQuickTextPaste(
  * Import QuickTextPaste file
  */
 export async function importQuickTextPaste(
-    file: File,
+    fileOrContent: File | string,
     existingCategories: SpeechPhraseCategory[],
     existingPhrases: SpeechPhrase[]
 ): Promise<{ categories: SpeechPhraseCategory[]; phrases: SpeechPhrase[] }> {
     try {
-        const content = await file.text();
+        const content = typeof fileOrContent === 'string' ? fileOrContent : await fileOrContent.text();
         if (!content.includes('[list_text]')) {
             throw new Error('Некорректный формат QuickTextPaste');
         }
