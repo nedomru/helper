@@ -1,4 +1,5 @@
 import type {QuickAppealsPreset, QuickAppealsPresetCategory} from '@src/shared/user-settings';
+import {getUserSettings} from '@src/shared/user-settings';
 import {notify} from '@src/utils/notify';
 
 export function exportPresets(
@@ -168,7 +169,14 @@ async function processImportedData(
     return {newPresets, newCategories};
 }
 
-export function exportSettings(settings: Record<string, Record<string, boolean>>): void {
+export async function exportSettings(): Promise<void> {
+    // Fetch fresh settings from the API/storage
+    const settings = await getUserSettings();
+    if (!settings) {
+        notify('Настройки', 'Не удалось получить настройки для экспорта', 'error');
+        return;
+    }
+
     const dataStr = JSON.stringify(settings, null, 2);
     const dataBlob = new Blob([dataStr], {type: 'application/json'});
     const url = URL.createObjectURL(dataBlob);
@@ -177,6 +185,8 @@ export function exportSettings(settings: Record<string, Record<string, boolean>>
     link.download = `helper-settings-${new Date().toISOString().split('T')[0]}.json`;
     link.click();
     URL.revokeObjectURL(url);
+
+    notify('Настройки', 'Настройки успешно экспортированы!', 'success');
 }
 
 export async function importSettings(
