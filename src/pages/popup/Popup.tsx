@@ -7,17 +7,22 @@ import type {MacLookupResult, Tab} from './types';
 import {Header, HomeTab, Loading, Tabs, Toolbar, ToolsTab} from './components';
 
 const TOOLBAR_BUTTONS = [
-    {title: 'Перейти в настройки', icon: '⚙️', onClick: () => browser.runtime.openOptionsPage()},
     {
-        title: 'Перейти в Telegram',
+        title: 'ТГ Канал',
         icon: 'telegram',
         onClick: () => window.open('https://t.me/+jH1mblw0ytcwOWUy', '_blank', 'noopener,noreferrer'),
+    },
+    {
+        title: '✨ Квазар',
+        icon: '✨',
+        onClick: () => window.open('https://t.me/quazar_vpnbot', '_blank', 'noopener,noreferrer'),
     },
     {
         title: 'Поддержать проект',
         icon: '💰',
         onClick: () => window.open('https://pay.cloudtips.ru/p/787b494c', '_blank', 'noopener,noreferrer'),
     },
+    {title: 'Перейти в настройки', icon: '⚙️', onClick: () => browser.runtime.openOptionsPage()},
 ] as const;
 
 export default function Popup() {

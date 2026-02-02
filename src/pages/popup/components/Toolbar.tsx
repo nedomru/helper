@@ -13,7 +13,7 @@ interface ToolbarProps {
 
 export function Toolbar({buttons}: ToolbarProps): ReactNode {
     return (
-        <div className="flex gap-1.5 ml-auto">
+        <div className="flex gap-1.5 ml-auto mr-4">
             {buttons.map(({title, icon, onClick}) => (
                 <button
                     key={title}
