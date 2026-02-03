@@ -3,19 +3,11 @@ import {updateUserSettings} from '@src/shared/user-settings';
 
 const FOLDING_TABS = [
     {id: "info", key: "foldTabInfo", name: "Информация", icon: "ℹ️", category: "Вкладки"},
-    {id: "applications", key: "foldTabApplications", name: "Заявки", icon: "📋", category: "Вкладки"},
+    {id: "applications", key: "foldTabApplications", name: "Приложения", icon: "📋", category: "Вкладки"},
     {id: "appeals", key: "foldTabAppeals", name: "Обращения", icon: "📝", category: "Вкладки"},
-    {id: "s_requests", key: "foldTabSRequests", name: "Сервисные заявки", icon: "🔧", category: "Вкладки"},
+    {id: "s_requests", key: "foldTabSRequests", name: "Заявки", icon: "🔧", category: "Вкладки"},
     {id: "c_requests", key: "foldTabCRequests", name: "Подключения", icon: "🔌", category: "Вкладки"},
 ] as const;
-
-interface FoldingTab {
-    id: string;
-    key: string;
-    name: string;
-    icon: string;
-    category: string;
-}
 
 interface AnticipationFoldingSectionProps {
     foldSpas: boolean;

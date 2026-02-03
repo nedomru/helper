@@ -180,38 +180,42 @@ class ContentInitializer {
     private async initializeFeatures(config: PageConfig): Promise<void> {
         const {features, alwaysRun} = config;
 
-        // Выполняем функции которые всегда должны запускаться
-        if (alwaysRun?.length) {
-            await Promise.all(alwaysRun.map(fn => fn()));
-        }
-
-        // Если нет функций зависящих от настроек, выходим
-        if (!features.length) return;
+        // Если нет функций, выходим
+        if (!features.length && !alwaysRun?.length) return;
 
         // Получаем настройки пользователя с /me endpoint
         const settings = await this.getSettings();
 
         if (!settings) {
             console.log('[Initializer] No user settings found, skipping optional features');
+            // Все равно запускаем alwaysRun даже без настроек
+            if (alwaysRun?.length) {
+                await Promise.all(alwaysRun.map(fn => fn()));
+            }
             return;
+        }
+
+        // Запускаем alwaysRun и включенные функции параллельно
+        const allPromises: Promise<void>[] = [];
+
+        // Выполняем функции которые всегда должны запускаться
+        if (alwaysRun?.length) {
+            allPromises.push(...alwaysRun.map(fn => Promise.resolve(fn())));
         }
 
         // Запускаем только включенные функции параллельно
         const enabledFeatures = features
             .filter(({key}) => isFeatureEnabled(key, settings))
-            .map(({handler}) => handler());
+            .map(({handler}) => Promise.resolve(handler()));
 
-        if (enabledFeatures.length === 0) {
-            console.log('[Initializer] No optional features enabled');
-            return;
-        }
+        allPromises.push(...enabledFeatures);
 
         const skippedFeatures = features.length - enabledFeatures.length;
         if (skippedFeatures > 0) {
             console.log(`[Initializer] Skipped ${skippedFeatures} disabled features`);
         }
 
-        await Promise.all(enabledFeatures);
+        await Promise.all(allPromises);
     }
 }
 
