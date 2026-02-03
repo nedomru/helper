@@ -7,15 +7,9 @@ import {
     showAgreementOnRequestChange
 } from "./features/ui-enhancements";
 import {macLookupButton} from "@pages/content/arm/features/network-info/macLookup";
-import {foldSpas} from "@pages/content/arm/features/folding/spas";
-import {foldTabInfo} from "@pages/content/arm/features/folding/info";
-import {foldTabCRequests} from "@pages/content/arm/features/folding/connection_requests";
-import {foldTabApplications} from "@pages/content/arm/features/folding/applications";
-import {foldTabAppeals} from "@pages/content/arm/features/folding/appeals";
-import {foldTabSRequests} from "@pages/content/arm/features/folding/service_requests";
 import {hideDiagnosticTabs} from "./features/ui-enhancements/eqm";
 import {addAppealIframeButtons, removeAppealsColumns} from "./features/ui-enhancements/appeals";
-import {hideSelectedTabs, observeTabsNavigation} from "./features/ui-enhancements/hideTabs";
+import {hideSelectedTabs} from "./features/ui-enhancements/hideTabs";
 import {showWarrantyExpiration} from "@pages/content/arm/features/highlights/warranty";
 import {showAppealsHighlights} from "@pages/content/arm/features/highlights/appeals";
 import {showSubscriptionStatus} from "@pages/content/arm/features/highlights/subscriptions";
@@ -42,6 +36,8 @@ import quickAppeals from "@pages/content/arm/features/fast-appeals/buttons";
 import {showClientAge} from "@pages/content/arm/features/ui-enhancements/client-age";
 import {findAppealsButton} from "@pages/content/arm/features/client-guts/find-appeals";
 import {setupAppealsCheck} from "@pages/content/arm/features/left-frame/check-appeals";
+import {foldSpas} from "@pages/content/arm/features/folding/spas";
+import {foldSelectedTabs} from "@pages/content/arm/features/ui-enhancements/foldTabs";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -60,11 +56,6 @@ export const armPageConfigs: PageConfig[] = [
         pattern: URL_PATTERNS.EXCELLS,
         features: [
             {key: 'foldSpas', handler: foldSpas},
-            {key: 'foldTabInfo', handler: foldTabInfo},
-            {key: 'foldTabApplications', handler: foldTabApplications},
-            {key: 'foldTabAppeals', handler: foldTabAppeals},
-            {key: 'foldTabSRequests', handler: foldTabSRequests},
-            {key: 'foldTabCRequests', handler: foldTabCRequests},
             {key: 'removeDiagnosticTabs', handler: hideDiagnosticTabs},
             {key: 'removeAppealsColumns', handler: removeAppealsColumns},
         ],
@@ -92,7 +83,7 @@ export const armPageConfigs: PageConfig[] = [
             copyClientNumber,
             findAppealsButton,
             hideSelectedTabs,
-            observeTabsNavigation,
+            foldSelectedTabs,
         ],
     },
 

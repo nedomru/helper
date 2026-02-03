@@ -222,34 +222,3 @@ export async function hideSelectedTabs(): Promise<void> {
         console.error("[Helper] Error in hideSelectedTabs:", error);
     }
 }
-
-/**
- * Sets up a MutationObserver to watch for tab navigation changes
- */
-export function observeTabsNavigation(): void {
-    const observer = new MutationObserver(async (mutations) => {
-        for (const mutation of mutations) {
-            if (mutation.type === "childList") {
-                const addedNodes = Array.from(mutation.addedNodes);
-                const hasTabsNav = addedNodes.some(
-                    (node) =>
-                        node instanceof HTMLElement &&
-                        (node.classList.contains("nav-tabs") ||
-                            node.querySelector?.("ul.nav.nav-tabs"))
-                );
-
-                if (hasTabsNav) {
-                    // Wait a bit for the DOM to settle
-                    setTimeout(() => {
-                        initHideTabs();
-                    }, 100);
-                }
-            }
-        }
-    });
-
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-    });
-}
