@@ -1,4 +1,4 @@
-import {notify} from "@src/utils";
+import {copyText, notify} from "@src/utils";
 
 /**
  * Creates and inserts a button to copy client agreement from info tab to clipboard
@@ -28,12 +28,14 @@ export async function copyClientAgreementButton(): Promise<void> {
         event.preventDefault();
         event.stopPropagation();
 
-        navigator.clipboard.writeText(agreementNumber).then(() => {
-            notify("📋 Договор", "Номер договора скопирован", "success");
-            console.info("[ARM] - Client agreement copied");
-        }).catch(() => {
-            notify("📋 Договор", "Не удалось скопировать номер договора", "error");
-        });
+        copyText(agreementNumber)
+            .then(() => {
+                notify("📋 Договор", "Номер договора скопирован", "success");
+                console.info("[ARM] - Client agreement copied");
+            })
+            .catch(() => {
+                notify("📋 Договор", "Не удалось скопировать номер договора", "error");
+            });
     });
     agreementBeforeTab.appendChild(lineBreak);
     agreementBeforeTab.appendChild(copyButton);

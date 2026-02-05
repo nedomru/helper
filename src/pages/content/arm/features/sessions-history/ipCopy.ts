@@ -1,4 +1,4 @@
-import {notify} from "@src/utils";
+import {copyText, notify} from "@src/utils";
 
 /**
  * Adds click-to-copy functionality to IP address span element
@@ -19,7 +19,7 @@ function addCopyFunctionality(ipSpan: HTMLElement): void {
         event.stopPropagation();
         event.stopImmediatePropagation();
 
-        navigator.clipboard.writeText(ipText).then((): void => {
+        copyText(ipText).then((): void => {
             ipSpan.style.transition = "color 0.2s ease, background-color 0.2s ease";
             ipSpan.style.color = "#16a34a";
             ipSpan.style.backgroundColor = "#dcfce7";

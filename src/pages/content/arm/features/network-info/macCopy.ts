@@ -1,4 +1,4 @@
-import {notify} from "@src/utils";
+import {copyText, notify} from "@src/utils";
 
 /**
  * Adds functionality to copy MAC address from client session
@@ -19,7 +19,7 @@ export async function copyMACAddress(): Promise<void> {
             event.stopPropagation();
             event.stopImmediatePropagation();
 
-            navigator.clipboard.writeText(macText).then((): void => {
+            copyText(macText).then((): void => {
                 macElement.style.transition = "color 0.2s ease, background-color 0.2s ease";
                 macElement.style.color = "#16a34a";
                 macElement.style.backgroundColor = "#dcfce7";

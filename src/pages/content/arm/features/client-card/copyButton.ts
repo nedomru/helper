@@ -1,4 +1,4 @@
-import {notify} from "@src/utils";
+import {copyText, notify} from "@src/utils";
 
 /**
  * Creates and inserts a button to copy client card from info tab to clipboard
@@ -32,12 +32,14 @@ export async function copyClientCardButton(): Promise<void> {
         event.preventDefault();
         event.stopPropagation();
 
-        navigator.clipboard.writeText(clientCardText).then(() => {
-            notify("🪪 Карточка", "Карточка клиента скопирована", "success");
-            console.info("[ARM] - Client card copied");
-        }).catch(() => {
-            notify("🪪 Карточка", "Не удалось скопировать карточку клиента", "error");
-        });
+        copyText(clientCardText)
+            .then(() => {
+                notify("🪪 Карточка", "Карточка клиента скопирована", "success");
+                console.info("[ARM] - Client card copied");
+            })
+            .catch(() => {
+                notify("🪪 Карточка", "Не удалось скопировать карточку клиента", "error");
+            });
     });
     clientCard.appendChild(lineBreak);
     clientCard.appendChild(copyButton);

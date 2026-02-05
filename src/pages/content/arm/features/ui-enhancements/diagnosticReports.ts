@@ -1,4 +1,4 @@
-import {notify} from "@src/utils";
+import {copyText, notify} from "@src/utils";
 
 const DIAGNOSTIC_URLS = [
     "http://octptest.corp.ertelecom.loc/diagnostic-results/mobile/",
@@ -112,7 +112,7 @@ function getLatestMatchingFiles(files: DiagnosticFile[], agreementNumber: string
  * Copies URL to clipboard and shows notification
  */
 function copyUrlToClipboard(url: string, fileName: string): void {
-    navigator.clipboard.writeText(url).then(() => {
+    copyText(url).then(() => {
         notify("📋 URL скопирован", `Ссылка на "${fileName}" скопирована в буфер обмена`, "success");
     }).catch((err) => {
         console.error("Failed to copy URL:", err);

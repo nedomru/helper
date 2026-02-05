@@ -1,4 +1,4 @@
-import {notify} from "@src/utils";
+import {copyText, notify} from "@src/utils";
 
 /**
  * Adds functionality to copy IP address from client session
@@ -15,8 +15,7 @@ export async function copyIPAddress(): Promise<void> {
         const ipText: string = acronymElement?.innerText.trim() || "";
 
         ipElement.onclick = (): void => {
-            navigator.clipboard
-                .writeText(ipText)
+            copyText(ipText)
                 .then(() => {
                     ipElement.style.transition = "color 0.2s ease, background-color 0.2s ease";
                     ipElement.style.color = "#16a34a";

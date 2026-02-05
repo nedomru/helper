@@ -1,4 +1,4 @@
-import {notify} from "@src/utils";
+import {copyText, notify} from "@src/utils";
 
 /**
  * Adds functionality to copy phone numbers from client session
@@ -33,8 +33,7 @@ export async function copyClientNumber(): Promise<void> {
                 // Click on last 4 digits - copy only last 4
                 lastFourElement.onclick = (e: Event): void => {
                     e.stopPropagation();
-                    navigator.clipboard
-                        .writeText(lastFourDigits)
+                    copyText(lastFourDigits)
                         .then(() => {
                             lastFourElement.style.transition = "color 0.2s ease, background-color 0.2s ease";
                             lastFourElement.style.color = "#16a34a";
@@ -59,8 +58,7 @@ export async function copyClientNumber(): Promise<void> {
 
         // Click on full element - copy complete phone number
         phoneElement.onclick = (): void => {
-            navigator.clipboard
-                .writeText(phoneNumber)
+            copyText(phoneNumber)
                 .then(() => {
                     phoneElement.style.transition = "color 0.2s ease, background-color 0.2s ease";
                     phoneElement.style.color = "#16a34a";

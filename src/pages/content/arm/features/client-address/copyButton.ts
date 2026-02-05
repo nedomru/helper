@@ -1,4 +1,4 @@
-import {notify} from "@src/utils";
+import {copyText, notify} from "@src/utils";
 
 /**
  * Creates and inserts a button to copy client address from info tab to clipboard
@@ -42,12 +42,14 @@ export async function copyClientAddressButton(): Promise<void> {
         event.preventDefault();
         event.stopPropagation();
 
-        navigator.clipboard.writeText(addressText).then(() => {
-            notify("📋 Адрес", "Адрес скопирован", "success");
-            console.info("[ARM] - Client address copied");
-        }).catch(() => {
-            notify("📋 Адрес", "Не удалось скопировать адрес", "error");
-        });
+        copyText(addressText)
+            .then(() => {
+                notify("📋 Адрес", "Адрес скопирован", "success");
+                console.info("[ARM] - Client address copied");
+            })
+            .catch(() => {
+                notify("📋 Адрес", "Не удалось скопировать адрес", "error");
+            });
     });
     addressLabel.appendChild(lineBreak);
     addressLabel.appendChild(copyButton);

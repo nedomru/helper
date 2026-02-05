@@ -1,4 +1,4 @@
-import {notify} from "@src/utils";
+import {copyText, notify} from "@src/utils";
 import {getCookies} from "@pages/options/utils/arm-api";
 
 // Unit type definitions
@@ -745,7 +745,7 @@ async function displayAppealDetails(
                 e.preventDefault();
                 e.stopPropagation();
                 try {
-                    await navigator.clipboard.writeText(group.agreementNumber);
+                    await copyText(group.agreementNumber);
                     notify('Договор', "Договор скопирован в буфер обмена", "success");
                 } catch (error) {
                     console.error("[ARM] Failed to copy agreement:", error);
