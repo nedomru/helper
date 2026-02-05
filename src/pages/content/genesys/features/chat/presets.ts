@@ -416,6 +416,54 @@ export async function setupPresets(): Promise<void> {
         return wrapper;
     };
 
+    // Calculate the top position for presets button and container
+    const calculatePresetsTopPosition = (messageEditor: HTMLElement): number => {
+        // Try to get position from selectSmile if custom message area is enabled
+        const selectSmile = messageEditor.querySelector(".selectSmile") as HTMLElement;
+        if (selectSmile?.style.top) {
+            return parseInt(selectSmile.style.top, 10);
+        }
+
+        // Fallback: calculate based on textarea/message-box height
+        const messageBox = messageEditor.querySelector(".wwe-message-box") as HTMLElement;
+        if (messageBox) {
+            // Get the actual height of messageBox content
+            const textareaWrapper = messageBox.querySelector(".wwe-textarea-wrapper") as HTMLElement;
+            const pushUrlWrapper = messageBox.querySelector(".wwe-push-url-wrapper") as HTMLElement;
+            const sendFileWrapper = messageBox.querySelector(".wwe-send-file-wrapper") as HTMLElement;
+
+            let currentTop = 100; // Default base height
+
+            // Add textarea wrapper height if it exists and is visible
+            if (textareaWrapper) {
+                const computedStyle = window.getComputedStyle(textareaWrapper);
+                if (computedStyle.display !== 'none') {
+                    currentTop = textareaWrapper.offsetHeight;
+                }
+            }
+
+            // Add push URL wrapper height if visible
+            if (pushUrlWrapper) {
+                const computedStyle = window.getComputedStyle(pushUrlWrapper);
+                if (computedStyle.display !== 'none') {
+                    currentTop += pushUrlWrapper.offsetHeight + 5;
+                }
+            }
+
+            // Add send file wrapper height if visible
+            if (sendFileWrapper) {
+                const computedStyle = window.getComputedStyle(sendFileWrapper);
+                if (computedStyle.display !== 'none') {
+                    currentTop += sendFileWrapper.offsetHeight + 5;
+                }
+            }
+
+            return currentTop - 4; // -4 to align with emoji button
+        }
+
+        return 96; // Default fallback position
+    };
+
     // Update presets button and container position based on selectSmile position
     const updatePresetsPosition = (messageEditor: HTMLElement): void => {
         const selectSmile = messageEditor.querySelector(".selectSmile") as HTMLElement;
@@ -423,17 +471,25 @@ export async function setupPresets(): Promise<void> {
         const presetsToggle = messageEditor.querySelector(".wwe-presets-toggle") as HTMLElement;
         const presetsWrapper = messageEditor.querySelector(".wwe-presets-wrapper") as HTMLElement;
 
+        // Calculate the top position
+        const topPosition = calculatePresetsTopPosition(messageEditor);
+
         if (selectSmile && presetsToggle) {
             // Position toggle button to the left of selectSmile
             // Emoji is at right: 75px, so we place presets at around right: 40px
             presetsToggle.style.right = "40px";
-            presetsToggle.style.top = selectSmile.style.top;
+            presetsToggle.style.top = `${topPosition}px`;
         }
 
-        if (containerSmile && presetsWrapper) {
-            // Position container at the same place as containerSmile
-            presetsWrapper.style.right = containerSmile.style.right || "105px";
-            presetsWrapper.style.top = containerSmile.style.top;
+        if (presetsWrapper) {
+            // Position container at the same place as containerSmile or calculate it
+            if (containerSmile?.style.top) {
+                presetsWrapper.style.top = containerSmile.style.top;
+            } else {
+                // Position below the button (same as emoji container)
+                presetsWrapper.style.top = `${topPosition + 30}px`;
+            }
+            presetsWrapper.style.right = containerSmile?.style.right || "105px";
         }
     };
 
