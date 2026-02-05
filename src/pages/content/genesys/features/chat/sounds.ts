@@ -6,31 +6,22 @@ interface ChatSounds {
 }
 
 const DEFAULT_SOUNDS: ChatSounds = {
-    incomingChat: 'zvuk-chpok-4.mp3',
+    incomingChat: 'Sound_1.mp3',
     incomingMessage: 'zvuk-chpok-4.mp3',
 };
 
-const SOUND_BASE_URL = chrome.runtime.getURL('sounds/');
 const GENESYS_SELECTOR = '.wwe-account-state';
+const GENESYS_SOUND_BASE_URL = 'http://genesys-srv.cc3.ertelecom.ru/sounds/';
 
-async function getChatSounds(): Promise<ChatSounds> {
+const toGenesysUrl = (fileName: string): string =>
+    `${GENESYS_SOUND_BASE_URL}${fileName}|-1|0`;
+
+const getChatSounds = async (): Promise<ChatSounds> => {
     const settings = await getUserSettings();
-    if (!settings) {
-        return DEFAULT_SOUNDS;
-    }
+    const genesysSettings = settings?.genesys as Record<string, unknown> | undefined;
+    const chatSounds = genesysSettings?.chatSounds as ChatSounds | undefined;
 
-    const genesysSettings = settings.genesys as Record<string, unknown> | undefined;
-    if (!genesysSettings) {
-        return DEFAULT_SOUNDS;
-    }
-
-    // Check if custom chat sounds are enabled
-    if (genesysSettings.customChatSounds !== true) {
-        return DEFAULT_SOUNDS;
-    }
-
-    const chatSounds = genesysSettings.chatSounds as ChatSounds | undefined;
-    if (!chatSounds || typeof chatSounds !== 'object') {
+    if (!genesysSettings?.customChatSounds || !chatSounds) {
         return DEFAULT_SOUNDS;
     }
 
@@ -38,31 +29,32 @@ async function getChatSounds(): Promise<ChatSounds> {
         incomingChat: chatSounds.incomingChat || DEFAULT_SOUNDS.incomingChat,
         incomingMessage: chatSounds.incomingMessage || DEFAULT_SOUNDS.incomingMessage,
     };
-}
+};
 
-function injectSoundScript(sounds: ChatSounds): void {
+const injectSoundScript = (newChatSound: string, newMessageSound: string): void => {
     const script = document.createElement('script');
     script.textContent = `
-window.genesys.wwe.configuration.set("chat.ringing-bell", "${SOUND_BASE_URL}${sounds.incomingChat}|-1|0");
-window.genesys.wwe.configuration.set("chat.new-message-bell", "${SOUND_BASE_URL}${sounds.incomingMessage}|-1|0");
+window.genesys.wwe.configuration.set("chat.ringing-bell", "${newChatSound}");
+window.genesys.wwe.configuration.set("chat.new-message-bell", "${newMessageSound}");
     `;
     document.body.appendChild(script);
-}
+};
 
 export async function customChatSounds(): Promise<void> {
     const sounds = await getChatSounds();
+    const [chatUrl, messageUrl] = [toGenesysUrl(sounds.incomingChat), toGenesysUrl(sounds.incomingMessage)];
 
-    const applyIfReady = (): boolean => {
+    const apply = (): boolean => {
         if (document.querySelector(GENESYS_SELECTOR)) {
-            injectSoundScript(sounds);
+            injectSoundScript(chatUrl, messageUrl);
             return true;
         }
         return false;
     };
 
-    if (!applyIfReady()) {
+    if (!apply()) {
         new MutationObserver((_, obs) => {
-            if (applyIfReady()) obs.disconnect();
+            if (apply()) obs.disconnect();
         }).observe(document, {childList: true, subtree: true});
     }
 }
