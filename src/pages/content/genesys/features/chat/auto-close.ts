@@ -12,6 +12,7 @@ const activeTimeouts = new Map<string, NodeJS.Timeout>();
 const remainingTimes = new Map<string, number>();
 const updateIntervals = new Map<string, NodeJS.Timeout>();
 const transcriptObservers = new Map<string, MutationObserver>();
+const fullyCloseTimeouts = new Map<string, NodeJS.Timeout>();
 
 interface ChatControls {
     checkbox: HTMLInputElement;
@@ -69,6 +70,10 @@ function clearChatTimers(chatId: string): void {
         clearInterval(updateIntervals.get(chatId)!);
         updateIntervals.delete(chatId);
     }
+    if (fullyCloseTimeouts.has(chatId)) {
+        clearTimeout(fullyCloseTimeouts.get(chatId)!);
+        fullyCloseTimeouts.delete(chatId);
+    }
     remainingTimes.delete(chatId);
 }
 
@@ -102,15 +107,6 @@ function resetControls(controls: ChatControls): void {
     timeUnitSelect.disabled = false;
     quickSelect3Min.disabled = false;
     quickSelect4Min.disabled = false;
-}
-
-/**
- * Disable timer controls while timer is active
- */
-function disableTimerControls(controls: ChatControls): void {
-    const {timerInput, timeUnitSelect} = controls;
-    timerInput.disabled = true;
-    timeUnitSelect.disabled = true;
 }
 
 /**
@@ -323,6 +319,193 @@ async function leaveChat(chatId: string): Promise<boolean> {
     } catch (error) {
         console.error(`Failed to leave chat ${chatId}:`, error);
         return false;
+    }
+}
+
+/**
+ * Send fully close request to Genesys API (UpdateUserData with eralinkReleased)
+ */
+async function releaseChat(
+    chatId: string,
+): Promise<{ success: boolean; statusCode?: number; error?: string }> {
+    try {
+        // Get the current URL to construct the API endpoint
+        const currentUrl = window.location.href;
+        const urlObj = new URL(currentUrl);
+        const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+
+        const apiUrl = `${baseUrl}/api/v2/me/chats/${chatId}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: JSON.stringify({
+                operationName: 'UpdateUserData',
+                userData: {
+                    eralinkReleased: true,
+                },
+            }),
+        });
+
+        if (!response.ok) {
+            return {
+                success: false,
+                error: `HTTP ${response.status}: ${response.statusText}`,
+            };
+        }
+
+        const data = await response.json();
+        console.log('UpdateUserData API response:', data);
+
+        // Check if statusCode is 0 (success)
+        if (data.statusCode !== 0) {
+            return {
+                success: false,
+                statusCode: data.statusCode,
+                error: data.statusMessage || `API вернул код ${data.statusCode}`,
+            };
+        }
+
+        return {success: true, statusCode: 0};
+    } catch (error) {
+        console.error(`Failed to fully close chat ${chatId}:`, error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        };
+    }
+}
+
+/**
+ * Fetch interaction workspace settings from Genesys API
+ */
+async function fetchSettings(): Promise<{ success: boolean; settings?: Map<string, string>; error?: string }> {
+    try {
+        // Get the current URL to construct the API endpoint
+        const currentUrl = window.location.href;
+        const urlObj = new URL(currentUrl);
+        const baseUrl = `${urlObj.protocol}//${urlObj.host.replace(/:\d+$/, ':81')}`; // Use port 81 for settings API
+
+        const apiUrl = `${baseUrl}/api/v2/me/settings/interaction-workspace`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            credentials: 'include', // Include cookies for authentication
+            headers: {
+                'Content-Type': 'application/json; charset=UTF-8',
+            },
+        });
+
+        if (!response.ok) {
+            return {
+                success: false,
+                error: `HTTP ${response.status}: ${response.statusText}`,
+            };
+        }
+
+        const data = await response.json();
+        console.log('Settings API response:', data);
+
+        // Check if statusCode is 0 (success)
+        if (data.statusCode !== 0) {
+            return {
+                success: false,
+                statusCode: data.statusCode,
+                error: data.statusMessage || `API вернул код ${data.statusCode}`,
+            } as { success: boolean; error?: string; statusCode?: number };
+        }
+
+        // Convert settings array to Map for easier lookup
+        const settingsMap = new Map<string, string>();
+        if (data.settings && Array.isArray(data.settings)) {
+            data.settings.forEach((setting: { name: string; value: string }) => {
+                settingsMap.set(setting.name, setting.value);
+            });
+        }
+
+        return {success: true, settings: settingsMap};
+    } catch (error) {
+        console.error('Failed to fetch settings:', error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        };
+    }
+}
+
+/**
+ * Get the auto-mark-done timer value from Genesys settings
+ */
+async function getAutoMarkDoneTimer(): Promise<number> {
+    const result = await fetchSettings();
+
+    if (!result.success || !result.settings) {
+        console.warn('Failed to fetch settings, using default 60 seconds:', result.error);
+        return 60; // Default fallback value
+    }
+
+    const timerValue = result.settings.get('custom.chat.auto-mark-done.timer');
+    const parsedValue = timerValue ? parseInt(timerValue, 10) : 60;
+
+    if (isNaN(parsedValue)) {
+        console.warn('Invalid timer value in settings, using default 60 seconds');
+        return 60;
+    }
+
+    console.log(`Using auto-mark-done timer from settings: ${parsedValue} seconds`);
+    return parsedValue;
+}
+
+/**
+ * Send complete request to Genesys API
+ */
+async function completeChat(
+    chatId: string,
+): Promise<{ success: boolean; statusCode?: number; error?: string }> {
+    try {
+        // Get the current URL to construct the API endpoint
+        const currentUrl = window.location.href;
+        const urlObj = new URL(currentUrl);
+        const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+
+        const apiUrl = `${baseUrl}/api/v2/me/chats/${chatId}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json; charset=UTF-8',
+            },
+            body: JSON.stringify({operationName: 'Complete'}),
+        });
+
+        if (!response.ok) {
+            return {
+                success: false,
+                error: `HTTP ${response.status}: ${response.statusText}`,
+            };
+        }
+
+        const data = await response.json();
+        console.log('Complete API response:', data);
+
+        // Check if statusCode is 0 (success)
+        if (data.statusCode !== 0) {
+            return {
+                success: false,
+                statusCode: data.statusCode,
+                error: data.statusMessage || `API вернул код ${data.statusCode}`,
+            };
+        }
+
+        return {success: true, statusCode: 0};
+    } catch (error) {
+        console.error(`Failed to complete chat ${chatId}:`, error);
+        return {
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        };
     }
 }
 
@@ -701,6 +884,69 @@ function createAutoCloseCheckbox(
                         ? 'Отправлено, выход из чата...'
                         : 'Запрос на выход отправлен...';
                     container.style.backgroundColor = '#d4edda';
+
+                    // Fetch and use the auto-mark-done timer from settings
+                    const autoMarkDoneTimer = await getAutoMarkDoneTimer();
+
+                    // Start countdown for fully close
+                    let countdownSeconds = autoMarkDoneTimer;
+                    const countdownIntervalId = setInterval(() => {
+                        countdownSeconds--;
+                        if (countdownSeconds > 0) {
+                            statusLabel.textContent = `Закрытие через ${countdownSeconds}...`;
+                        } else {
+                            clearInterval(countdownIntervalId);
+                            statusLabel.textContent = 'Закрытие чата...';
+                        }
+                    }, 1000);
+
+                    // Schedule fully close after the configured timer value
+                    const fullyCloseTimeoutId = setTimeout(async () => {
+                        clearInterval(countdownIntervalId);
+                        console.log(`Sending fully close request for chat ${chatId}`);
+                        statusLabel.textContent = 'Закрытие чата...';
+
+                        const fullyCloseResult = await releaseChat(chatId);
+                        if (!fullyCloseResult.success) {
+                            console.warn(`Failed to fully close chat ${chatId}:`, fullyCloseResult.error);
+                            statusLabel.textContent = `Ошибка закрытия: ${fullyCloseResult.error}`;
+                            container.style.backgroundColor = '#fff3cd';
+                            fullyCloseTimeouts.delete(chatId);
+                            setTimeout(() => {
+                                statusLabel.textContent = '';
+                                container.style.backgroundColor = '#FFFFFF';
+                            }, 5000);
+                            return;
+                        }
+
+                        console.log(`Successfully fully closed chat ${chatId}`);
+
+                        // Now complete the chat
+                        console.log(`Sending complete request for chat ${chatId}`);
+                        statusLabel.textContent = 'Завершение чата...';
+
+                        const completeResult = await completeChat(chatId);
+                        if (completeResult.success) {
+                            console.log(`Successfully completed chat ${chatId}`);
+                            statusLabel.textContent = 'Чат закрыт';
+                            container.style.backgroundColor = '#d4edda';
+                        } else {
+                            console.warn(`Failed to complete chat ${chatId}:`, completeResult.error);
+                            statusLabel.textContent = `Ошибка завершения: ${completeResult.error}`;
+                            container.style.backgroundColor = '#fff3cd';
+                        }
+
+                        // Clear the timeout from the map
+                        fullyCloseTimeouts.delete(chatId);
+
+                        // Reset status after delay
+                        setTimeout(() => {
+                            statusLabel.textContent = '';
+                            container.style.backgroundColor = '#FFFFFF';
+                        }, 5000);
+                    }, autoMarkDoneTimer * 1000); // Use the timer value from settings
+
+                    fullyCloseTimeouts.set(chatId, fullyCloseTimeoutId);
                 } else {
                     checkbox.checked = false;
                     checkbox.disabled = false;
@@ -966,6 +1212,9 @@ export function removeAutoClose(): void {
 
     updateIntervals.forEach((interval) => clearInterval(interval));
     updateIntervals.clear();
+
+    fullyCloseTimeouts.forEach((timeout) => clearTimeout(timeout));
+    fullyCloseTimeouts.clear();
 
     remainingTimes.clear();
 
