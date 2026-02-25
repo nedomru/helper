@@ -80,7 +80,7 @@ export default function Auth({onAuthorized}: AuthProps) {
             setStep('waiting');
         }
 
-        const cleanup = pollSessionStatus(
+        return pollSessionStatus(
             sessionId,
             (newStatus, user) => {
                 setStatus(newStatus);
@@ -94,8 +94,6 @@ export default function Auth({onAuthorized}: AuthProps) {
             () => {
             }
         );
-
-        return cleanup;
     }, [sessionId, step]);
 
     const handleAuthorized = useCallback(async (user: TelegramUser) => {
@@ -172,7 +170,7 @@ export default function Auth({onAuthorized}: AuthProps) {
                         <p className="text-gray-600 mb-8">{error}</p>
                         <button
                             onClick={handleCreateSession}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                            className="w-full px-6 py-3 bg-linear-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         >
                             Создать новую сессию
                         </button>
@@ -203,7 +201,7 @@ export default function Auth({onAuthorized}: AuthProps) {
                         </p>
                         <button
                             onClick={handleCreateSession}
-                            className="w-full px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+                            className="w-full px-6 py-3 bg-linear-to-r from-cyan-500 to-blue-600 text-white rounded-xl hover:from-cyan-600 hover:to-blue-700 transition-all font-medium shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         >
                             Попробовать снова
                         </button>
@@ -226,7 +224,7 @@ export default function Auth({onAuthorized}: AuthProps) {
                     <div className="flex justify-center mb-6">
                         <div className="relative">
                             <div
-                                className="absolute inset-0 bg-gradient-to-r from-cyan-500 to-blue-600 rounded-2xl blur opacity-30"/>
+                                className="absolute inset-0 bg-linear-to-r from-cyan-500 to-blue-600 rounded-2xl blur opacity-30"/>
                             <div className="relative bg-white p-4 rounded-2xl shadow-lg border-2 border-gray-100">
                                 <img src={qrCodeUrl} alt="QR Code" className="w-56 h-56"/>
                             </div>
@@ -249,7 +247,7 @@ export default function Auth({onAuthorized}: AuthProps) {
                         </a>
                     </div>
 
-                    <div className="bg-gradient-to-r from-cyan-50 to-blue-50 rounded-xl p-4">
+                    <div className="bg-linear-to-r from-cyan-50 to-blue-50 rounded-xl p-4">
                         <div className="flex items-center justify-center gap-3">
                             {step === 'waiting' && (
                                 <>
