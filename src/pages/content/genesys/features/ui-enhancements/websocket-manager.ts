@@ -14,7 +14,6 @@ export interface SocketMessage {
     chatCapacity?: Record<string, { available: number; max: number }>;
     daySl?: string | number;
     serviceScheme?: number;
-    lastMessage?: { author?: string; message: string };
 }
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'connecting' | 'reconnecting';

@@ -5,7 +5,6 @@ import {allowPaste} from "@pages/content/genesys/features/chat/pasting";
 import {allowChatSizeEdit} from "@pages/content/genesys/features/chat/message_area";
 import {autoCollapseChatHeader} from "@pages/content/genesys/features/chat/headers";
 import {showLineStatus} from "@pages/content/genesys/features/ui-enhancements/line_status";
-import {showDutyMessages} from "@pages/content/genesys/features/ui-enhancements/duty_messages";
 import {hideButtons} from "@pages/content/genesys/features/ui-enhancements/hideButtons";
 import {showClock} from "@pages/content/genesys/features/ui-enhancements/clock";
 import {initAutoClose} from "@pages/content/genesys/features/chat/auto-close";
@@ -22,7 +21,6 @@ export const genesysPageConfigs: PageConfig[] = [
         features: [
             {key: 'showClock', handler: showClock},
             {key: 'showLineStatus', handler: showLineStatus},
-            {key: 'showDutyMessages', handler: showDutyMessages},
             {key: 'hideButtons', handler: hideButtons},
             {key: 'customChatColors', handler: customChatColors},
             {key: 'customChatSounds', handler: customChatSounds},

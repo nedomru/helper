@@ -13,6 +13,36 @@ interface CachedSettings {
     timestamp: number;
 }
 
+/** Keys that have been removed and should be cleaned from saved settings */
+const DEPRECATED_KEYS: Record<string, string[]> = {
+    genesys: ['showDutyMessages'],
+};
+
+/**
+ * Removes deprecated keys from settings and persists the cleanup
+ */
+async function migrateDeprecatedKeys(settings: Record<string, unknown>): Promise<Record<string, unknown>> {
+    let changed = false;
+
+    for (const [module, keys] of Object.entries(DEPRECATED_KEYS)) {
+        const moduleSettings = settings[module] as Record<string, unknown> | undefined;
+        if (!moduleSettings || typeof moduleSettings !== 'object') continue;
+
+        for (const key of keys) {
+            if (key in moduleSettings) {
+                delete moduleSettings[key];
+                changed = true;
+            }
+        }
+    }
+
+    if (changed) {
+        await updateUserSettingsAPI(settings);
+    }
+
+    return settings;
+}
+
 /**
  * Fetches user settings with caching
  * @returns The user settings or null if not authenticated/error
@@ -28,6 +58,7 @@ export async function getUserSettings(): Promise<Record<string, unknown> | null>
     // Fetch from API
     const settings = await fetchUserSettings();
     if (settings) {
+        await migrateDeprecatedKeys(settings);
         await cacheSettings(settings);
     }
     return settings;

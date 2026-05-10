@@ -61,7 +61,6 @@ export const genesysFeatureGroups: FeatureGroup[] = [
         description: 'Настройки интерфейса Genesys',
         features: [
             {key: 'showLineStatus', label: 'Статус линии', description: 'Показывать статус линии (слоты, аварии)'},
-            {key: 'showDutyMessages', label: 'Сообщения дежурных', description: 'Отображать сообщения дежурных'},
             {key: 'hideButtons', label: 'Скрыть бесполезные кнопки', description: 'Скрыть ненужные кнопки'},
             {key: 'showClock', label: 'Отображать таймер', description: 'Включает таймер в верхнюю панель Генезиса'},
         ],
