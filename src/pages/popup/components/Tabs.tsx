@@ -7,7 +7,7 @@ interface TabsProps {
     badges?: Partial<Record<Tab, number>>;
 }
 
-const TABS: Tab[] = ['Главная', 'Инструменты', 'Что нового'];
+const TABS: Tab[] = ['Главная', 'Инструменты', 'Буфер', 'Что нового'];
 
 export function Tabs({active, onChange, badges}: TabsProps): ReactNode {
     return (

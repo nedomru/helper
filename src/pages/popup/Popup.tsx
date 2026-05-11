@@ -4,7 +4,7 @@ import {getAuthState, isAuthenticated, logout} from '@src/utils/auth';
 import Auth from '@src/components/Auth';
 import browser from 'webextension-polyfill';
 import type {MacLookupResult, Tab} from './types';
-import {Header, HomeTab, Loading, Tabs, Toolbar, ToolsTab, WhatsNewTab} from './components';
+import {ClipboardTab, Header, HomeTab, Loading, Tabs, Toolbar, ToolsTab, WhatsNewTab} from './components';
 import {countUnseenEntries, getLatestVersion} from './data/changelog';
 
 const LAST_SEEN_CHANGELOG_KEY = 'lastSeenChangelogVersion';
@@ -106,6 +106,7 @@ export default function Popup() {
                 {activeTab === 'Инструменты' &&
                     <ToolsTab macAddress={macAddress} onMacChange={setMacAddress} onMacLookup={handleMacLookup}
                               macResult={macResult}/>}
+                {activeTab === 'Буфер' && <ClipboardTab/>}
                 {activeTab === 'Что нового' && <WhatsNewTab lastSeenVersion={lastSeenVersion}/>}
             </div>
         </div>

@@ -1,6 +1,9 @@
+import {pushClipboardEntry} from "@src/shared/clipboard-history";
+
 /**
  * Copies text to clipboard using the best available method
- * Tries navigator.clipboard first, falls back to document.execCommand
+ * Tries navigator.clipboard first, falls back to document.execCommand.
+ * Also pushes the value into local clipboard history.
  *
  * @param text - Text to copy
  * @returns Promise that resolves when copy is complete
@@ -11,6 +14,7 @@ export async function copyText(text: string): Promise<void> {
     if (navigator.clipboard && window.isSecureContext) {
         try {
             await navigator.clipboard.writeText(text);
+            void pushClipboardEntry(text);
             return;
         } catch (err) {
             console.warn("[Хелпер] - navigator.clipboard failed, trying fallback:", err);
@@ -33,6 +37,7 @@ export async function copyText(text: string): Promise<void> {
         if (!successful) {
             throw new Error("execCommand returned false");
         }
+        void pushClipboardEntry(text);
     } catch (err) {
         console.error("[Хелпер] - [Копирование текста] Не удалось скопировать текст, ошибка:", err);
         throw err;

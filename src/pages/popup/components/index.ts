@@ -9,3 +9,4 @@ export {LinkSection} from './LinkSection';
 export {HomeTab} from './HomeTab';
 export {ToolsTab} from './ToolsTab';
 export {WhatsNewTab} from './WhatsNewTab';
+export {ClipboardTab} from './ClipboardTab';
