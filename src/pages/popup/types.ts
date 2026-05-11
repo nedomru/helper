@@ -24,4 +24,4 @@ export interface ToolInputProps {
     onAction?: () => void;
 }
 
-export type Tab = 'Главная' | 'Инструменты';
+export type Tab = 'Главная' | 'Инструменты' | 'Что нового';

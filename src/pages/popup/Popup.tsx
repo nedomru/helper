@@ -4,7 +4,10 @@ import {getAuthState, isAuthenticated, logout} from '@src/utils/auth';
 import Auth from '@src/components/Auth';
 import browser from 'webextension-polyfill';
 import type {MacLookupResult, Tab} from './types';
-import {Header, HomeTab, Loading, Tabs, Toolbar, ToolsTab} from './components';
+import {Header, HomeTab, Loading, Tabs, Toolbar, ToolsTab, WhatsNewTab} from './components';
+import {countUnseenEntries, getLatestVersion} from './data/changelog';
+
+const LAST_SEEN_CHANGELOG_KEY = 'lastSeenChangelogVersion';
 
 const TOOLBAR_BUTTONS = [
     {
@@ -31,6 +34,8 @@ export default function Popup() {
     const [activeTab, setActiveTab] = useState<Tab>('Главная');
     const [macAddress, setMacAddress] = useState('');
     const [macResult, setMacResult] = useState<MacLookupResult | null>(null);
+    const [lastSeenVersion, setLastSeenVersion] = useState<string | null>(null);
+    const [unseenCount, setUnseenCount] = useState(0);
 
     useEffect(() => {
         (async () => {
@@ -40,8 +45,19 @@ export default function Popup() {
                 const state = await getAuthState();
                 if (state?.user) setCurrentUser(state.user);
             }
+            const stored = await browser.storage.local.get(LAST_SEEN_CHANGELOG_KEY);
+            const seen = (stored[LAST_SEEN_CHANGELOG_KEY] as string | undefined) ?? null;
+            setLastSeenVersion(seen);
+            setUnseenCount(countUnseenEntries(seen));
         })();
     }, []);
+
+    useEffect(() => {
+        if (activeTab !== 'Что нового' || unseenCount === 0) return;
+        const latest = getLatestVersion();
+        browser.storage.local.set({[LAST_SEEN_CHANGELOG_KEY]: latest});
+        setUnseenCount(0);
+    }, [activeTab, unseenCount]);
 
     const handleAuthorized = useCallback((user: TelegramUser) => {
         setCurrentUser(user);
@@ -81,7 +97,7 @@ export default function Popup() {
             {currentUser && <Header user={currentUser} onLogout={handleLogout}/>}
 
             <div className="flex items-center border-b border-gray-200/80 bg-white">
-                <Tabs active={activeTab} onChange={setActiveTab}/>
+                <Tabs active={activeTab} onChange={setActiveTab} badges={{'Что нового': unseenCount}}/>
                 <Toolbar buttons={TOOLBAR_BUTTONS}/>
             </div>
 
@@ -90,6 +106,7 @@ export default function Popup() {
                 {activeTab === 'Инструменты' &&
                     <ToolsTab macAddress={macAddress} onMacChange={setMacAddress} onMacLookup={handleMacLookup}
                               macResult={macResult}/>}
+                {activeTab === 'Что нового' && <WhatsNewTab lastSeenVersion={lastSeenVersion}/>}
             </div>
         </div>
     );
