@@ -40,6 +40,7 @@ import {setupAppealsCheck} from "@pages/content/arm/features/left-frame/check-ap
 import {foldSpas} from "@pages/content/arm/features/folding/spas";
 import {foldSelectedTabs} from "@pages/content/arm/features/ui-enhancements/foldTabs";
 import {broadcastClientContext} from "@pages/content/arm/features/client-context";
+import {setupClientNotes} from "@pages/content/arm/features/client-notes";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -87,6 +88,7 @@ export const armPageConfigs: PageConfig[] = [
             hideSelectedTabs,
             foldSelectedTabs,
             broadcastClientContext,
+            setupClientNotes,
         ],
     },
 
