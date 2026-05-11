@@ -22,25 +22,33 @@ import {copyClientCardButton} from "@pages/content/arm/features/client-card/copy
 import {sendClientCardButton} from "@pages/content/arm/features/client-card/sendButton";
 import {copyClientAgreementButton} from "@pages/content/arm/features/client-agreement/copyButton";
 import {copyClientAddressButton} from "@pages/content/arm/features/client-address/copyButton";
-import {compensateButton} from "@pages/content/arm/features/compensation/button";
 import {copyMACAddress} from "@pages/content/arm/features/network-info/macCopy";
 import {copyIPAddress} from "@pages/content/arm/features/network-info/ipCopy";
-import {filterSessions} from "@pages/content/arm/features/sessions-history/filters";
-import {setupBulkActions} from "@pages/content/arm/features/sessions-history/bulkActions";
 import {macLookupButton as sessionsMacLookupButton} from "@pages/content/arm/features/sessions-history/macLookup";
 import {copyMACAddress as sessionsCopyMACAddress} from "@pages/content/arm/features/sessions-history/macCopy";
 import {copyIPAddress as sessionsCopyIPAddress} from "@pages/content/arm/features/sessions-history/ipCopy";
 import {loadLastDayClientSessions} from "@pages/content/arm/features/ui-enhancements/sessionsLastDay";
 import {smsButtons} from "@pages/content/arm/features/sms/fast_choose";
 import {copyClientNumber} from "@pages/content/arm/features/client-number/copyButton";
-import quickAppeals from "@pages/content/arm/features/fast-appeals/buttons";
 import {showClientAge} from "@pages/content/arm/features/ui-enhancements/client-age";
 import {findAppealsButton} from "@pages/content/arm/features/client-guts/find-appeals";
 import {setupAppealsCheck} from "@pages/content/arm/features/left-frame/check-appeals";
 import {foldSpas} from "@pages/content/arm/features/folding/spas";
 import {foldSelectedTabs} from "@pages/content/arm/features/ui-enhancements/foldTabs";
 import {broadcastClientContext} from "@pages/content/arm/features/client-context";
-import {setupClientNotes} from "@pages/content/arm/features/client-notes";
+
+// Lazy-loaded features — these are only fetched when their URL pattern matches.
+// Keeps the base ARM content-script bundle smaller for pages that don't need them.
+const lazyClientNotes = async () =>
+    (await import("@pages/content/arm/features/client-notes")).setupClientNotes();
+const lazyBulkActions = async () =>
+    (await import("@pages/content/arm/features/sessions-history/bulkActions")).setupBulkActions();
+const lazyFilterSessions = async () =>
+    (await import("@pages/content/arm/features/sessions-history/filters")).filterSessions();
+const lazyQuickAppeals = async () =>
+    (await import("@pages/content/arm/features/fast-appeals/buttons")).default();
+const lazyCompensate = async () =>
+    (await import("@pages/content/arm/features/compensation/button")).compensateButton();
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -70,7 +78,7 @@ export const armPageConfigs: PageConfig[] = [
             sendClientCardButton,
             copyClientAgreementButton,
             copyClientAddressButton,
-            compensateButton,
+            lazyCompensate,
             diagnosticReportsButton,
             showWarrantyExpiration,
             showAppealsHighlights,
@@ -88,7 +96,7 @@ export const armPageConfigs: PageConfig[] = [
             hideSelectedTabs,
             foldSelectedTabs,
             broadcastClientContext,
-            setupClientNotes,
+            lazyClientNotes,
         ],
     },
 
@@ -102,13 +110,13 @@ export const armPageConfigs: PageConfig[] = [
         pattern: URL_PATTERNS.CLIENT_SESSIONS,
         features: [],
         alwaysRun: [
-            filterSessions,
+            lazyFilterSessions,
             sessionsCopyIPAddress,
             sessionsCopyMACAddress,
             sessionsMacLookupButton,
             loadLastDayClientSessions,
             broadcastClientContext,
-            setupBulkActions,
+            lazyBulkActions,
         ],
     },
 
@@ -117,7 +125,7 @@ export const armPageConfigs: PageConfig[] = [
         features: [],
         alwaysRun: [
             setupAppealsCheck,
-            quickAppeals
+            lazyQuickAppeals,
         ],
     },
 
