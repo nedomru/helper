@@ -71,6 +71,12 @@ function injectStyles(): void {
             color: #92400e; font-size: 11px; margin-top: 4px;
             display: flex; justify-content: space-between; gap: 8px;
         }
+        #${PANEL_ID} .helper-note-author {
+            color: #1d4ed8; text-decoration: none;
+        }
+        #${PANEL_ID} .helper-note-author:hover {
+            text-decoration: underline;
+        }
         #${PANEL_ID} .helper-note-delete {
             background: transparent; border: none; color: #b91c1c;
             cursor: pointer; font-size: 14px; padding: 0;
@@ -115,6 +121,11 @@ async function getOperatorName(): Promise<string | undefined> {
     const u = auth?.user;
     if (!u) return undefined;
     return [u.first_name, u.last_name].filter(Boolean).join(" ") || u.username;
+}
+
+async function getOperatorUsername(): Promise<string | undefined> {
+    const auth = await getAuthState();
+    return auth?.user?.username || undefined;
 }
 
 async function getOperatorId(): Promise<string | null> {
@@ -193,7 +204,10 @@ async function renderPanel(): Promise<void> {
 
 function renderNote(note: ClientNote, currentUserId: string | null): string {
     const text = escapeHtml(note.text);
-    const author = note.authorName ? escapeHtml(note.authorName) : "—";
+    const authorName = note.authorName ? escapeHtml(note.authorName) : "—";
+    const authorMarkup = note.authorUsername
+        ? `<a class="helper-note-author" href="https://t.me/${escapeHtml(note.authorUsername)}" target="_blank" rel="noopener noreferrer" title="@${escapeHtml(note.authorUsername)} — открыть в Telegram">${authorName}</a>`
+        : `<span>${authorName}</span>`;
     const isOwn = currentUserId !== null && note.authorUserId === currentUserId;
     const deleteBtn = isOwn
         ? `<button class="helper-note-delete" type="button" data-delete-id="${note.id}" title="Удалить">🗑</button>`
@@ -202,7 +216,7 @@ function renderNote(note: ClientNote, currentUserId: string | null): string {
         <div class="helper-note">
             <div class="helper-note-text">${text}</div>
             <div class="helper-note-meta">
-                <span>${formatTime(note.createdAt)} · ${author}</span>
+                <span>${formatTime(note.createdAt)} · ${authorMarkup}</span>
                 ${deleteBtn}
             </div>
         </div>
@@ -224,10 +238,13 @@ async function handleSave(): Promise<void> {
     const ta = panel?.querySelector("textarea") as HTMLTextAreaElement | null;
     const value = ta?.value.trim();
     if (!value) return;
-    const author = await getOperatorName();
+    const [author, username] = await Promise.all([
+        getOperatorName(),
+        getOperatorUsername(),
+    ]);
 
     isLoading = true;
-    const saved = await addNote(currentAgreement, value, author);
+    const saved = await addNote(currentAgreement, value, author, username);
     isLoading = false;
 
     if (!saved) {

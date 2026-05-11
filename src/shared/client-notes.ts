@@ -14,6 +14,7 @@ export interface ClientNote {
     text: string;
     authorUserId: string;
     authorName: string;
+    authorUsername: string | null;
     createdAt: string;
     updatedAt: string;
 }
@@ -47,14 +48,20 @@ export async function addNote(
     agreement: string,
     text: string,
     authorName?: string,
+    authorUsername?: string | null,
 ): Promise<ClientNote | null> {
     const trimmed = text.trim();
     if (!agreement || !trimmed) return null;
     try {
         const res = await securePost<
-            {agreement: string; text: string; authorName?: string},
+            {agreement: string; text: string; authorName?: string; authorUsername?: string},
             CreateResponse
-        >("/api/notes/create", {agreement, text: trimmed, authorName});
+        >("/api/notes/create", {
+            agreement,
+            text: trimmed,
+            authorName,
+            authorUsername: authorUsername ?? undefined,
+        });
         return res.note;
     } catch (err) {
         console.error("[client-notes] create failed:", err);
