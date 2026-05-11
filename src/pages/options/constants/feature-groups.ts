@@ -14,6 +14,19 @@ export interface FeatureGroup {
 
 export const armFeatureGroups: FeatureGroup[] = [
     {
+        title: 'Внешний вид',
+        icon: '🌙',
+        description: 'Настройки оформления АРМ',
+        features: [
+            {
+                key: 'darkTheme',
+                label: 'Тёмная тема',
+                description:
+                    'Включает тёмную тему для всех страниц АРМ. Применяется через инверсию цветов — может слегка искажать изображения.',
+            },
+        ],
+    },
+    {
         title: 'Сворачивание',
         icon: '📁',
         description: 'Управление отображением вкладок и панелей',
