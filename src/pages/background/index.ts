@@ -12,6 +12,7 @@ import {
     rebuildSpeechPhrasesMenu,
 } from "./handlers/speechPhrasesMenu";
 import {createExtensionIconMenu, handleExtensionIconClick,} from "./handlers/extensionIconMenu";
+import {handleSecurePost} from "./handlers/securePost";
 
 // Handle all messages from content scripts
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
@@ -68,6 +69,14 @@ chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
         handleExtensionIconClick()
             .then(() => sendResponse({ok: true}))
             .catch(err => sendResponse({ok: false, err: String(err)}));
+        return true;
+    }
+
+    // E2E-encrypted POST proxy (heavy crypto stays in the SW realm)
+    if (request.action === "securePost") {
+        handleSecurePost(request)
+            .then(result => sendResponse(result))
+            .catch(err => sendResponse({ok: false, status: 0, error: String(err)}));
         return true;
     }
 });
