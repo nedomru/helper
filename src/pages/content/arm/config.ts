@@ -26,6 +26,7 @@ import {compensateButton} from "@pages/content/arm/features/compensation/button"
 import {copyMACAddress} from "@pages/content/arm/features/network-info/macCopy";
 import {copyIPAddress} from "@pages/content/arm/features/network-info/ipCopy";
 import {filterSessions} from "@pages/content/arm/features/sessions-history/filters";
+import {setupBulkActions} from "@pages/content/arm/features/sessions-history/bulkActions";
 import {macLookupButton as sessionsMacLookupButton} from "@pages/content/arm/features/sessions-history/macLookup";
 import {copyMACAddress as sessionsCopyMACAddress} from "@pages/content/arm/features/sessions-history/macCopy";
 import {copyIPAddress as sessionsCopyIPAddress} from "@pages/content/arm/features/sessions-history/ipCopy";
@@ -105,6 +106,7 @@ export const armPageConfigs: PageConfig[] = [
             sessionsMacLookupButton,
             loadLastDayClientSessions,
             broadcastClientContext,
+            setupBulkActions,
         ],
     },
 
