@@ -99,3 +99,20 @@ chrome.storage.onChanged.addListener((changes, areaName) => {
         rebuildSpeechPhrasesMenu().catch(console.error);
     }
 });
+
+// Global keyboard shortcuts (chrome.commands)
+chrome.commands.onCommand.addListener(async (command) => {
+    if (command === "open-helper-options") {
+        chrome.runtime.openOptionsPage();
+        return;
+    }
+
+    const [tab] = await chrome.tabs.query({active: true, currentWindow: true});
+    if (!tab?.id) return;
+
+    try {
+        await chrome.tabs.sendMessage(tab.id, {action: "helperCommand", command});
+    } catch (err) {
+        console.debug("[Helper] No content script on active tab for command:", command, err);
+    }
+});

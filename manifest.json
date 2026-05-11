@@ -93,5 +93,26 @@
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'; connect-src 'self' http: https:"
   },
+  "commands": {
+    "copy-client-agreement": {
+      "suggested_key": {"default": "Alt+Shift+1"},
+      "description": "Скопировать номер договора клиента"
+    },
+    "copy-client-number": {
+      "suggested_key": {"default": "Alt+Shift+2"},
+      "description": "Скопировать номер телефона клиента"
+    },
+    "copy-session-ip": {
+      "suggested_key": {"default": "Alt+Shift+3"},
+      "description": "Скопировать IP-адрес текущей сессии"
+    },
+    "copy-session-mac": {
+      "suggested_key": {"default": "Alt+Shift+4"},
+      "description": "Скопировать MAC-адрес текущей сессии"
+    },
+    "open-helper-options": {
+      "description": "Открыть настройки расширения"
+    }
+  },
   "author": "Roman Chursanov"
 }
