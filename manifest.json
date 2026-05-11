@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Хелпер",
-  "version": "3.0.0.3",
+  "version": "3.1.0.0",
   "description": "Твой швейцарский нож для работы \uD83D\uDE0E",
   "options_ui": {
     "page": "src/pages/options/index.html",
