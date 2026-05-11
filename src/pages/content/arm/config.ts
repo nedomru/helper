@@ -38,6 +38,7 @@ import {findAppealsButton} from "@pages/content/arm/features/client-guts/find-ap
 import {setupAppealsCheck} from "@pages/content/arm/features/left-frame/check-appeals";
 import {foldSpas} from "@pages/content/arm/features/folding/spas";
 import {foldSelectedTabs} from "@pages/content/arm/features/ui-enhancements/foldTabs";
+import {broadcastClientContext} from "@pages/content/arm/features/client-context";
 
 // URL patterns for ARM
 export const URL_PATTERNS = {
@@ -84,13 +85,14 @@ export const armPageConfigs: PageConfig[] = [
             findAppealsButton,
             hideSelectedTabs,
             foldSelectedTabs,
+            broadcastClientContext,
         ],
     },
 
     {
         pattern: URL_PATTERNS.CLIENT_SESSION,
         features: [],
-        alwaysRun: [copyIPAddress, copyMACAddress, macLookupButton],
+        alwaysRun: [copyIPAddress, copyMACAddress, macLookupButton, broadcastClientContext],
     },
 
     {
@@ -101,7 +103,8 @@ export const armPageConfigs: PageConfig[] = [
             sessionsCopyIPAddress,
             sessionsCopyMACAddress,
             sessionsMacLookupButton,
-            loadLastDayClientSessions
+            loadLastDayClientSessions,
+            broadcastClientContext,
         ],
     },
 

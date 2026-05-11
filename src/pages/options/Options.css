@@ -2920,3 +2920,43 @@ input:focus-visible + .slider {
     }
 }
 
+.placeholder-hints {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0;
+}
+
+.placeholder-hints-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary, #64748b);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-weight: 600;
+}
+
+.placeholder-hints-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+}
+
+.placeholder-hint-chip {
+    background: var(--surface-2, #f1f5f9);
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: 999px;
+    padding: 0.15rem 0.55rem;
+    font-size: 0.7rem;
+    color: var(--text-primary, #0f172a);
+    cursor: pointer;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.placeholder-hint-chip:hover {
+    background: var(--primary-50, #dbeafe);
+    border-color: var(--primary-300, #93c5fd);
+}
+

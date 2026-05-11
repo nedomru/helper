@@ -7,6 +7,8 @@
  * Also handles direct text insertion from context menu.
  */
 
+import {applyPlaceholders} from '@src/shared/placeholders';
+
 type InsertPhraseMessage = {
     action: 'insertSpeechPhrase';
     text: string;
@@ -67,7 +69,9 @@ function checkExpand(el: HTMLElement): void {
 
     for (const p of phrases) {
         if (text.endsWith(p.trigger)) {
-            replaceTrigger(el, p.trigger, p.replacement);
+            void applyPlaceholders(p.replacement).then((expanded) => {
+                replaceTrigger(el, p.trigger, expanded);
+            });
             return;
         }
     }
@@ -231,10 +235,18 @@ function insertTextAtCursor(text: string): void {
  */
 chrome.runtime.onMessage.addListener((message: InsertPhraseMessage, _sender, sendResponse) => {
     if (message.action === 'insertSpeechPhrase') {
-        insertTextAtCursor(message.text);
-        sendResponse({ok: true});
+        applyPlaceholders(message.text)
+            .then((expanded) => {
+                insertTextAtCursor(expanded);
+                sendResponse({ok: true});
+            })
+            .catch(() => {
+                insertTextAtCursor(message.text);
+                sendResponse({ok: true});
+            });
+        return true; // async response
     }
-    return false; // No async response
+    return false;
 });
 
 // Reload if storage changes

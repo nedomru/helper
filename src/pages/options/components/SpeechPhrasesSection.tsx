@@ -2,6 +2,7 @@ import {JSX, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import type {SpeechPhrase, SpeechPhraseCategory} from '@src/shared/speech-phrases';
 import {buildCategoryTree} from '@src/shared/speech-phrases';
 import {notify} from '@src/utils/notify';
+import {PlaceholderHints} from './PlaceholderHints';
 
 interface SpeechPhrasesSectionProps {
     phrases: SpeechPhrase[];
@@ -501,6 +502,9 @@ export default function SpeechPhrasesSection({
                                     placeholder="Текст *"
                                     rows={2}
                                 />
+                                <PlaceholderHints
+                                    onInsert={(ph) => setEditPhraseText((prev) => prev + ph)}
+                                />
                             </div>
                             <div className="tree-edit-actions-inline">
                                 <button className="tree-btn-inline tree-btn-save-inline" onClick={updatePhrase}
@@ -741,6 +745,9 @@ export default function SpeechPhrasesSection({
                                         className="tree-create-textarea"
                                         placeholder="Текст *"
                                         rows={2}
+                                    />
+                                    <PlaceholderHints
+                                        onInsert={(ph) => setNewPhraseText((prev) => prev + ph)}
                                     />
                                 </div>
                                 <div className="tree-create-actions">
