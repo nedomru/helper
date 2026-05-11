@@ -23,7 +23,8 @@
     "management",
     "contextMenus",
     "browsingData",
-    "cookies"
+    "cookies",
+    "alarms"
   ],
   "host_permissions": [
     "*://*.ertelecom.ru/*",

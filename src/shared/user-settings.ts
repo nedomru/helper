@@ -7,10 +7,97 @@ import {fetchUserSettings, updateUserSettingsAPI} from '@src/utils/api';
 
 const SETTINGS_CACHE_KEY = 'user_settings_cache';
 const SETTINGS_CACHE_TTL = 60 * 1000; // 1 minute
+const PENDING_QUEUE_KEY = 'helper_pending_settings_queue';
+const MAX_QUEUE_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 дней
 
 interface CachedSettings {
     data: Record<string, unknown>;
     timestamp: number;
+}
+
+interface PendingUpdate {
+    id: string;
+    settings: Record<string, unknown>;
+    queuedAt: number;
+    attempts: number;
+}
+
+function deepMerge(
+    target: Record<string, unknown>,
+    source: Record<string, unknown>,
+): Record<string, unknown> {
+    const result: Record<string, unknown> = {...target};
+    for (const [key, value] of Object.entries(source)) {
+        const existing = result[key];
+        const isPlainObject = (v: unknown): v is Record<string, unknown> =>
+            !!v && typeof v === 'object' && !Array.isArray(v);
+        if (isPlainObject(existing) && isPlainObject(value)) {
+            result[key] = deepMerge(existing, value);
+        } else {
+            result[key] = value;
+        }
+    }
+    return result;
+}
+
+async function readPendingQueue(): Promise<PendingUpdate[]> {
+    const stored = await chrome.storage.local.get(PENDING_QUEUE_KEY);
+    const queue = stored[PENDING_QUEUE_KEY] as PendingUpdate[] | undefined;
+    if (!Array.isArray(queue)) return [];
+    const cutoff = Date.now() - MAX_QUEUE_AGE_MS;
+    return queue.filter((u) => u.queuedAt >= cutoff);
+}
+
+async function writePendingQueue(queue: PendingUpdate[]): Promise<void> {
+    if (queue.length === 0) {
+        await chrome.storage.local.remove(PENDING_QUEUE_KEY);
+    } else {
+        await chrome.storage.local.set({[PENDING_QUEUE_KEY]: queue});
+    }
+}
+
+async function enqueueUpdate(settings: Record<string, unknown>): Promise<void> {
+    const queue = await readPendingQueue();
+    queue.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        settings,
+        queuedAt: Date.now(),
+        attempts: 0,
+    });
+    await writePendingQueue(queue);
+}
+
+function mergePending(queue: PendingUpdate[]): Record<string, unknown> {
+    return queue.reduce(
+        (acc, update) => deepMerge(acc, update.settings),
+        {} as Record<string, unknown>,
+    );
+}
+
+/**
+ * Attempts to push any pending settings updates to the backend.
+ * Safe to call repeatedly; no-ops if queue is empty.
+ */
+export async function drainPendingSettings(): Promise<boolean> {
+    const queue = await readPendingQueue();
+    if (queue.length === 0) return true;
+
+    const merged = mergePending(queue);
+    const success = await updateUserSettingsAPI(merged);
+    if (success) {
+        await writePendingQueue([]);
+        await clearSettingsCache();
+        return true;
+    }
+
+    const updated = queue.map((u) => ({...u, attempts: u.attempts + 1}));
+    await writePendingQueue(updated);
+    return false;
+}
+
+export async function getPendingSettingsCount(): Promise<number> {
+    const queue = await readPendingQueue();
+    return queue.length;
 }
 
 /** Keys that have been removed and should be cleaned from saved settings */
@@ -112,17 +199,40 @@ export async function clearSettingsCache(): Promise<void> {
 }
 
 /**
- * Updates user settings on the backend
- * @param settings - The settings object to update
- * @returns true if successful, false otherwise
+ * Updates user settings.
+ *
+ * Write-through: applies changes to the local cache immediately so the UI
+ * reflects them, then attempts to persist on the backend. If the backend
+ * call fails (offline or transient error), queues the update for later
+ * retry via drainPendingSettings(). Always returns true to keep the UI
+ * optimistic; callers can inspect getPendingSettingsCount() to surface
+ * sync state.
  */
 export async function updateUserSettings(settings: Record<string, unknown>): Promise<boolean> {
-    const success = await updateUserSettingsAPI(settings);
+    // Optimistically merge into the local cache so consumers see the new
+    // values even before the network round-trip resolves.
+    const stored = await new Promise<CachedSettings | null>((resolve) => {
+        chrome.storage.local.get([SETTINGS_CACHE_KEY], (result) => {
+            resolve((result[SETTINGS_CACHE_KEY] as CachedSettings | undefined) ?? null);
+        });
+    });
+    const baseline = stored?.data ?? {};
+    const optimistic = deepMerge(baseline, settings);
+    await cacheSettings(optimistic);
+
+    // Try to flush any prior pending updates together with the new payload.
+    const pending = await readPendingQueue();
+    const payload = pending.length > 0 ? deepMerge(mergePending(pending), settings) : settings;
+
+    const success = await updateUserSettingsAPI(payload);
     if (success) {
-        // Clear cache after successful update
-        await clearSettingsCache();
+        await writePendingQueue([]);
+        // Keep the optimistic cache; next read will refresh after TTL.
+        return true;
     }
-    return success;
+
+    await enqueueUpdate(settings);
+    return true;
 }
 
 /**

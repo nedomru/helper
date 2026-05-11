@@ -1,5 +1,6 @@
 console.log("background script loaded");
 
+import {drainPendingSettings} from "@src/shared/user-settings";
 import {handleSendClientCard} from "./handlers/sendClientCard";
 import {handleMACLookup} from "./handlers/macLookup";
 import {handleGetCookie, handleGetMultipleCookies} from "./handlers/getCookie";
@@ -97,6 +98,25 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName === 'local' && (changes.speechPhrases || changes.speechPhraseCategories)) {
         rebuildSpeechPhrasesMenu().catch(console.error);
+    }
+});
+
+// Periodic drain of any pending settings updates queued while offline
+const SETTINGS_DRAIN_ALARM = "helper-drain-settings";
+chrome.runtime.onInstalled.addListener(() => {
+    chrome.alarms.create(SETTINGS_DRAIN_ALARM, {periodInMinutes: 5});
+});
+chrome.runtime.onStartup.addListener(() => {
+    chrome.alarms.create(SETTINGS_DRAIN_ALARM, {periodInMinutes: 5});
+    drainPendingSettings().catch((err) =>
+        console.debug("[Helper] drain on startup failed:", err),
+    );
+});
+chrome.alarms.onAlarm.addListener((alarm) => {
+    if (alarm.name === SETTINGS_DRAIN_ALARM) {
+        drainPendingSettings().catch((err) =>
+            console.debug("[Helper] drain on alarm failed:", err),
+        );
     }
 });
 
