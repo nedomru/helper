@@ -65,6 +65,13 @@ export const armFeatureGroups: FeatureGroup[] = [
         features: [],
         isCustom: true,
     },
+    {
+        title: 'Быстрые сервисные заявки',
+        icon: '🛠️',
+        description: 'Пресеты для блока «Сервисная заявка»',
+        features: [],
+        isCustom: true,
+    },
 ];
 
 export const genesysFeatureGroups: FeatureGroup[] = [

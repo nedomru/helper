@@ -8,6 +8,7 @@ import {armFeatureGroups, extensionFeatureGroups, genesysFeatureGroups} from './
 import {importSettings} from './utils/export-import';
 import {useAuth} from './hooks/useAuth';
 import {useQuickAppeals} from './hooks/useQuickAppeals';
+import {useServiceRequests} from './hooks/useServiceRequests';
 import {useWizard} from './hooks/useWizard';
 import {useSpeechPhrases} from './hooks/useSpeechPhrases';
 import Header from './components/Header';
@@ -16,6 +17,7 @@ import SearchBar from './components/SearchBar';
 import ActionsToolbar from './components/ActionsToolbar';
 import FeatureCard from './components/FeatureCard';
 import QuickAppealsSection from './components/QuickAppealsSection';
+import ServiceRequestsSection from './components/ServiceRequestsSection';
 import HiddenTabsSection from './components/HiddenTabsSection';
 import AnticipationFoldingSection from './components/AnticipationFoldingSection';
 import SpeechPhrasesSection from './components/SpeechPhrasesSection';
@@ -62,6 +64,7 @@ export default function Options() {
     } = useAuth();
 
     const quickAppeals = useQuickAppeals();
+    const serviceRequests = useServiceRequests();
     const wizard = useWizard();
     const speechPhrases = useSpeechPhrases();
 
@@ -380,6 +383,23 @@ export default function Options() {
     const renderCustomContent = (group: { title: string }) => {
         if (group.title === 'Быстрые обращения') {
             return renderQuickAppealsCustom();
+        }
+        if (group.title === 'Быстрые сервисные заявки') {
+            return (
+                <ServiceRequestsSection
+                    presets={serviceRequests.presets}
+                    categories={serviceRequests.categories}
+                    onSavePreset={serviceRequests.savePreset}
+                    onRemovePreset={serviceRequests.removePreset}
+                    onDuplicatePreset={serviceRequests.duplicatePreset}
+                    onCreateCategory={serviceRequests.createCategory}
+                    onRenameCategory={serviceRequests.renameCategory}
+                    onDeleteCategory={serviceRequests.deleteCategory}
+                    onMoveCategory={serviceRequests.moveCategory}
+                    onExport={serviceRequests.exportAll}
+                    onImport={serviceRequests.importFromJson}
+                />
+            );
         }
         if (group.title === 'Скрытие вкладок') {
             return renderHiddenTabsCustom();

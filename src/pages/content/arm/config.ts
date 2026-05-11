@@ -47,6 +47,8 @@ const lazyFilterSessions = async () =>
     (await import("@pages/content/arm/features/sessions-history/filters")).filterSessions();
 const lazyQuickAppeals = async () =>
     (await import("@pages/content/arm/features/fast-appeals/buttons")).default();
+const lazyQuickServiceRequests = async () =>
+    (await import("@pages/content/arm/features/fast-service-requests/buttons")).default();
 const lazyCompensate = async () =>
     (await import("@pages/content/arm/features/compensation/button")).compensateButton();
 
@@ -126,6 +128,7 @@ export const armPageConfigs: PageConfig[] = [
         alwaysRun: [
             setupAppealsCheck,
             lazyQuickAppeals,
+            lazyQuickServiceRequests,
         ],
     },
 

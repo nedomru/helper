@@ -360,3 +360,55 @@ export async function getQuickAppealsPresetCategories(): Promise<QuickAppealsPre
 export async function saveQuickAppealsPresetCategories(categories: QuickAppealsPresetCategory[]): Promise<boolean> {
     return updateUserSettings({quickAppealsPresetCategories: categories});
 }
+
+/**
+ * Types for quick service requests presets and categories
+ */
+export interface ServiceRequestReasonStep {
+    level: number;
+    value: string;
+    label: string;
+}
+
+export interface ServiceRequestPreset {
+    id: string;
+    name: string;
+    categoryId?: string | null;
+    product: number;
+    productLabel: string;
+    reasonChain: ServiceRequestReasonStep[];
+    step?: string;
+    stepLabel?: string;
+    technology?: string;
+    technologyLabel?: string;
+    comment?: string;
+}
+
+export type ServiceRequestPresetCategory = QuickAppealsPresetCategory;
+
+/**
+ * Gets quick service request presets from user settings
+ */
+export async function getServiceRequestPresets(): Promise<ServiceRequestPreset[]> {
+    const settings = await getUserSettings();
+    if (!settings) return [];
+    const presets = settings.serviceRequestPresets as ServiceRequestPreset[] | undefined;
+    return Array.isArray(presets) ? presets : [];
+}
+
+export async function saveServiceRequestPresets(presets: ServiceRequestPreset[]): Promise<boolean> {
+    return updateUserSettings({serviceRequestPresets: presets});
+}
+
+export async function getServiceRequestPresetCategories(): Promise<ServiceRequestPresetCategory[]> {
+    const settings = await getUserSettings();
+    if (!settings) return [];
+    const categories = settings.serviceRequestPresetCategories as ServiceRequestPresetCategory[] | undefined;
+    return Array.isArray(categories) ? categories : [];
+}
+
+export async function saveServiceRequestPresetCategories(
+    categories: ServiceRequestPresetCategory[],
+): Promise<boolean> {
+    return updateUserSettings({serviceRequestPresetCategories: categories});
+}
