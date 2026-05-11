@@ -141,7 +141,6 @@ function renderButton(agreement: string, count: number): void {
         btn = document.createElement("button");
         btn.id = BUTTON_ID;
         btn.type = "button";
-        btn.setAttribute("data-helper-no-invert", "1");
         btn.addEventListener("click", togglePanel);
         document.body.appendChild(btn);
     }
@@ -155,7 +154,6 @@ async function renderPanel(): Promise<void> {
     if (!panel) {
         panel = document.createElement("div");
         panel.id = PANEL_ID;
-        panel.setAttribute("data-helper-no-invert", "1");
         document.body.appendChild(panel);
     }
 
